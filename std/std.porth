@@ -9,8 +9,6 @@ const sizeof(u64) 8 end
 const sizeof(u32) 4 end
 const sizeof(ptr) sizeof(u64) end
 
-proc @ptr @64 cast(ptr) end
-
 /// Standard streams
 const stdin  0 end
 const stdout 1 end
