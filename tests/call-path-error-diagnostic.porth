@@ -1,0 +1,6 @@
+include "std.porth"
+
+proc foo true true cstr-to-str end
+proc bar foo end
+proc baz bar end
+baz
