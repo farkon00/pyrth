@@ -1,5 +1,4 @@
-// TODO: NULL should have type ptr
-const NULL 0 end
+const NULL 0 cast(ptr) end
 
 const true  1 cast(bool) end
 const false 0 cast(bool) end
