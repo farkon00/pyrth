@@ -1,6 +1,6 @@
 include "std.porth"
 
-macro N 13 end
+const N 13 end
 
 memory str sizeof(Str) end
 memory acc sizeof(u64) end

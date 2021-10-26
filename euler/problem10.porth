@@ -10,12 +10,12 @@ memory ans sizeof(u64) end
 memory primes-count sizeof(u64) end
 memory primes sizeof(u32) 1000000 * end
 
-macro push-prime // value --
+proc push-prime // value --
   primes-count @32 sizeof(u32) * primes + !32
   primes-count inc32
 end
 
-macro is-prime // [value: int] -> [ret: bool]
+proc is-prime // [value: int] -> [ret: bool]
   0 while
     2dup sizeof(u32) * primes + @32 dup * >= if
       2dup sizeof(u32) * primes + @32 mod 0 !=

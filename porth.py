@@ -7,15 +7,15 @@ import shlex
 from os import path
 from typing import *
 from enum import IntEnum, Enum, auto
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from copy import copy
 from time import sleep
 import traceback
 
 PORTH_EXT = '.porth'
-DEFAULT_EXPANSION_LIMIT=1000
-EXPANSION_DIAGNOSTIC_LIMIT=10
 X86_64_RET_STACK_CAP=8192
+# TODO: INCLUDE_LIMIT should be probably customizable
+INCLUDE_LIMIT=100
 SIM_NULL_POINTER_PADDING = 1 # just a little bit of a padding at the beginning of the memory to make 0 an invalid address
 SIM_STR_CAPACITY  = 640_000
 SIM_ARGV_CAPACITY = 640_000
@@ -32,7 +32,6 @@ class Keyword(Enum):
     END=auto()
     WHILE=auto()
     DO=auto()
-    MACRO=auto()
     INCLUDE=auto()
     MEMORY=auto()
     PROC=auto()
@@ -127,9 +126,6 @@ class Token:
     text: str
     loc: Loc
     value: Union[int, str, Keyword]
-    # https://www.python.org/dev/peps/pep-0484/#forward-references
-    expanded_from: Optional['Token'] = None
-    expanded_count: int = 0
 
 OpAddr=int
 MemAddr=int
@@ -142,8 +138,8 @@ class Op:
 
 @dataclass
 class Program:
-    ops: List[Op]
-    memory_capacity: int
+    ops: List[Op] = field(default_factory=list)
+    memory_capacity: int = 0
 
 def get_cstr_from_mem(mem: bytearray, ptr: int) -> bytes:
     end = ptr
@@ -547,18 +543,10 @@ def simulate_little_endian_linux(program: Program, argv: List[str]):
 def compiler_diagnostic(loc: Loc, tag: str, message: str):
     print("%s:%d:%d: %s: %s" % (loc + (tag, message)), file=sys.stderr)
 
+# TODO: get rid of compiler_diagnostic_with_expansion_stack
+# It was needed when we had macros
 def compiler_diagnostic_with_expansion_stack(token: Token, tag: str, message: str):
     compiler_diagnostic(token.loc, tag, message)
-    stack = token.expanded_from
-    limit = 0
-    while stack is not None and limit <= EXPANSION_DIAGNOSTIC_LIMIT:
-        compiler_note(stack.loc, "expanded from `%s`" % stack.text)
-        stack = stack.expanded_from
-        limit += 1
-    if limit > EXPANSION_DIAGNOSTIC_LIMIT:
-        print('...', file=sys.stderr)
-        print('... too many expansions ...', file=sys.stderr)
-        print('...', file=sys.stderr)
 
 def compiler_error(loc: Loc, message: str):
     compiler_diagnostic(loc, 'ERROR', message)
@@ -592,7 +580,7 @@ CallPath=Tuple[OpAddr, ...]
 # TODO: better error reporting on type checking errors of intrinsics
 # Reported expected and actual types with the location that introduced the actual type
 # TODO: better error reporting on type checking errors of procs
-# Show the call path and stuff (like for macros)
+# Show the call path and stuff
 def type_check_program(program: Program):
     visited_dos: Dict[CallPath, DataStack] = {}
     contexts: List[Context] = [Context(stack=[], ip=0, ret_stack=[])]
@@ -1508,14 +1496,13 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
         out.write("ret_stack_end:\n")
         out.write("mem: resb %d\n" % program.memory_capacity)
 
-assert len(Keyword) == 13, "Exhaustive KEYWORD_NAMES definition."
+assert len(Keyword) == 12, f"Exhaustive KEYWORD_NAMES definition. {len(Keyword)}"
 KEYWORD_BY_NAMES: Dict[str, Keyword] = {
     'if': Keyword.IF,
     'if*': Keyword.IFSTAR,
     'else': Keyword.ELSE,
     'while': Keyword.WHILE,
     'do': Keyword.DO,
-    'macro': Keyword.MACRO,
     'include': Keyword.INCLUDE,
     'memory': Keyword.MEMORY,
     'proc': Keyword.PROC,
@@ -1573,11 +1560,6 @@ INTRINSIC_BY_NAMES: Dict[str, Intrinsic] = {
 }
 INTRINSIC_NAMES: Dict[Intrinsic, str] = {v: k for k, v in INTRINSIC_BY_NAMES.items()}
 
-@dataclass
-class Macro:
-    loc: Loc
-    tokens: List[Token]
-
 class HumanNumber(Enum):
     Singular=auto()
     Plural=auto()
@@ -1620,13 +1602,6 @@ def human(obj: TokenType, number: HumanNumber = HumanNumber.Singular) -> str:
     else:
         assert False, "unreachable"
 
-def expand_macro(macro: Macro, expanded_from: Token) -> List[Token]:
-    result = list(map(lambda x: copy(x), macro.tokens))
-    for token in result:
-        token.expanded_from = expanded_from
-        token.expanded_count = expanded_from.expanded_count + 1
-    return result
-
 @dataclass
 class Memory:
     offset: MemAddr
@@ -1645,31 +1620,46 @@ class Const:
     typ: DataType
     loc: Loc
 
-def check_word_redefinition(token: Token, memories: Dict[str, Memory], macros: Dict[str, Macro], procs: Dict[str, Proc], consts: Dict[str, Const]):
+@dataclass
+class ParseContext:
+    stack: List[OpAddr] = field(default_factory=list)
+    ops: List[Op] = field(default_factory=list)
+    memories: Dict[str, Memory] = field(default_factory=dict)
+    memory_capacity: int = 0
+    procs: Dict[str, Proc] = field(default_factory=dict)
+    consts: Dict[str, Const] = field(default_factory=dict)
+    current_proc: Optional[Proc] = None
+    iota: int = 0
+    # TODO: consider getting rid of the ip variable in ParseContext
+    ip: OpAddr = 0
+
+def check_word_redefinition(ctx: ParseContext, token: Token):
     assert token.typ == TokenType.WORD
     assert isinstance(token.value, str)
     name: str = token.value
-    if name in memories:
-        compiler_error_with_expansion_stack(token, "redefinition of a memory region `%s`" % name)
-        compiler_note(memories[name].loc, "the original definition is located here")
-        exit(1)
+    if ctx.current_proc is None:
+        if name in ctx.memories:
+            compiler_error_with_expansion_stack(token, "redefinition of a memory region `%s`" % name)
+            compiler_note(ctx.memories[name].loc, "the original definition is located here")
+            exit(1)
+    else:
+        if name in ctx.current_proc.local_memories:
+            compiler_error_with_expansion_stack(token, "redefinition of a local memory region `%s`" % name)
+            compiler_note(ctx.current_proc.local_memories[name].loc, "the original definition is located here")
+            exit(1)
     if name in INTRINSIC_BY_NAMES:
         compiler_error_with_expansion_stack(token, "redefinition of an intrinsic word `%s`" % (name, ))
         exit(1)
-    if name in macros:
-        compiler_error_with_expansion_stack(token, "redefinition of a macro `%s`" % (name, ))
-        compiler_note(macros[name].loc, "the original definition is located here")
-        exit(1)
-    if name in procs:
+    if name in ctx.procs:
         compiler_error_with_expansion_stack(token, "redefinition of a proc `%s`" % (name, ))
-        compiler_note(procs[name].loc, "the original definition is located here")
+        compiler_note(ctx.procs[name].loc, "the original definition is located here")
         exit(1)
-    if name in consts:
+    if name in ctx.consts:
         compiler_error_with_expansion_stack(token, "redefinition of a constant `%s`" % (name, ))
-        compiler_note(consts[name].loc, "the original definition is located here")
+        compiler_note(ctx.consts[name].loc, "the original definition is located here")
         exit(1)
 
-def eval_const_value(rtokens: List[Token], macros: Dict[str, Macro], consts: Dict[str, Const], iota: List[int]) -> Tuple[int, DataType]:
+def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, DataType]:
     stack: List[Tuple[int, DataType]] = []
     while len(rtokens) > 0:
         token = rtokens.pop()
@@ -1685,11 +1675,11 @@ def eval_const_value(rtokens: List[Token], macros: Dict[str, Macro], consts: Dic
                 if typ is not DataType.INT:
                     compiler_error_with_expansion_stack(token, f"`{KEYWORD_NAMES[token.value]}` expects type {DataType.INT} but got {typ}")
                     exit(1)
-                stack.append((iota[0], DataType.INT))
-                iota[0] += offset
+                stack.append((ctx.iota, DataType.INT))
+                ctx.iota += offset
             elif token.value == Keyword.RESET:
-                stack.append((iota[0], DataType.INT))
-                iota[0] = 0
+                stack.append((ctx.iota, DataType.INT))
+                ctx.iota = 0
             else:
                 compiler_error_with_expansion_stack(token, f"unsupported keyword `{KEYWORD_NAMES[token.value]}` in compile time evaluation")
                 exit(1)
@@ -1770,13 +1760,9 @@ def eval_const_value(rtokens: List[Token], macros: Dict[str, Macro], consts: Dic
                     exit(1)
                 value, typ = stack.pop()
                 stack.append((value, DataType.PTR))
-            elif token.value in macros:
-                if token.expanded_count >= expansion_limit:
-                    compiler_error_with_expansion_stack(token, "the macro exceeded the expansion limit (it expanded %d times)" % token.expanded_count)
-                    exit(1)
-                rtokens += reversed(expand_macro(macros[token.value], token))
-            elif token.value in consts:
-                stack.append((consts[token.value].value, consts[token.value].typ))
+            elif token.value in ctx.consts:
+                const = ctx.consts[token.value]
+                stack.append((const.value, const.typ))
             else:
                 compiler_error_with_expansion_stack(token, f"unsupported word `{token.value}` in compile time evaluation")
                 exit(1)
@@ -1788,172 +1774,156 @@ def eval_const_value(rtokens: List[Token], macros: Dict[str, Macro], consts: Dic
         exit(1)
     return stack.pop()
 
-def parse_program_from_tokens(tokens: List[Token], include_paths: List[str], expansion_limit: int) -> Program:
-    stack: List[OpAddr] = []
-    program: Program = Program(ops=[], memory_capacity=0)
+def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_paths: List[str], included: int):
     rtokens: List[Token] = list(reversed(tokens))
-    macros: Dict[str, Macro] = {}
-    memories: Dict[str, Memory] = {}
-    procs: Dict[str, Proc] = {}
-    consts: Dict[str, Const] = {}
-    current_proc: Optional[Proc] = None
-    iota: List[int] = [0]
-    # TODO: consider getting rid of the ip variable in parse_program_from_tokens()
-    ip: OpAddr = 0;
     while len(rtokens) > 0:
         token = rtokens.pop()
         assert len(TokenType) == 6, "Exhaustive token handling in parse_program_from_tokens"
         if token.typ == TokenType.WORD:
             assert isinstance(token.value, str), "This could be a bug in the lexer"
             if token.value in INTRINSIC_BY_NAMES:
-                program.ops.append(Op(typ=OpType.INTRINSIC, token=token, operand=INTRINSIC_BY_NAMES[token.value]))
-                ip += 1
-            elif token.value in macros:
-                if token.expanded_count >= expansion_limit:
-                    compiler_error_with_expansion_stack(token, "the macro exceeded the expansion limit (it expanded %d times)" % token.expanded_count)
-                    exit(1)
-                rtokens += reversed(expand_macro(macros[token.value], token))
-            elif current_proc is not None and token.value in current_proc.local_memories:
-                program.ops.append(Op(typ=OpType.PUSH_LOCAL_MEM, token=token, operand=current_proc.local_memories[token.value].offset))
-                ip += 1
-            elif token.value in memories:
-                program.ops.append(Op(typ=OpType.PUSH_MEM, token=token, operand=memories[token.value].offset))
-                ip += 1
-            elif token.value in procs:
-                program.ops.append(Op(typ=OpType.CALL, token=token, operand=procs[token.value].addr))
-                ip += 1
-            elif token.value in consts:
-                const = consts[token.value]
+                ctx.ops.append(Op(typ=OpType.INTRINSIC, token=token, operand=INTRINSIC_BY_NAMES[token.value]))
+                ctx.ip += 1
+            elif ctx.current_proc is not None and token.value in ctx.current_proc.local_memories:
+                ctx.ops.append(Op(typ=OpType.PUSH_LOCAL_MEM, token=token, operand=ctx.current_proc.local_memories[token.value].offset))
+                ctx.ip += 1
+            elif token.value in ctx.memories:
+                ctx.ops.append(Op(typ=OpType.PUSH_MEM, token=token, operand=ctx.memories[token.value].offset))
+                ctx.ip += 1
+            elif token.value in ctx.procs:
+                ctx.ops.append(Op(typ=OpType.CALL, token=token, operand=ctx.procs[token.value].addr))
+                ctx.ip += 1
+            elif token.value in ctx.consts:
+                const = ctx.consts[token.value]
                 if const.typ == DataType.INT:
-                    program.ops.append(Op(typ=OpType.PUSH_INT, token=token, operand=const.value))
+                    ctx.ops.append(Op(typ=OpType.PUSH_INT, token=token, operand=const.value))
                 elif const.typ == DataType.BOOL:
-                    program.ops.append(Op(typ=OpType.PUSH_BOOL, token=token, operand=const.value))
+                    ctx.ops.append(Op(typ=OpType.PUSH_BOOL, token=token, operand=const.value))
                 elif const.typ == DataType.PTR:
-                    program.ops.append(Op(typ=OpType.PUSH_PTR, token=token, operand=const.value))
+                    ctx.ops.append(Op(typ=OpType.PUSH_PTR, token=token, operand=const.value))
                 else:
                     assert False, "unreachable"
-                ip += 1
+                ctx.ip += 1
             else:
                 compiler_error_with_expansion_stack(token, "unknown word `%s`" % token.value)
                 exit(1)
         elif token.typ == TokenType.INT:
             assert isinstance(token.value, int), "This could be a bug in the lexer"
-            program.ops.append(Op(typ=OpType.PUSH_INT, operand=token.value, token=token))
-            ip += 1
+            ctx.ops.append(Op(typ=OpType.PUSH_INT, operand=token.value, token=token))
+            ctx.ip += 1
         elif token.typ == TokenType.STR:
             assert isinstance(token.value, str), "This could be a bug in the lexer"
-            program.ops.append(Op(typ=OpType.PUSH_STR, operand=token.value, token=token));
-            ip += 1
+            ctx.ops.append(Op(typ=OpType.PUSH_STR, operand=token.value, token=token));
+            ctx.ip += 1
         elif token.typ == TokenType.CSTR:
             assert isinstance(token.value, str), "This could be a bug in the lexer"
-            program.ops.append(Op(typ=OpType.PUSH_CSTR, operand=token.value, token=token));
-            ip += 1
+            ctx.ops.append(Op(typ=OpType.PUSH_CSTR, operand=token.value, token=token));
+            ctx.ip += 1
         elif token.typ == TokenType.CHAR:
             assert isinstance(token.value, int)
-            program.ops.append(Op(typ=OpType.PUSH_INT, operand=token.value, token=token));
-            ip += 1
+            ctx.ops.append(Op(typ=OpType.PUSH_INT, operand=token.value, token=token));
+            ctx.ip += 1
         elif token.typ == TokenType.KEYWORD:
-            assert len(Keyword) == 13, "Exhaustive keywords handling in parse_program_from_tokens()"
+            assert len(Keyword) == 12, "Exhaustive keywords handling in parse_program_from_tokens()"
             if token.value == Keyword.IF:
-                program.ops.append(Op(typ=OpType.IF, token=token))
-                stack.append(ip)
-                ip += 1
+                ctx.ops.append(Op(typ=OpType.IF, token=token))
+                ctx.stack.append(ctx.ip)
+                ctx.ip += 1
             elif token.value == Keyword.IFSTAR:
-                if len(stack) == 0:
+                if len(ctx.stack) == 0:
                     compiler_error_with_expansion_stack(token, '`if*` can only come after `else`')
                     exit(1)
 
-                else_ip = stack[-1]
-                if program.ops[else_ip].typ != OpType.ELSE:
-                    compiler_error_with_expansion_stack(program.ops[else_ip].token, '`if*` can only come after `else`')
+                else_ip = ctx.stack[-1]
+                if ctx.ops[else_ip].typ != OpType.ELSE:
+                    compiler_error_with_expansion_stack(ctx.ops[else_ip].token, '`if*` can only come after `else`')
                     exit(1)
-                program.ops.append(Op(typ=OpType.IFSTAR, token=token))
-                stack.append(ip)
-                ip += 1
+                ctx.ops.append(Op(typ=OpType.IFSTAR, token=token))
+                ctx.stack.append(ctx.ip)
+                ctx.ip += 1
             elif token.value == Keyword.ELSE:
-                if len(stack) == 0:
+                if len(ctx.stack) == 0:
                     compiler_error_with_expansion_stack(token, '`else` can only come after `if` or `if*`')
                     exit(1)
 
-                if_ip = stack.pop()
-                if program.ops[if_ip].typ == OpType.IF:
-                    program.ops[if_ip].operand = ip + 1
-                    stack.append(ip)
-                    program.ops.append(Op(typ=OpType.ELSE, token=token))
-                    ip += 1
-                elif program.ops[if_ip].typ == OpType.IFSTAR:
-                    else_before_ifstar_ip = None if len(stack) == 0 else stack.pop()
-                    assert else_before_ifstar_ip is not None and program.ops[else_before_ifstar_ip].typ == OpType.ELSE, "At this point we should've already checked that `if*` comes after `else`. Otherwise this is a compiler bug."
+                if_ip = ctx.stack.pop()
+                if ctx.ops[if_ip].typ == OpType.IF:
+                    ctx.ops[if_ip].operand = ctx.ip + 1
+                    ctx.stack.append(ctx.ip)
+                    ctx.ops.append(Op(typ=OpType.ELSE, token=token))
+                    ctx.ip += 1
+                elif ctx.ops[if_ip].typ == OpType.IFSTAR:
+                    else_before_ifstar_ip = None if len(ctx.stack) == 0 else ctx.stack.pop()
+                    assert else_before_ifstar_ip is not None and ctx.ops[else_before_ifstar_ip].typ == OpType.ELSE, "At this point we should've already checked that `if*` comes after `else`. Otherwise this is a compiler bug."
 
-                    program.ops[if_ip].operand = ip + 1
-                    program.ops[else_before_ifstar_ip].operand = ip
+                    ctx.ops[if_ip].operand = ctx.ip + 1
+                    ctx.ops[else_before_ifstar_ip].operand = ctx.ip
 
-                    stack.append(ip)
-                    program.ops.append(Op(typ=OpType.ELSE, token=token))
-                    ip += 1
+                    ctx.stack.append(ctx.ip)
+                    ctx.ops.append(Op(typ=OpType.ELSE, token=token))
+                    ctx.ip += 1
                 else:
-                    compiler_error_with_expansion_stack(program.ops[if_ip].token, f'`else` can only come after `if` or `if*`')
+                    compiler_error_with_expansion_stack(ctx.ops[if_ip].token, f'`else` can only come after `if` or `if*`')
                     exit(1)
             elif token.value == Keyword.END:
-                block_ip = stack.pop()
+                block_ip = ctx.stack.pop()
 
-                if program.ops[block_ip].typ == OpType.ELSE:
-                    program.ops.append(Op(typ=OpType.END, token=token))
-                    program.ops[block_ip].operand = ip
-                    program.ops[ip].operand = ip + 1
-                elif program.ops[block_ip].typ == OpType.DO:
-                    program.ops.append(Op(typ=OpType.END, token=token))
-                    assert program.ops[block_ip].operand is not None
-                    while_ip = program.ops[block_ip].operand
+                if ctx.ops[block_ip].typ == OpType.ELSE:
+                    ctx.ops.append(Op(typ=OpType.END, token=token))
+                    ctx.ops[block_ip].operand = ctx.ip
+                    ctx.ops[ctx.ip].operand = ctx.ip + 1
+                elif ctx.ops[block_ip].typ == OpType.DO:
+                    ctx.ops.append(Op(typ=OpType.END, token=token))
+                    assert ctx.ops[block_ip].operand is not None
+                    while_ip = ctx.ops[block_ip].operand
                     assert isinstance(while_ip, OpAddr)
 
-                    if program.ops[while_ip].typ != OpType.WHILE:
-                        compiler_error_with_expansion_stack(program.ops[while_ip].token, '`end` can only close `do` blocks that are preceded by `while`')
+                    if ctx.ops[while_ip].typ != OpType.WHILE:
+                        compiler_error_with_expansion_stack(ctx.ops[while_ip].token, '`end` can only close `do` blocks that are preceded by `while`')
                         exit(1)
 
-                    program.ops[ip].operand = while_ip
-                    program.ops[block_ip].operand = ip + 1
-                elif program.ops[block_ip].typ == OpType.PREP_PROC:
-                    assert current_proc is not None
-                    program.ops[block_ip].operand = current_proc.local_memory_capacity
-                    block_ip = stack.pop()
-                    assert program.ops[block_ip].typ == OpType.SKIP_PROC
-                    program.ops.append(Op(typ=OpType.RET, token=token, operand=current_proc.local_memory_capacity))
-                    program.ops[block_ip].operand = ip + 1
-                    current_proc = None
-                elif program.ops[block_ip].typ == OpType.IFSTAR:
-                    else_before_ifstar_ip = None if len(stack) == 0 else stack.pop()
-                    assert else_before_ifstar_ip is not None and program.ops[else_before_ifstar_ip].typ == OpType.ELSE, "At this point we should've already checked that `if*` comes after `else`. Otherwise this is a compiler bug."
+                    ctx.ops[ctx.ip].operand = while_ip
+                    ctx.ops[block_ip].operand = ctx.ip + 1
+                elif ctx.ops[block_ip].typ == OpType.PREP_PROC:
+                    assert ctx.current_proc is not None
+                    ctx.ops[block_ip].operand = ctx.current_proc.local_memory_capacity
+                    block_ip = ctx.stack.pop()
+                    assert ctx.ops[block_ip].typ == OpType.SKIP_PROC
+                    ctx.ops.append(Op(typ=OpType.RET, token=token, operand=ctx.current_proc.local_memory_capacity))
+                    ctx.ops[block_ip].operand = ctx.ip + 1
+                    ctx.current_proc = None
+                elif ctx.ops[block_ip].typ == OpType.IFSTAR:
+                    else_before_ifstar_ip = None if len(ctx.stack) == 0 else ctx.stack.pop()
+                    assert else_before_ifstar_ip is not None and ctx.ops[else_before_ifstar_ip].typ == OpType.ELSE, "At this point we should've already checked that `if*` comes after `else`. Otherwise this is a compiler bug."
 
-                    program.ops.append(Op(typ=OpType.END, token=token))
-                    program.ops[block_ip].operand = ip
-                    program.ops[else_before_ifstar_ip].operand = ip
-                    program.ops[ip].operand = ip + 1
-                elif program.ops[block_ip].typ == OpType.IF:
-                    program.ops.append(Op(typ=OpType.END, token=token))
-                    program.ops[block_ip].operand = ip
-                    program.ops[ip].operand = ip + 1
+                    ctx.ops.append(Op(typ=OpType.END, token=token))
+                    ctx.ops[block_ip].operand = ctx.ip
+                    ctx.ops[else_before_ifstar_ip].operand = ctx.ip
+                    ctx.ops[ctx.ip].operand = ctx.ip + 1
+                elif ctx.ops[block_ip].typ == OpType.IF:
+                    ctx.ops.append(Op(typ=OpType.END, token=token))
+                    ctx.ops[block_ip].operand = ctx.ip
+                    ctx.ops[ctx.ip].operand = ctx.ip + 1
                 else:
-                    # NOTE: the closing of `macro` blocks is handled in its own separate place, not here
-                    compiler_error_with_expansion_stack(program.ops[block_ip].token, '`end` can only close `if`, `else`, `do`, `macro` or `proc` blocks for now')
+                    compiler_error_with_expansion_stack(ctx.ops[block_ip].token, '`end` can only close `if`, `else`, `do`, or `proc` blocks for now')
                     exit(1)
-                ip += 1
+                ctx.ip += 1
             elif token.value == Keyword.WHILE:
-                program.ops.append(Op(typ=OpType.WHILE, token=token))
-                stack.append(ip)
-                ip += 1
+                ctx.ops.append(Op(typ=OpType.WHILE, token=token))
+                ctx.stack.append(ctx.ip)
+                ctx.ip += 1
             elif token.value == Keyword.DO:
-                program.ops.append(Op(typ=OpType.DO, token=token))
-                if len(stack) == 0:
+                ctx.ops.append(Op(typ=OpType.DO, token=token))
+                if len(ctx.stack) == 0:
                     compiler_error_with_expansion_stack(token, "`do` is not preceded by `while`")
                     exit(1)
-                while_ip = stack.pop()
-                if program.ops[while_ip].typ != OpType.WHILE:
+                while_ip = ctx.stack.pop()
+                if ctx.ops[while_ip].typ != OpType.WHILE:
                     compiler_error_with_expansion_stack(token, "`do` is not preceded by `while`")
                     exit(1)
-                program.ops[ip].operand = while_ip
-                stack.append(ip)
-                ip += 1
+                ctx.ops[ctx.ip].operand = while_ip
+                ctx.stack.append(ctx.ip)
+                ctx.ip += 1
             elif token.value == Keyword.INCLUDE:
                 if len(rtokens) == 0:
                     compiler_error_with_expansion_stack(token, "expected path to the include file but found nothing")
@@ -1963,13 +1933,13 @@ def parse_program_from_tokens(tokens: List[Token], include_paths: List[str], exp
                     compiler_error_with_expansion_stack(token, "expected path to the include file to be %s but found %s" % (human(TokenType.STR), human(token.typ)))
                     exit(1)
                 assert isinstance(token.value, str), "This is probably a bug in the lexer"
+                if included >= INCLUDE_LIMIT:
+                    compiler_error_with_expansion_stack(token, f"Include limit is exceeded. A file was included {included} times.")
+                    exit(1)
                 file_included = False
                 for include_path in include_paths:
                     try:
-                        if token.expanded_count >= expansion_limit:
-                            compiler_error_with_expansion_stack(token, "the include exceeded the expansion limit (it expanded %d times)" % token.expanded_count)
-                            exit(1)
-                        rtokens += reversed(lex_file(path.join(include_path, token.value), token))
+                        parse_program_from_file(ctx, path.join(include_path, token.value), include_paths, included + 1)
                         file_included = True
                         break
                     except FileNotFoundError:
@@ -1988,9 +1958,9 @@ def parse_program_from_tokens(tokens: List[Token], include_paths: List[str], exp
                 assert isinstance(token.value, str), "This is probably a bug in the lexer"
                 const_name = token.value
                 const_loc = token.loc
-                check_word_redefinition(token, memories, macros, procs, consts)
-                const_value, const_typ = eval_const_value(rtokens, macros, consts, iota)
-                consts[const_name] = Const(value=const_value, loc=const_loc, typ=const_typ)
+                check_word_redefinition(ctx, token)
+                const_value, const_typ = eval_const_value(ctx, rtokens)
+                ctx.consts[const_name] = Const(value=const_value, loc=const_loc, typ=const_typ)
             elif token.value == Keyword.MEMORY:
 
                 if len(rtokens) == 0:
@@ -2003,59 +1973,30 @@ def parse_program_from_tokens(tokens: List[Token], include_paths: List[str], exp
                 assert isinstance(token.value, str), "This is probably a bug in the lexer"
                 memory_name = token.value
                 memory_loc = token.loc
-                memory_size, memory_size_type = eval_const_value(rtokens, macros, consts, iota)
+                memory_size, memory_size_type = eval_const_value(ctx, rtokens)
                 if memory_size_type != DataType.INT:
                     compiler_error_with_expansion_stack(token, f"Memory size must be of type {DataType.INT} but it is of type {memory_size_type}")
                     exit(1)
-                if current_proc is None:
-                    check_word_redefinition(token, memories, macros, procs, consts)
-                    memories[memory_name] = Memory(offset=program.memory_capacity, loc=memory_loc)
-                    program.memory_capacity += memory_size
+                check_word_redefinition(ctx, token)
+                if ctx.current_proc is None:
+                    ctx.memories[memory_name] = Memory(offset=ctx.memory_capacity, loc=memory_loc)
+                    ctx.memory_capacity += memory_size
                 else:
                     # TODO: local memory regions can shadow the global ones
                     # Is that something we actually want?
-                    check_word_redefinition(token, current_proc.local_memories, macros, procs, consts)
-                    current_proc.local_memories[memory_name] = Memory(offset=current_proc.local_memory_capacity, loc=memory_loc)
-                    current_proc.local_memory_capacity += memory_size
-            elif token.value == Keyword.MACRO:
-                if len(rtokens) == 0:
-                    compiler_error_with_expansion_stack(token, "expected macro name but found nothing")
-                    exit(1)
-                token = rtokens.pop()
-                if token.typ != TokenType.WORD:
-                    compiler_error_with_expansion_stack(token, "expected macro name to be %s but found %s" % (human(TokenType.WORD), human(token.typ)))
-                    exit(1)
-                assert isinstance(token.value, str), "This is probably a bug in the lexer"
-                check_word_redefinition(token, memories, macros, procs, consts)
-                macro = Macro(token.loc, [])
-                macros[token.value] = macro
-                nesting_depth = 0
-                while len(rtokens) > 0:
-                    token = rtokens.pop()
-                    if token.typ == TokenType.KEYWORD and token.value == Keyword.END and nesting_depth == 0:
-                        break
-                    else:
-                        macro.tokens.append(token)
-                        if token.typ == TokenType.KEYWORD:
-                            assert len(Keyword) == 13, "Exhaustive handling of keywords in parsing macro body"
-                            if token.value in [Keyword.IF, Keyword.WHILE, Keyword.MACRO, Keyword.MEMORY, Keyword.PROC, Keyword.CONST]:
-                                nesting_depth += 1
-                            elif token.value == Keyword.END:
-                                nesting_depth -= 1
-                if token.typ != TokenType.KEYWORD or token.value != Keyword.END:
-                    compiler_error_with_expansion_stack(token, "expected `end` at the end of the macro definition but got `%s`" % (token.value, ))
-                    exit(1)
+                    ctx.current_proc.local_memories[memory_name] = Memory(offset=ctx.current_proc.local_memory_capacity, loc=memory_loc)
+                    ctx.current_proc.local_memory_capacity += memory_size
             elif token.value == Keyword.PROC:
-                if current_proc is None:
-                    program.ops.append(Op(typ=OpType.SKIP_PROC, token=token))
-                    proc_addr = ip
+                if ctx.current_proc is None:
+                    ctx.ops.append(Op(typ=OpType.SKIP_PROC, token=token))
+                    proc_addr = ctx.ip
 
-                    stack.append(ip)
-                    ip += 1
+                    ctx.stack.append(ctx.ip)
+                    ctx.ip += 1
 
-                    program.ops.append(Op(typ=OpType.PREP_PROC, token=token))
-                    stack.append(ip)
-                    ip += 1
+                    ctx.ops.append(Op(typ=OpType.PREP_PROC, token=token))
+                    ctx.stack.append(ctx.ip)
+                    ctx.ip += 1
 
                     if len(rtokens) == 0:
                         compiler_error_with_expansion_stack(token, "expected procedure name but found nothing")
@@ -2067,14 +2008,14 @@ def parse_program_from_tokens(tokens: List[Token], include_paths: List[str], exp
                     assert isinstance(token.value, str), "This is probably a bug in the lexer"
                     proc_loc = token.loc
                     proc_name = token.value
-                    check_word_redefinition(token, memories, macros, procs, consts)
-                    procs[proc_name] = Proc(addr=proc_addr + 1, loc=token.loc, local_memories={}, local_memory_capacity=0)
-                    current_proc = procs[proc_name]
+                    check_word_redefinition(ctx, token)
+                    ctx.procs[proc_name] = Proc(addr=proc_addr + 1, loc=token.loc, local_memories={}, local_memory_capacity=0)
+                    ctx.current_proc = ctx.procs[proc_name]
                 else:
                     # TODO: forbid constant definition inside of proc
-                    # TODO: forbid macro definition inside of proc
                     compiler_error_with_expansion_stack(token, "defining procedures inside of procedures is not allowed")
-                    compiler_note(current_proc.loc, "the current procedure starts here")
+                    compiler_note(ctx.current_proc.loc, "the current procedure starts here")
+                    exit(1)
             elif token.value in [Keyword.OFFSET, Keyword.RESET]:
                 compiler_error_with_expansion_stack(token, f"keyword `{token.text}` is supported only in compile time evaluation context")
                 exit(1)
@@ -2083,11 +2024,9 @@ def parse_program_from_tokens(tokens: List[Token], include_paths: List[str], exp
         else:
             assert False, 'unreachable'
 
-    if len(stack) > 0:
-        compiler_error_with_expansion_stack(program.ops[stack.pop()].token, 'unclosed block')
+    if len(ctx.stack) > 0:
+        compiler_error_with_expansion_stack(ctx.ops[ctx.stack.pop()].token, 'unclosed block')
         exit(1)
-
-    return program
 
 def find_col(line: str, start: int, predicate: Callable[[str], bool]) -> int:
     while start < len(line) and not predicate(line[start]):
@@ -2177,17 +2116,12 @@ def lex_lines(file_path: str, lines: List[str]) -> Generator[Token, None, None]:
                 col = find_col(line, col_end, lambda x: not x.isspace())
         row += 1
 
-def lex_file(file_path: str, expanded_from: Optional[Token] = None) -> List[Token]:
+def lex_file(file_path: str) -> List[Token]:
     with open(file_path, "r", encoding='utf-8') as f:
-        result = [token for token in lex_lines(file_path, f.readlines())]
-        for token in result:
-            if expanded_from is not None:
-                token.expanded_from = expanded_from
-                token.expanded_count = expanded_from.expanded_count + 1
-        return result
+        return [token for token in lex_lines(file_path, f.readlines())]
 
-def parse_program_from_file(file_path: str, include_paths: List[str], expansion_limit: int) -> Program:
-    return parse_program_from_tokens(lex_file(file_path), include_paths, expansion_limit)
+def parse_program_from_file(ctx: ParseContext, file_path: str, include_paths: List[str], included: int = 0):
+    parse_program_from_tokens(ctx, lex_file(file_path), include_paths, included)
 
 def cmd_call_echoed(cmd: List[str], silent: bool) -> int:
     if not silent:
@@ -2273,7 +2207,6 @@ def usage(compiler_name: str):
     print("  OPTIONS:")
     print("    -debug                Enable debug mode.")
     print("    -I <path>             Add the path to the include search list")
-    print("    -E <expansion-limit>  Macro and include expansion limit. (Default %d)" % DEFAULT_EXPANSION_LIMIT)
     print("    -unsafe               Disable type checking.")
     print("  SUBCOMMAND:")
     print("    sim <file>            Simulate the program")
@@ -2291,7 +2224,6 @@ if __name__ == '__main__' and '__file__' in globals():
     compiler_name, *argv = argv
 
     include_paths = ['.', './std/']
-    expansion_limit = DEFAULT_EXPANSION_LIMIT
     unsafe = False
 
     while len(argv) > 0:
@@ -2306,14 +2238,6 @@ if __name__ == '__main__' and '__file__' in globals():
                 exit(1)
             include_path, *argv = argv
             include_paths.append(include_path)
-        elif argv[0] == '-E':
-            argv = argv[1:]
-            if len(argv) == 0:
-                usage(compiler_name)
-                print("[ERROR] no value is provided for `-E` flag", file=sys.stderr)
-                exit(1)
-            arg, *argv = argv
-            expansion_limit = int(arg)
         elif argv[0] == '-unsafe':
             argv = argv[1:]
             unsafe = True
@@ -2327,6 +2251,7 @@ if __name__ == '__main__' and '__file__' in globals():
     subcommand, *argv = argv
 
     program_path: Optional[str] = None
+    program: Program = Program()
 
     if subcommand == "sim":
         if len(argv) < 1:
@@ -2335,7 +2260,9 @@ if __name__ == '__main__' and '__file__' in globals():
             exit(1)
         program_path, *argv = argv
         include_paths.append(path.dirname(program_path))
-        program = parse_program_from_file(program_path, include_paths, expansion_limit);
+        parse_context = ParseContext()
+        parse_program_from_file(parse_context, program_path, include_paths);
+        program = Program(ops=parse_context.ops, memory_capacity=parse_context.memory_capacity)
         if not unsafe:
             type_check_program(program)
         simulate_little_endian_linux(program, [program_path] + argv)
@@ -2392,7 +2319,9 @@ if __name__ == '__main__' and '__file__' in globals():
 
         include_paths.append(path.dirname(program_path))
 
-        program = parse_program_from_file(program_path, include_paths, expansion_limit);
+        parse_context = ParseContext()
+        parse_program_from_file(parse_context, program_path, include_paths);
+        program = Program(ops=parse_context.ops, memory_capacity=parse_context.memory_capacity)
         if control_flow:
             dot_path = basepath + ".dot"
             if not silent:

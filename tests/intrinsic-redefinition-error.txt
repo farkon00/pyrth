@@ -5,5 +5,5 @@
 :b stdout 0
 
 :b stderr 93
-./tests/intrinsic-redefinition-error.porth:1:7: ERROR: redefinition of an intrinsic word `+`
+./tests/intrinsic-redefinition-error.porth:1:6: ERROR: redefinition of an intrinsic word `+`
 

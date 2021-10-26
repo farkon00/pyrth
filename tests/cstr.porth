@@ -3,4 +3,4 @@ include "std.porth"
 "foo"c "foo"c cstreq print
 "foo"c "bar"c cstreq print
 "Foo Bar Baz"c cstrlen print
-"Hello, World\n"c cstr-to-pstr puts
+"Hello, World\n"c cstr-to-str puts

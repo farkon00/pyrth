@@ -1,31 +1,33 @@
 include "./std.porth"
 
-macro sizeof(Node) 16 end
-macro Node.value 0 + end
-macro Node.prev  8 + end
-macro @Node.value Node.value @64 end
-macro @Node.prev  Node.prev  @64 end
-macro !Node.value Node.value !64 end
-macro !Node.prev  Node.prev  !64 end
+const offsetof(Node.value) sizeof(u64) offset end
+const offsetof(Node.prev)  sizeof(u64) offset end
+const sizeof(Node) reset end
+proc Node.value offsetof(Node.value) + end
+proc Node.prev  offsetof(Node.prev) + end
+proc @Node.value Node.value @64 end
+proc @Node.prev  Node.prev  @64 end
+proc !Node.value Node.value !64 end
+proc !Node.prev  Node.prev  !64 end
 
 memory list_a sizeof(ptr) end
 memory list_b sizeof(ptr) end
 
-macro NODES_CAP 1024 end
+const NODES_CAP 1024 end
 memory nodes_count sizeof(u64) end
 memory nodes sizeof(Node) NODES_CAP * end
 
-macro alloc_node
+proc alloc_node
   nodes_count @64 sizeof(Node) * nodes +
   nodes_count dup @64 1 + swap !64
 end
 
-macro push_node
+proc push_node
   over alloc_node 2dup swap @64 swap !Node.prev swap !64
   swap @64 cast(ptr) !Node.value
 end
 
-macro pop_node
+proc pop_node
   dup @64 cast(ptr) @Node.value swap
   dup @64 cast(ptr) @Node.prev swap !64
 end

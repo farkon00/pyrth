@@ -10,11 +10,11 @@ argc 2 < if
   1 exit
 end
 
-macro WIDTH 512 end
-macro HEIGHT 512 end
-macro CELL_WIDTH 64 end
-macro CELL_HEIGHT 64 end
-macro sizeof(pixel) 3 end
+const WIDTH 512 end
+const HEIGHT 512 end
+const CELL_WIDTH 64 end
+const CELL_HEIGHT 64 end
+const sizeof(pixel) 3 end
 
 memory canvas sizeof(pixel) WIDTH * HEIGHT * end
 
@@ -41,13 +41,13 @@ memory canvas sizeof(pixel) WIDTH * HEIGHT * end
 end drop
 
 memory file_path_cstr sizeof(ptr) end
-macro @file_path_cstr file_path_cstr @64 cast(ptr) end
-macro @file_path @file_path_cstr cstr-to-str end
+proc @file_path_cstr file_path_cstr @64 cast(ptr) end
+proc @file_path @file_path_cstr cstr-to-str end
 1 nth_argv file_path_cstr !64
 
 memory fd sizeof(u64) end
-macro @fd fd @64 end
-macro !fd fd !64 end
+proc @fd fd @64 end
+proc !fd fd !64 end
 
 "[INFO] Generating " puts @file_path puts "\n" puts
 

@@ -1,13 +1,13 @@
 include "std.porth"
 
-macro check_less
+proc check_less
   < if "YES\n" else "NO\n" end puts
 end
 
 1 2 check_less
 2 1 check_less
 
-macro even_fibs
+proc even_fibs
   0 1 while over 1000000 < do
     over 2 mod 0 = if
       over print

@@ -1,9 +1,9 @@
 include "std.porth"
 
 // constants
-macro ROWS 10 end
-macro COLS 20 end
-macro BOARD_SIZE ROWS COLS * end
+const ROWS 10 end
+const COLS 20 end
+const BOARD_SIZE ROWS COLS * end
 
 // memory layout
 memory delta_time sizeof(timespec) end

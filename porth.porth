@@ -1081,7 +1081,7 @@ proc main // --
     dump-ops
   else
     stderr usage
-    "ERROR: unknown subcommand `" eputs dup cstr-to-pstr eputs "`\n" eputs
+    "ERROR: unknown subcommand `" eputs dup cstr-to-str eputs "`\n" eputs
     1 exit
   end
   drop

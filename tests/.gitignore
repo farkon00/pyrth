@@ -4,8 +4,6 @@ comparison
 memory
 stack
 comments
-macros
-dead-recursive-macro
 argv
 if-else
 if-else-less
@@ -25,3 +23,4 @@ memcpy
 fputd
 offset-reset
 str-chop-by-delim
+procs

@@ -149,7 +149,7 @@ include "std.porth"
 "Hello, World" puts
 ```
 
-The `puts` macro from `std.porth` module expects two values on the data stack:
+The `puts` procedure from `std.porth` module expects two values on the data stack:
 1. the size of the buffer it needs to print,
 2. the pointer to the beginning of the buffer.
 
@@ -310,16 +310,6 @@ end
 ```porth
 while <condition> do
    <body>
-end
-```
-
-### Macros
-
-Define a new word `write` that expands into a sequence of tokens `stdout SYS_write syscall3` during the compilation.
-
-```porth
-macro write
-    stdout SYS_write syscall3
 end
 ```
 
