@@ -1,0 +1,9 @@
+:i argc 0
+:b stdin 0
+
+:i returncode 1
+:b stdout 0
+
+:b stderr 212
+./tests/type-checking-call-limit.porth:5:5: ERROR: Type checking call limit exceeded. Are you trying to do recursion? We don't support type checking recursion properly yet. Consider using `-unsafe` flag for now.
+
