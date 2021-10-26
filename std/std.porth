@@ -1,13 +1,8 @@
 // TODO: NULL should have type ptr
 const NULL 0 end
 
-// TODO: using procs for true/false is kinda wasteful
-// We should allow constants to be different types.
-// This can be also used for NULL const.
-// Basically use the cast(*) in compile time context and
-// track the types.
-proc true  1 cast(bool) end
-proc false 0 cast(bool) end
+const true  1 cast(bool) end
+const false 0 cast(bool) end
 
 const sizeof(u64) 8 end
 const sizeof(u32) 4 end
