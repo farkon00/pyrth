@@ -7,6 +7,7 @@ const SIM_STACK_CAP 1024 end
 
 const OP_PUSH_INT  1 offset end
 const OP_IF        1 offset end
+const OP_ELSE      1 offset end
 const OP_END       1 offset end
 const OP_INTRINSIC 1 offset end
 const COUNT_OPS       reset end
@@ -234,7 +235,7 @@ proc compile-ops // --
     dup sizeof(Op) * ops +
 
     // TODO: compile time assertion
-    COUNT_OPS 4 != if
+    COUNT_OPS 5 != if
       here eputs ": Assertion Failed: Exhaustive handling of Op types in compile-ops\n" eputs
       1 exit
     end
@@ -252,6 +253,9 @@ proc compile-ops // --
        "    pop rax\n"       out-fd @64 fputs
        "    test rax, rax\n" out-fd @64 fputs
        "    jz addr_"        out-fd @64 fputs dup @Op.operand out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup @Op.type OP_ELSE = if*
+       "    ;; -- else --\n"  out-fd @64 fputs
+       "    jmp addr_"       out-fd @64 fputs dup @Op.operand out-fd @64 fputu "\n" out-fd @64 fputs
     else dup @Op.type OP_END = if*
        "    ;; -- end --\n"  out-fd @64 fputs
        "    jmp addr_"       out-fd @64 fputs dup @Op.operand out-fd @64 fputu "\n" out-fd @64 fputs
@@ -533,8 +537,11 @@ proc compile-ops // --
     drop
 
     1 +
-  end
-  drop
+  end drop
+
+  "addr_"    out-fd @64 fputs
+  @ops-count out-fd @64 fputu
+  ":\n"      out-fd @64 fputs
 
   "    mov rax, 60\n"  out-fd @64 fputs
   "    mov rdi, 0\n"   out-fd @64 fputs
@@ -567,7 +574,6 @@ proc compile-ops // --
   output-argv cmd-echoed
 end
 
-
 proc simulate-ops // --
   memory sim-ip sizeof(u64) end
   memory sim-op sizeof(Op) end
@@ -579,7 +585,7 @@ proc simulate-ops // --
     sim-op
     memcpy
 
-    COUNT_OPS 4 != if
+    COUNT_OPS 5 != if
       here eputs ": Assertion Failed: Exhaustive handling of Op types in simulate-ops\n" eputs
       1 exit
     end
@@ -593,6 +599,8 @@ proc simulate-ops // --
        else
          sim-op @Op.operand sim-ip !64
        end
+    else sim-op @Op.type OP_ELSE = if*
+      sim-op @Op.operand sim-ip !64
     else sim-op @Op.type OP_END = if*
       sim-op @Op.operand sim-ip !64
     else sim-op @Op.type OP_INTRINSIC = if*
@@ -883,7 +891,7 @@ proc parse_file_path_cstr_into_ops // file-path-cstr
       line str-trim-left
       ' ' word line str-chop-by-delim
 
-      COUNT_OPS 4 != if
+      COUNT_OPS 5 != if
         here eputs ": Assertion Failed: Exhaustive handling of Op types in parse-file-path\n" eputs
         1 exit
       end
@@ -983,32 +991,61 @@ proc parse_file_path_cstr_into_ops // file-path-cstr
       else word @Str "if" streq if*
         @ops-count parse-block-stack-push
         OP_IF 0 push-op
-      else word @Str "end" streq if*
+      else word @Str "else" streq if*
         @parse-block-stack-count 0 <= if
           file-path-cstr @64 cast(ptr) cstr-to-str eputs
           ":" puts line_number @64 putu
           ":" puts word @Str.data cast(int) line_start @64 - 1 + putu
-          ": ERROR: `end` can only close `if` for now\n" eputs
+          ": ERROR: `else` can only come after `if`\n" eputs
           1 exit
         end
 
-        parse-block-stack-pop
-
-        ops over sizeof(Op) * +
+        parse-block-stack-pop   // if_ip
+        dup sizeof(Op) * ops +  // if_op
 
         dup @Op.type OP_IF != if
           file-path-cstr @64 cast(ptr) cstr-to-str eputs
           ":" puts line_number @64 putu
           ":" puts word @Str.data cast(int) line_start @64 - 1 + putu
+          ": ERROR: `else` can only come after `if`\n" eputs
+          1 exit
+        end
+
+        @ops-count 1 + over !Op.operand
+
+        @ops-count parse-block-stack-push
+        OP_ELSE 0 push-op
+
+        drop // if_op
+        drop // if_ip
+      else word @Str "end" streq if*
+        @parse-block-stack-count 0 <= if
+          file-path-cstr @64 cast(ptr) cstr-to-str eputs
+          ":" puts line_number @64 putu
+          ":" puts word @Str.data cast(int) line_start @64 - 1 + putu
+          ": ERROR: `end` can only close `if` and `else` for now\n" eputs
+          1 exit
+        end
+
+        parse-block-stack-pop // ip
+        ops over sizeof(Op) * + // op
+
+        dup @Op.type OP_IF = if
+          dup @ops-count swap !Op.operand
+          OP_END @ops-count 1 + push-op
+        else dup @Op.type OP_ELSE = if*
+          dup @ops-count swap !Op.operand
+          OP_END @ops-count 1 + push-op
+        else
+          file-path-cstr @64 cast(ptr) cstr-to-str eputs
+          ":" puts line_number @64 putu
+          ":" puts word @Str.data cast(int) line_start @64 - 1 + putu
           ": ERROR: `end` can only close `if` for now\n" eputs
           1 exit
         end
 
-        @ops-count swap !Op.operand
-
+        drop // op
         drop // ip
-
-        OP_END @ops-count 1 + push-op
       else
         OP_PUSH_INT
         word @Str try-parse-int lnot if
