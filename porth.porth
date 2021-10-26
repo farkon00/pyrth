@@ -1046,6 +1046,10 @@ proc parse_file_path_cstr_into_ops // file-path-cstr
 
         drop // op
         drop // ip
+      else word @Str "include" streq if*
+        here eputs ": TODO: `include` keyword is not implemented\n" eputs 1 exit
+        // TODO: implementing `include` requires looking ahead
+        // We need to preparse all the tokens of the file like in porth.py
       else
         OP_PUSH_INT
         word @Str try-parse-int lnot if
