@@ -586,8 +586,6 @@ CallPath=Tuple[OpAddr, ...]
 
 # TODO: better error reporting on type checking errors of intrinsics
 # Reported expected and actual types with the location that introduced the actual type
-# TODO: better error reporting on type checking errors of procs
-# Show the call path and stuff
 def type_check_program(program: Program):
     visited_dos: Dict[CallPath, DataStack] = {}
     contexts: List[Context] = [Context(stack=[], ip=0, ret_stack=[])]
