@@ -12,6 +12,8 @@ const stdin  0 end
 const stdout 1 end
 const stderr 2 end
 
+proc @ptr @64 cast(ptr) end
+
 /// Syscalls
 // Stolen from https://filippo.io/linux-syscall-table/
 // Not all of the syscalls here are useful/implemented. I literally just copy-pasted them.
