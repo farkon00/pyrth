@@ -847,6 +847,11 @@ proc memset // ( int int ptr -- )
   drop
 end
 
+const Loc.file-path sizeof(Str) offset end
+const Loc.row sizeof(u64) offset end
+const Loc.col sizeof(u64) offset end
+const sizeof(Loc) reset end
+
 const TOKEN_INT  1 offset end
 const TOKEN_WORD 1 offset end
 const TOKEN_STR  1 offset end
@@ -854,6 +859,7 @@ const TOKEN_CHAR 1 offset end
 const COUNT_TOKENS reset end
 
 const Token.type sizeof(u64) offset end
+const Token.loc  sizeof(Loc) offset end
 const Token.text sizeof(Str) offset end
 const Token.value
    sizeof(u64)
@@ -862,8 +868,11 @@ const Token.value
 end
 const sizeof(Token) reset end
 
-const Lexer.content sizeof(Str) offset end
-const Lexer.line sizeof(Str) offset end
+const Lexer.content    sizeof(Str) offset end
+const Lexer.line       sizeof(Str) offset end
+const Lexer.line-start sizeof(ptr) offset end
+const Lexer.file-path  sizeof(Str) offset end
+const Lexer.row        sizeof(u64) offset end
 const sizeof(Lexer) reset end
 
 proc ?str-empty
@@ -883,17 +892,26 @@ proc lexer-next-line // ( lexer:ptr -- )
   lexer @ptr Lexer.content +
   str-chop-by-delim
 
+  lexer @ptr Lexer.line + offsetof(Str.data) + @ptr
+  lexer @ptr Lexer.line-start +
+  !64
+
   lexer @ptr Lexer.line +
   line
   remove-comment
+
+  lexer @ptr Lexer.row + inc64
 end
 
 proc lexer-next-token // ( token:ptr lexer:ptr -- bool )
+  memory lexer sizeof(ptr) end
+  lexer !64
   memory token sizeof(ptr) end
-  swap token !64
+  token !64
 
   memory word sizeof(Str) end
 
+  lexer @ptr
   while
     dup Lexer.line + str-trim-left
 
@@ -910,7 +928,7 @@ proc lexer-next-token // ( token:ptr lexer:ptr -- bool )
        '"' word rot Lexer.line + str-chop-by-delim
 
        word @Str  token @ptr Token.value + !Str
-       TOKEN_STR token @ptr Token.type + !64
+       TOKEN_STR  token @ptr Token.type + !64
 
        // TODO: check if the string literal was actually closed at the end
        // TODO: string literals don't support escaping
@@ -921,6 +939,7 @@ proc lexer-next-token // ( token:ptr lexer:ptr -- bool )
 
        word @Str  token @ptr Token.value + !Str
        TOKEN_CHAR token @ptr Token.type + !64
+
 
        // TODO: check if the character literal was actually closed at the end
        // TODO: character literals don't support escaping
@@ -941,6 +960,21 @@ proc lexer-next-token // ( token:ptr lexer:ptr -- bool )
           TOKEN_WORD token @ptr Token.type + !64
        end
     end
+
+    sizeof(Str)
+    lexer @ptr Lexer.file-path +
+    token @ptr Token.loc + Loc.file-path +
+    memcpy
+
+    lexer @ptr Lexer.row + @64
+    token @ptr Token.loc + Loc.row +
+    !64
+
+    word offsetof(Str.data) + @ptr
+    lexer @ptr Lexer.line-start + @ptr
+    -
+    token @ptr Token.loc + Loc.col +
+    !64
 
     true
   else
@@ -999,27 +1033,33 @@ proc lex-file // ( file-path-cstr -- )
 
   memory lexer sizeof(Lexer) end
   sizeof(Lexer) 0 lexer memset
-  file-path-cstr @ptr map-file lexer Lexer.content + !Str
+  file-path-cstr @ptr map-file    lexer Lexer.content   + !Str
+  file-path-cstr @ptr cstr-to-str lexer Lexer.file-path + !Str
 
   memory token sizeof(Token) end
 
   while token lexer lexer-next-token do
-    token Token.type + @64 // token.type
 
     COUNT_TOKENS 4 != if
       here eputs ": Assertion Failed: exhaustive handling of token types in lex-file\n" eputs
       1 exit
     end
 
-    // TODO: lex-file should also report locations of the tokens
+    token Token.loc + // loc
+    dup Loc.file-path + @Str puts ":" puts
+    dup Loc.row + @64 putu        ":" puts
+    dup Loc.col + @64 putu        ": " puts
+    drop // loc
+
+    token Token.type + @64 // token.type
     dup TOKEN_INT = if
-      "Integer:    " puts token Token.value + @64 putu "\n" puts
+      "[INTEGER] " puts token Token.value + @64 putu "\n" puts
     else dup TOKEN_WORD = if*
-      "Word:       " puts token Token.value + @Str puts "\n" puts
+      "[WORD] " puts token Token.value + @Str puts "\n" puts
     else dup TOKEN_STR = if*
-      "String:     \"" puts token Token.value + @Str puts "\"\n" puts
+      "[STR] \"" puts token Token.value + @Str puts "\"\n" puts
     else dup TOKEN_CHAR = if*
-      "Character:  \'" puts token Token.value + @Str puts "\'\n" puts
+      "[CHAR] \'" puts token Token.value + @Str puts "\'\n" puts
     else
       here eputs ": Unreachable. Unknown token type.\n" eputs
       1 exit
