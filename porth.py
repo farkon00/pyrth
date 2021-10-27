@@ -1807,7 +1807,7 @@ def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, Data
 
                 if a_type != b_type:
                     compiler_error_with_expansion_stack(token, f"intrinsic `{token.value}` expects the arguments to have the same type. The actual types are")
-                    compiler_note(token, f"    {(a_type, b_type)}")
+                    compiler_note(token.loc, f"    {(a_type, b_type)}")
                     exit(1)
 
                 stack.append((int(a == b), DataType.BOOL))
