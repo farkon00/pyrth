@@ -142,9 +142,8 @@ proc push-op // type operand --
 end
 
 proc print-op-type
-  COUNT_OPS 4 != if
-    here eputs ": Assertion Failed: Exhaustive handling of Op types in print-op-type\n" eputs
-    1 exit
+  assert "Exhaustive handling of Op types in print-op-type"
+    COUNT_OPS 5 =
   end
 
   dup OP_PUSH_INT = if
@@ -153,6 +152,8 @@ proc print-op-type
     "OP_INTRINSIC" puts
   else dup OP_IF = if*
     "OP_IF" puts
+  else dup OP_ELSE = if*
+    "OP_ELSE" puts
   else dup OP_END = if*
     "OP_END" puts
   else
@@ -234,10 +235,8 @@ proc compile-ops // --
   0 while dup @ops-count < do
     dup sizeof(Op) * ops +
 
-    // TODO: compile time assertion
-    COUNT_OPS 5 != if
-      here eputs ": Assertion Failed: Exhaustive handling of Op types in compile-ops\n" eputs
-      1 exit
+    assert "Exhaustive handling of Op types in compile-ops"
+      COUNT_OPS 5 =
     end
 
     "addr_" out-fd @64 fputs
@@ -260,9 +259,8 @@ proc compile-ops // --
        "    ;; -- end --\n"  out-fd @64 fputs
        "    jmp addr_"       out-fd @64 fputs dup @Op.operand out-fd @64 fputu "\n" out-fd @64 fputs
     else dup @Op.type OP_INTRINSIC = if*
-        COUNT_INTRINSICS 42 != if
-          here eputs ": Assertion Failed: Exhaustive handling of Intrinsics in compile-ops\n" eputs
-          1 exit
+        assert "Exhaustive handling of Intrinsics in compile-ops"
+          COUNT_INTRINSICS 42 =
         end
 
         dup @Op.operand INTRINSIC_PLUS = if
@@ -585,9 +583,8 @@ proc simulate-ops // --
     sim-op
     memcpy
 
-    COUNT_OPS 5 != if
-      here eputs ": Assertion Failed: Exhaustive handling of Op types in simulate-ops\n" eputs
-      1 exit
+    assert "Exhaustive handling of Op types in simulate-ops"
+      COUNT_OPS 5 =
     end
 
     sim-op @Op.type OP_PUSH_INT = if
@@ -604,9 +601,8 @@ proc simulate-ops // --
     else sim-op @Op.type OP_END = if*
       sim-op @Op.operand sim-ip !64
     else sim-op @Op.type OP_INTRINSIC = if*
-      COUNT_INTRINSICS 42 != if
-        here eputs ": Assertion Failed: Exhaustive handling of Intrinsics in compile-ops\n" eputs
-        1 exit
+      assert "Exhaustive handling of Intrinsics in compile-ops"
+        COUNT_INTRINSICS 42 =
       end
 
       sim-op @Op.operand INTRINSIC_PLUS = if
@@ -1040,9 +1036,8 @@ proc lex-file // ( file-path-cstr -- )
 
   while token lexer lexer-next-token do
 
-    COUNT_TOKENS 4 != if
-      here eputs ": Assertion Failed: exhaustive handling of token types in lex-file\n" eputs
-      1 exit
+    assert "Exhaustive handling of token types in lex-file"
+      COUNT_TOKENS 4 =
     end
 
     token Token.loc + // loc
@@ -1091,14 +1086,12 @@ proc parse_file_path_cstr_into_ops // file-path-cstr
       line str-trim-left
       ' ' word line str-chop-by-delim
 
-      COUNT_OPS 5 != if
-        here eputs ": Assertion Failed: Exhaustive handling of Op types in parse-file-path\n" eputs
-        1 exit
+      assert "Exhaustive handling of Op types in parse-file-path"
+        COUNT_OPS 5 =
       end
 
-      COUNT_INTRINSICS 42 != if
-        here eputs ": Assertion Failed: Exhaustive handling of Intrinsics in parse-file-path\n" eputs
-        1 exit
+      assert "Exhaustive handling of Intrinsics in parse-file-path"
+        COUNT_INTRINSICS 42 =
       end
 
       // Intrinsics
