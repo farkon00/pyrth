@@ -66,6 +66,19 @@ proc Op.operand offsetof(Op.operand) + end
 proc @Op.operand Op.operand @64 end
 proc !Op.operand Op.operand !64 end
 
+const offsetof(Token.type)  sizeof(u64) offset end
+const offsetof(Token.text)  sizeof(Str) offset end
+const offsetof(Token.value)
+   // NOTE: Either number or string depending on Token.type
+   sizeof(u64)
+   sizeof(Str) max
+   offset
+end
+const sizeof(Token) reset end
+proc Token.type  offsetof(Token.type)  + end
+proc Token.text  offsetof(Token.text)  + end
+proc Token.value offsetof(Token.value) + end
+
 // TODO: implement reusable stack data structure
 
 memory sim-stack-count sizeof(u64) end

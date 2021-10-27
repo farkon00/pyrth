@@ -225,6 +225,7 @@ This program pushes integer `69` onto the stack (since the ASCII code of letter 
 | `-`      | `[a: int] [b: int] -- [a - b: int]`              | subtracts two elements on the top of the stack                                                                           |
 | `*`      | `[a: int] [b: int] -- [a * b: int]`              | multiples two elements on top of the stack                                                                               |
 | `divmod` | `[a: int] [b: int] -- [a / b: int] [a % b: int]` | perform [Euclidean division](https://en.wikipedia.org/wiki/Euclidean_division) between two elements on top of the stack. |
+| `max`    | `[a: int] [b: int] -- [max(a, b): int]`          | compute maximum between two numbers                                                                                      |
 
 #### Bitwise
 

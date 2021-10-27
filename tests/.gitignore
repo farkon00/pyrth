@@ -24,3 +24,4 @@ fputd
 offset-reset
 str-chop-by-delim
 procs
+max

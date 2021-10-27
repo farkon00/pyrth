@@ -1,0 +1,9 @@
+include "std.porth"
+
+const N
+   sizeof(u64)
+   sizeof(Str) max
+end
+N print
+
+420 69 max print
