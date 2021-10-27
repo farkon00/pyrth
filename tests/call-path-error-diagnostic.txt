@@ -5,8 +5,8 @@
 :b stdout 0
 
 :b stderr 431
-./std/std.porth:411:13: ERROR: invalid argument type for LOAD8 intrinsic: DataType.BOOL
-./std/std.porth:430:22: NOTE: called from `cstrlen`
+./std/std.porth:413:13: ERROR: invalid argument type for LOAD8 intrinsic: DataType.BOOL
+./std/std.porth:432:22: NOTE: called from `cstrlen`
 ./tests/call-path-error-diagnostic.porth:3:20: NOTE: called from `cstr-to-str`
 ./tests/call-path-error-diagnostic.porth:4:10: NOTE: called from `foo`
 ./tests/call-path-error-diagnostic.porth:5:10: NOTE: called from `bar`
