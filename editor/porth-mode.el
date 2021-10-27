@@ -29,6 +29,10 @@
 ;;
 ;; Major Mode for editing Porth source code. It's Forth but written in Python.
 
+;; TODO: jump to the opposite side of the blocks with C-M-f and C-M-b
+;; I think tuareg-mode can do that with similar end-like block, we try
+;; to steal their approach
+
 (defconst porth-mode-syntax-table
   (with-syntax-table (copy-syntax-table)
     ;; C/C++ style comments
