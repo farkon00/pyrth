@@ -39,6 +39,7 @@ class Keyword(Enum):
     CONST=auto()
     OFFSET=auto()
     RESET=auto()
+    ASSERT=auto()
 
 class DataType(IntEnum):
     INT=auto()
@@ -1531,7 +1532,7 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
         out.write("ret_stack_end:\n")
         out.write("mem: resb %d\n" % program.memory_capacity)
 
-assert len(Keyword) == 12, f"Exhaustive KEYWORD_NAMES definition. {len(Keyword)}"
+assert len(Keyword) == 13, f"Exhaustive KEYWORD_NAMES definition. {len(Keyword)}"
 KEYWORD_BY_NAMES: Dict[str, Keyword] = {
     'if': Keyword.IF,
     'if*': Keyword.IFSTAR,
@@ -1545,6 +1546,7 @@ KEYWORD_BY_NAMES: Dict[str, Keyword] = {
     'const': Keyword.CONST,
     'offset': Keyword.OFFSET,
     'reset': Keyword.RESET,
+    'assert': Keyword.ASSERT,
 }
 KEYWORD_NAMES: Dict[Keyword, str] = {v: k for k, v in KEYWORD_BY_NAMES.items()}
 
@@ -1796,6 +1798,19 @@ def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, Data
                     exit(1)
                 value, typ = stack.pop()
                 stack.append((value, DataType.PTR))
+            elif token.value == INTRINSIC_NAMES[Intrinsic.EQ]:
+                if len(stack) < 2:
+                    compiler_error_with_expansion_stack(token, f"not enough arguments for `{token.value}` intrinsic")
+                    exit(1)
+                a, a_type = stack.pop()
+                b, b_type = stack.pop()
+
+                if a_type != b_type:
+                    compiler_error_with_expansion_stack(token, f"intrinsic `{token.value}` expects the arguments to have the same type. The actual types are")
+                    compiler_note(token.loc, f"    {(a_type, b_type)}")
+                    exit(1)
+
+                stack.append((int(a == b), DataType.BOOL))
             elif token.value == INTRINSIC_NAMES[Intrinsic.MAX]:
                 if len(stack) < 2:
                     compiler_error_with_expansion_stack(token, f"not enough arguments for `{token.value}` intrinsic")
@@ -1873,7 +1888,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
             ctx.ops.append(Op(typ=OpType.PUSH_INT, operand=token.value, token=token));
             ctx.ip += 1
         elif token.typ == TokenType.KEYWORD:
-            assert len(Keyword) == 12, "Exhaustive keywords handling in parse_program_from_tokens()"
+            assert len(Keyword) == 13, "Exhaustive keywords handling in parse_program_from_tokens()"
             if token.value == Keyword.IF:
                 ctx.ops.append(Op(typ=OpType.IF, token=token))
                 ctx.stack.append(ctx.ip)
@@ -1995,6 +2010,23 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                         continue
                 if not file_included:
                     compiler_error_with_expansion_stack(token, "file `%s` not found" % token.value)
+                    exit(1)
+            elif token.value == Keyword.ASSERT:
+                if len(rtokens) == 0:
+                    compiler_error_with_expansion_stack(token, "expected assert messsage but found nothing")
+                    exit(1)
+                token = rtokens.pop()
+                if token.typ != TokenType.STR:
+                    compiler_error_with_expansion_stack(token, "expected assert message to be %s but found %s" % (human(TokenType.STR), human(token.typ)))
+                    exit(1)
+                assert isinstance(token.value, str), "This is probably a bug in the lexer"
+                assert_message = token.value
+                assert_value, assert_typ = eval_const_value(ctx, rtokens)
+                if assert_typ != DataType.BOOL:
+                    compiler_error_with_expansion_stack(token, "assertion expects the expresion to be of type `bool`")
+                    exit(1)
+                if assert_value == 0:
+                    compiler_error_with_expansion_stack(token, f"Static Assertion Failed: {assert_message}");
                     exit(1)
             elif token.value == Keyword.CONST:
                 if len(rtokens) == 0:
