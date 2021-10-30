@@ -3,12 +3,12 @@ include "./std.porth"
 const offsetof(Node.value) sizeof(u64) offset end
 const offsetof(Node.prev)  sizeof(u64) offset end
 const sizeof(Node) reset end
-proc Node.value offsetof(Node.value) + end
-proc Node.prev  offsetof(Node.prev) + end
-proc @Node.value Node.value @64 end
-proc @Node.prev  Node.prev  @64 end
-proc !Node.value Node.value !64 end
-proc !Node.prev  Node.prev  !64 end
+proc Node.value ptr -- ptr in offsetof(Node.value) + end
+proc Node.prev  ptr -- ptr in offsetof(Node.prev) + end
+proc @Node.value ptr -- int in Node.value @64 end
+proc @Node.prev  ptr -- int in Node.prev  @64 end
+proc !Node.value int ptr in Node.value !64 end
+proc !Node.prev  ptr ptr in Node.prev  !64 end
 
 memory list_a sizeof(ptr) end
 memory list_b sizeof(ptr) end
@@ -17,17 +17,17 @@ const NODES_CAP 1024 end
 memory nodes_count sizeof(u64) end
 memory nodes sizeof(Node) NODES_CAP * end
 
-proc alloc_node
+proc alloc_node -- ptr in
   nodes_count @64 sizeof(Node) * nodes +
   nodes_count dup @64 1 + swap !64
 end
 
-proc push_node
-  over alloc_node 2dup swap @64 swap !Node.prev swap !64
+proc push_node ptr int in
+  over alloc_node over over swap @64 cast(ptr) swap !Node.prev swap !64
   swap @64 cast(ptr) !Node.value
 end
 
-proc pop_node
+proc pop_node ptr -- int in
   dup @64 cast(ptr) @Node.value swap
   dup @64 cast(ptr) @Node.prev swap !64
 end
