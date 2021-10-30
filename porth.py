@@ -552,23 +552,15 @@ def simulate_little_endian_linux(program: Program, argv: List[str]):
             else:
                 assert False, "unreachable"
         except Exception as e:
-            compiler_error_with_expansion_stack(op.token, "Python Exception during simulation")
+            compiler_error(op.token.loc, "Python Exception during simulation")
             traceback.print_exception(type(e), e, e.__traceback__)
             exit(1)
 
 def compiler_diagnostic(loc: Loc, tag: str, message: str):
     print("%s:%d:%d: %s: %s" % (loc + (tag, message)), file=sys.stderr)
 
-# TODO: get rid of compiler_diagnostic_with_expansion_stack
-# It was needed when we had macros
-def compiler_diagnostic_with_expansion_stack(token: Token, tag: str, message: str):
-    compiler_diagnostic(token.loc, tag, message)
-
 def compiler_error(loc: Loc, message: str):
     compiler_diagnostic(loc, 'ERROR', message)
-
-def compiler_error_with_expansion_stack(token: Token, message: str):
-    compiler_diagnostic_with_expansion_stack(token, 'ERROR', message)
 
 def compiler_note(loc: Loc, message: str):
     compiler_diagnostic(loc, 'NOTE', message)
@@ -577,13 +569,13 @@ def not_enough_arguments(op: Op):
     assert len(OpType) == 18, f"Exhaustive handling of Op types in not_enough_arguments() (expected {len(OpType)}). Keep in mind that not all of the ops should be handled in here. Only those that consume elements from the stack."
     if op.typ == OpType.INTRINSIC:
         assert isinstance(op.operand, Intrinsic)
-        compiler_error_with_expansion_stack(op.token, "not enough arguments for the `%s` intrinsic" % INTRINSIC_NAMES[op.operand])
+        compiler_error(op.token.loc, "not enough arguments for the `%s` intrinsic" % INTRINSIC_NAMES[op.operand])
     elif op.typ == OpType.DO:
-        compiler_error_with_expansion_stack(op.token, "not enough arguments for the do-block")
+        compiler_error(op.token.loc, "not enough arguments for the do-block")
     else:
         assert False, "unsupported type of operation"
 
-DataStack=List[Tuple[DataType, Token]]
+DataStack=List[Tuple[DataType, Loc]]
 
 @dataclass
 class Context:
@@ -596,20 +588,20 @@ class Contract:
     ins: List[DataType]
     outs: List[DataType]
 
-def type_check_contract(intro_token: Token, ctx: Context, contract: Contract):
+def type_check_contract(intro_loc: Loc, ctx: Context, contract: Contract):
     ins = copy(contract.ins)
     while len(ctx.stack) > 0 and len(ins) > 0:
-        actual, token_loc = ctx.stack.pop()
+        actual, loc = ctx.stack.pop()
         expected = ins.pop()
         if actual != expected:
-            compiler_error_with_expansion_stack(token_loc, f"Unexpected data type {repr(actual)}. Expected {repr(expected)}")
+            compiler_error(loc, f"Unexpected data type {repr(actual)}. Expected {repr(expected)}")
             exit(1)
     if len(ctx.stack) < len(ins):
-        compiler_error_with_expansion_stack(intro_token, f"Not enough arguments provided. Expected:")
+        compiler_error(intro_loc, f"Not enough arguments provided. Expected:")
         for typ in ins:
-            compiler_note(intro_token.loc, f"  {repr(typ)}")
+            compiler_note(intro_loc, f"  {repr(typ)}")
         exit(1)
-    ctx.stack += [(typ, intro_token) for typ in contract.outs]
+    ctx.stack += [(typ, intro_loc) for typ in contract.outs]
 
 # # TODO: use Contract-s for type checking intrinsics
 # INTRINSIC_CONTRACTS: Dict[Intrinsic, List[Contract]] = {
@@ -763,7 +755,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
     contexts: List[Context] = [Context(stack=[], ip=0, outs=[])]
     for proc_addr, proc_contract in reversed(list(proc_contracts.items())):
         contexts.append(Context(
-            stack=[(typ, program.ops[proc_addr].token) for typ in proc_contract.ins],
+            stack=[(typ, program.ops[proc_addr].token.loc) for typ in proc_contract.ins],
             ip=proc_addr,
             outs=proc_contract.outs
         ))
@@ -772,33 +764,33 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
         if ctx.ip >= len(program.ops):
             if len(ctx.stack) != 0:
                 # TODO: report where the unhandled data was introduced
-                compiler_error_with_expansion_stack(ctx.stack[-1][1], "unhandled data on the data stack: %s" % list(map(lambda x: x[0], ctx.stack)))
+                compiler_error(ctx.stack[-1][1], "unhandled data on the data stack: %s" % list(map(lambda x: x[0], ctx.stack)))
                 exit(1)
             contexts.pop()
             continue
         op = program.ops[ctx.ip]
         assert len(OpType) == 18, "Exhaustive ops handling in type_check_program()"
         if op.typ == OpType.PUSH_INT:
-            ctx.stack.append((DataType.INT, op.token))
+            ctx.stack.append((DataType.INT, op.token.loc))
             ctx.ip += 1
         elif op.typ == OpType.PUSH_BOOL:
-            ctx.stack.append((DataType.BOOL, op.token))
+            ctx.stack.append((DataType.BOOL, op.token.loc))
             ctx.ip += 1
         elif op.typ == OpType.PUSH_PTR:
-            ctx.stack.append((DataType.PTR, op.token))
+            ctx.stack.append((DataType.PTR, op.token.loc))
             ctx.ip += 1
         elif op.typ == OpType.PUSH_STR:
-            ctx.stack.append((DataType.INT, op.token))
-            ctx.stack.append((DataType.PTR, op.token))
+            ctx.stack.append((DataType.INT, op.token.loc))
+            ctx.stack.append((DataType.PTR, op.token.loc))
             ctx.ip += 1
         elif op.typ == OpType.PUSH_CSTR:
-            ctx.stack.append((DataType.PTR, op.token))
+            ctx.stack.append((DataType.PTR, op.token.loc))
             ctx.ip += 1
         elif op.typ == OpType.PUSH_MEM:
-            ctx.stack.append((DataType.PTR, op.token))
+            ctx.stack.append((DataType.PTR, op.token.loc))
             ctx.ip += 1
         elif op.typ == OpType.PUSH_LOCAL_MEM:
-            ctx.stack.append((DataType.PTR, op.token))
+            ctx.stack.append((DataType.PTR, op.token.loc))
             ctx.ip += 1
         elif op.typ == OpType.SKIP_PROC:
             assert isinstance(op.operand, OpAddr)
@@ -807,15 +799,15 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             ctx.ip += 1
         elif op.typ == OpType.CALL:
             assert isinstance(op.operand, OpAddr)
-            type_check_contract(op.token, ctx, proc_contracts[op.operand])
+            type_check_contract(op.token.loc, ctx, proc_contracts[op.operand])
             ctx.ip += 1
         elif op.typ == OpType.RET:
             if [typ for typ, _ in ctx.stack] != ctx.outs:
-                compiler_error_with_expansion_stack(op.token, "Unexpected data on the stack")
+                compiler_error(op.token.loc, "Unexpected data on the stack")
                 compiler_note(op.token.loc, f"Expected: {ctx.outs}")
                 compiler_note(op.token.loc, f"Actual:")
-                for typ, tok in ctx.stack:
-                    compiler_note(tok.loc, f"{repr(typ)}")
+                for typ, loc in ctx.stack:
+                    compiler_note(loc, f"{repr(typ)}")
                 exit(1)
             contexts.pop()
         elif op.typ == OpType.INTRINSIC:
@@ -830,13 +822,13 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == DataType.INT and b_type == DataType.INT:
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 elif a_type == DataType.INT and b_type == DataType.PTR:
-                    ctx.stack.append((DataType.PTR, op.token))
+                    ctx.stack.append((DataType.PTR, op.token.loc))
                 elif a_type == DataType.PTR and b_type == DataType.INT:
-                    ctx.stack.append((DataType.PTR, op.token))
+                    ctx.stack.append((DataType.PTR, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument types for PLUS intrinsic. Expected INT or PTR")
+                    compiler_error(op.token.loc, "invalid argument types for PLUS intrinsic. Expected INT or PTR")
                     exit(1)
             elif op.operand == Intrinsic.MINUS:
                 assert len(DataType) == 3, "Exhaustive type handling in MINUS intrinsic"
@@ -847,11 +839,11 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type and (a_type == DataType.INT or a_type == DataType.PTR):
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 elif b_type == DataType.PTR and a_type == DataType.INT:
-                    ctx.stack.append((DataType.PTR, op.token))
+                    ctx.stack.append((DataType.PTR, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument types fo MINUS intrinsic: %s" % [b_type, a_type])
+                    compiler_error(op.token.loc, "invalid argument types fo MINUS intrinsic: %s" % [b_type, a_type])
                     exit(1)
             elif op.operand == Intrinsic.MUL:
                 assert len(DataType) == 3, "Exhaustive type handling in MUL intrinsic"
@@ -862,9 +854,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument types fo MUL intrinsic. Expected INT.")
+                    compiler_error(op.token.loc, "invalid argument types fo MUL intrinsic. Expected INT.")
                     exit(1)
             elif op.operand == Intrinsic.DIVMOD:
                 assert len(DataType) == 3, "Exhaustive type handling in DIVMOD intrinsic"
@@ -875,21 +867,21 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.INT, op.token))
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument types fo DIVMOD intrinsic. Expected INT.")
+                    compiler_error(op.token.loc, "invalid argument types fo DIVMOD intrinsic. Expected INT.")
                     exit(1)
             elif op.operand == Intrinsic.MAX:
                 if len(ctx.stack) < 2:
-                    compiler_error_with_expansion_stack(op.token, f"not enough arguments for `{op.token.value}` intrinsic")
+                    compiler_error(op.token.loc, f"not enough arguments for `{op.token.value}` intrinsic")
                     exit(1)
                 a_type, a_loc = ctx.stack.pop()
                 b_type, a_loc = ctx.stack.pop()
                 if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, f"Invalid argument types for `{op.token.value}` intrinsic: {(a_type, b_type)}")
+                    compiler_error(op.token.loc, f"Invalid argument types for `{op.token.value}` intrinsic: {(a_type, b_type)}")
                     compiler_note(op.token.loc, f"Expected:")
                     compiler_note(op.token.loc, f"  {(DataType.INT, DataType.INT)}")
                     exit(1)
@@ -902,9 +894,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type:
-                    ctx.stack.append((DataType.BOOL, op.token))
+                    ctx.stack.append((DataType.BOOL, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument types fo EQ intrinsic.")
+                    compiler_error(op.token.loc, "invalid argument types fo EQ intrinsic.")
                     exit(1)
             elif op.operand == Intrinsic.GT:
                 assert len(DataType) == 3, "Exhaustive type handling in GT intrinsic"
@@ -916,10 +908,10 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.BOOL, op.token))
+                    ctx.stack.append((DataType.BOOL, op.token.loc))
                 else:
                     print(a_type, b_type)
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for GT intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for GT intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.LT:
                 assert len(DataType) == 3, "Exhaustive type handling in LT intrinsic"
@@ -931,9 +923,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.BOOL, op.token))
+                    ctx.stack.append((DataType.BOOL, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for LT intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for LT intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.GE:
                 assert len(DataType) == 3, "Exhaustive type handling in GE intrinsic"
@@ -945,9 +937,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.BOOL, op.token))
+                    ctx.stack.append((DataType.BOOL, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for GE intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for GE intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.LE:
                 assert len(DataType) == 3, "Exhaustive type handling in LE intrinsic"
@@ -959,9 +951,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.BOOL, op.token))
+                    ctx.stack.append((DataType.BOOL, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for LE intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for LE intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.NE:
                 assert len(DataType) == 3, "Exhaustive type handling in NE intrinsic"
@@ -973,9 +965,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.BOOL, op.token))
+                    ctx.stack.append((DataType.BOOL, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for NE intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for NE intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.SHR:
                 assert len(DataType) == 3, "Exhaustive type handling in SHR intrinsic"
@@ -987,9 +979,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for SHR intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for SHR intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.SHL:
                 assert len(DataType) == 3, "Exhaustive type handling in SHL intrinsic"
@@ -1001,9 +993,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for SHL intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for SHL intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.OR:
                 assert len(DataType) == 3, "Exhaustive type handling in OR intrinsic"
@@ -1015,11 +1007,11 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 elif a_type == b_type and a_type == DataType.BOOL:
-                    ctx.stack.append((DataType.BOOL, op.token))
+                    ctx.stack.append((DataType.BOOL, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for OR intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for OR intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.AND:
                 assert len(DataType) == 3, "Exhaustive type handling in AND intrinsic"
@@ -1031,11 +1023,11 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 b_type, b_loc = ctx.stack.pop()
 
                 if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 elif a_type == b_type and a_type == DataType.BOOL:
-                    ctx.stack.append((DataType.BOOL, op.token))
+                    ctx.stack.append((DataType.BOOL, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for AND intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for AND intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.NOT:
                 assert len(DataType) == 3, "Exhaustive type handling in NOT intrinsic"
@@ -1045,11 +1037,11 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 a_type, a_loc = ctx.stack.pop()
 
                 if a_type == DataType.INT:
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 elif a_type == DataType.BOOL:
-                    ctx.stack.append((DataType.BOOL, op.token))
+                    ctx.stack.append((DataType.BOOL, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for NOT intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for NOT intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.PRINT:
                 if len(ctx.stack) < 1:
@@ -1103,9 +1095,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 a_type, a_loc = ctx.stack.pop()
 
                 if a_type == DataType.PTR:
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for LOAD8 intrinsic: %s" % a_type)
+                    compiler_error(op.token.loc, "invalid argument type for LOAD8 intrinsic: %s" % a_type)
                     exit(1)
             elif op.operand == Intrinsic.STORE8:
                 assert len(DataType) == 3, "Exhaustive type handling in STORE8 intrinsic"
@@ -1119,7 +1111,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 if a_type == DataType.PTR and b_type == DataType.INT:
                     pass
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for STORE8 intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for STORE8 intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.LOAD16:
                 assert len(DataType) == 3, "Exhaustive type handling in LOAD16 intrinsic"
@@ -1129,9 +1121,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 a_type, a_loc = ctx.stack.pop()
 
                 if a_type == DataType.PTR:
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for LOAD16 intrinsic: %s" % a_type)
+                    compiler_error(op.token.loc, "invalid argument type for LOAD16 intrinsic: %s" % a_type)
                     exit(1)
             elif op.operand == Intrinsic.STORE16:
                 assert len(DataType) == 3, "Exhaustive type handling in STORE16 intrinsic"
@@ -1145,7 +1137,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 if a_type == DataType.PTR and b_type == DataType.INT:
                     pass
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for STORE16 intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for STORE16 intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.LOAD32:
                 assert len(DataType) == 3, "Exhaustive type handling in LOAD32 intrinsic"
@@ -1155,9 +1147,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 a_type, a_loc = ctx.stack.pop()
 
                 if a_type == DataType.PTR:
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for LOAD32 intrinsic: %s" % a_type)
+                    compiler_error(op.token.loc, "invalid argument type for LOAD32 intrinsic: %s" % a_type)
                     exit(1)
             elif op.operand == Intrinsic.STORE32:
                 assert len(DataType) == 3, "Exhaustive type handling in STORE32 intrinsic"
@@ -1171,7 +1163,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 if a_type == DataType.PTR and b_type == DataType.INT:
                     pass
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for STORE32 intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for STORE32 intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.LOAD64:
                 assert len(DataType) == 3, "Exhaustive type handling in LOAD64 intrinsic"
@@ -1181,9 +1173,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 a_type, a_loc = ctx.stack.pop()
 
                 if a_type == DataType.PTR:
-                    ctx.stack.append((DataType.INT, op.token))
+                    ctx.stack.append((DataType.INT, op.token.loc))
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for LOAD64 intrinsic")
+                    compiler_error(op.token.loc, "invalid argument type for LOAD64 intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.STORE64:
                 assert len(DataType) == 3, "Exhaustive type handling in STORE64 intrinsic"
@@ -1197,7 +1189,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 if (b_type == DataType.INT or b_type == DataType.PTR) and a_type == DataType.PTR:
                     pass
                 else:
-                    compiler_error_with_expansion_stack(op.token, "invalid argument type for STORE64 intrinsic: %s" % [b_type, a_type])
+                    compiler_error(op.token.loc, "invalid argument type for STORE64 intrinsic: %s" % [b_type, a_type])
                     exit(1)
             elif op.operand == Intrinsic.CAST_PTR:
                 if len(ctx.stack) < 1:
@@ -1224,12 +1216,12 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
 
                 ctx.stack.append((DataType.BOOL, a_token))
             elif op.operand == Intrinsic.ARGC:
-                ctx.stack.append((DataType.INT, op.token))
+                ctx.stack.append((DataType.INT, op.token.loc))
             elif op.operand == Intrinsic.ARGV:
-                ctx.stack.append((DataType.PTR, op.token))
+                ctx.stack.append((DataType.PTR, op.token.loc))
             elif op.operand == Intrinsic.HERE:
-                ctx.stack.append((DataType.INT, op.token))
-                ctx.stack.append((DataType.PTR, op.token))
+                ctx.stack.append((DataType.INT, op.token.loc))
+                ctx.stack.append((DataType.PTR, op.token.loc))
             # TODO: figure out how to type check syscall arguments and return types
             elif op.operand == Intrinsic.SYSCALL0:
                 if len(ctx.stack) < 1:
@@ -1237,49 +1229,49 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                     exit(1)
                 for i in range(1):
                     ctx.stack.pop()
-                ctx.stack.append((DataType.INT, op.token))
+                ctx.stack.append((DataType.INT, op.token.loc))
             elif op.operand == Intrinsic.SYSCALL1:
                 if len(ctx.stack) < 2:
                     not_enough_arguments(op)
                     exit(1)
                 for i in range(2):
                     ctx.stack.pop()
-                ctx.stack.append((DataType.INT, op.token))
+                ctx.stack.append((DataType.INT, op.token.loc))
             elif op.operand == Intrinsic.SYSCALL2:
                 if len(ctx.stack) < 3:
                     not_enough_arguments(op)
                     exit(1)
                 for i in range(3):
                     ctx.stack.pop()
-                ctx.stack.append((DataType.INT, op.token))
+                ctx.stack.append((DataType.INT, op.token.loc))
             elif op.operand == Intrinsic.SYSCALL3:
                 if len(ctx.stack) < 4:
                     not_enough_arguments(op)
                     exit(1)
                 for i in range(4):
                     ctx.stack.pop()
-                ctx.stack.append((DataType.INT, op.token))
+                ctx.stack.append((DataType.INT, op.token.loc))
             elif op.operand == Intrinsic.SYSCALL4:
                 if len(ctx.stack) < 5:
                     not_enough_arguments(op)
                     exit(1)
                 for i in range(5):
                     ctx.stack.pop()
-                ctx.stack.append((DataType.INT, op.token))
+                ctx.stack.append((DataType.INT, op.token.loc))
             elif op.operand == Intrinsic.SYSCALL5:
                 if len(ctx.stack) < 6:
                     not_enough_arguments(op)
                     exit(1)
                 for i in range(6):
                     ctx.stack.pop()
-                ctx.stack.append((DataType.INT, op.token))
+                ctx.stack.append((DataType.INT, op.token.loc))
             elif op.operand == Intrinsic.SYSCALL6:
                 if len(ctx.stack) < 7:
                     not_enough_arguments(op)
                     exit(1)
                 for i in range(7):
                     ctx.stack.pop()
-                ctx.stack.append((DataType.INT, op.token))
+                ctx.stack.append((DataType.INT, op.token.loc))
             else:
                 assert False, "unreachable"
             ctx.ip += 1
@@ -1289,7 +1281,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 exit(1)
             a_type, a_token = ctx.stack.pop()
             if a_type != DataType.BOOL:
-                compiler_error_with_expansion_stack(op.token, "Invalid argument for the if condition. Expected BOOL.")
+                compiler_error(op.token.loc, "Invalid argument for the if condition. Expected BOOL.")
                 exit(1)
             ctx.ip += 1
             assert isinstance(op.operand, OpAddr)
@@ -1301,7 +1293,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 exit(1)
             a_type, a_token = ctx.stack.pop()
             if a_type != DataType.BOOL:
-                compiler_error_with_expansion_stack(op.token, "Invalid argument for the `if*` condition. Expected BOOL.")
+                compiler_error(op.token.loc, "Invalid argument for the `if*` condition. Expected BOOL.")
                 exit(1)
             ctx.ip += 1
             assert isinstance(op.operand, OpAddr)
@@ -1322,13 +1314,13 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 exit(1)
             a_type, a_token = ctx.stack.pop()
             if a_type != DataType.BOOL:
-                compiler_error_with_expansion_stack(op.token, "Invalid argument for the while-do condition. Expected BOOL.")
+                compiler_error(op.token.loc, "Invalid argument for the while-do condition. Expected BOOL.")
                 exit(1)
             if ctx.ip in visited_dos:
                 expected_types = list(map(lambda x: x[0], visited_dos[ctx.ip]))
                 actual_types = list(map(lambda x: x[0], ctx.stack))
                 if expected_types != actual_types:
-                    compiler_error_with_expansion_stack(op.token, 'Loops are not allowed to alter types and amount of elements on the stack.')
+                    compiler_error(op.token.loc, 'Loops are not allowed to alter types and amount of elements on the stack.')
                     compiler_note(op.token.loc, 'Expected elements: %s' % expected_types)
                     compiler_note(op.token.loc, 'Actual elements: %s' % actual_types)
                     exit(1)
@@ -1854,23 +1846,23 @@ def check_word_redefinition(ctx: ParseContext, token: Token):
     name: str = token.value
     if ctx.current_proc is None:
         if name in ctx.memories:
-            compiler_error_with_expansion_stack(token, "redefinition of a memory region `%s`" % name)
+            compiler_error(token.loc, "redefinition of a memory region `%s`" % name)
             compiler_note(ctx.memories[name].loc, "the original definition is located here")
             exit(1)
     else:
         if name in ctx.current_proc.local_memories:
-            compiler_error_with_expansion_stack(token, "redefinition of a local memory region `%s`" % name)
+            compiler_error(token.loc, "redefinition of a local memory region `%s`" % name)
             compiler_note(ctx.current_proc.local_memories[name].loc, "the original definition is located here")
             exit(1)
     if name in INTRINSIC_BY_NAMES:
-        compiler_error_with_expansion_stack(token, "redefinition of an intrinsic word `%s`" % (name, ))
+        compiler_error(token.loc, "redefinition of an intrinsic word `%s`" % (name, ))
         exit(1)
     if name in ctx.procs:
-        compiler_error_with_expansion_stack(token, "redefinition of a proc `%s`" % (name, ))
+        compiler_error(token.loc, "redefinition of a proc `%s`" % (name, ))
         compiler_note(ctx.procs[name].loc, "the original definition is located here")
         exit(1)
     if name in ctx.consts:
-        compiler_error_with_expansion_stack(token, "redefinition of a constant `%s`" % (name, ))
+        compiler_error(token.loc, "redefinition of a constant `%s`" % (name, ))
         compiler_note(ctx.consts[name].loc, "the original definition is located here")
         exit(1)
 
@@ -1884,11 +1876,11 @@ def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, Data
                 break
             elif token.value == Keyword.OFFSET:
                 if len(stack) < 1:
-                    compiler_error_with_expansion_stack(token, f"not enough arguments for `{KEYWORD_NAMES[token.value]}` keyword")
+                    compiler_error(token.loc, f"not enough arguments for `{KEYWORD_NAMES[token.value]}` keyword")
                     exit(1)
                 offset, typ = stack.pop()
                 if typ is not DataType.INT:
-                    compiler_error_with_expansion_stack(token, f"`{KEYWORD_NAMES[token.value]}` expects type {DataType.INT} but got {typ}")
+                    compiler_error(token.loc, f"`{KEYWORD_NAMES[token.value]}` expects type {DataType.INT} but got {typ}")
                     exit(1)
                 stack.append((ctx.iota, DataType.INT))
                 ctx.iota += offset
@@ -1896,7 +1888,7 @@ def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, Data
                 stack.append((ctx.iota, DataType.INT))
                 ctx.iota = 0
             else:
-                compiler_error_with_expansion_stack(token, f"unsupported keyword `{KEYWORD_NAMES[token.value]}` in compile time evaluation")
+                compiler_error(token.loc, f"unsupported keyword `{KEYWORD_NAMES[token.value]}` in compile time evaluation")
                 exit(1)
         elif token.typ == TokenType.INT:
             assert isinstance(token.value, int)
@@ -1905,7 +1897,7 @@ def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, Data
             assert isinstance(token.value, str)
             if token.value == INTRINSIC_NAMES[Intrinsic.PLUS]:
                 if len(stack) < 2:
-                    compiler_error_with_expansion_stack(token, f"not enough arguments for `{token.value}` intrinsic")
+                    compiler_error(token.loc, f"not enough arguments for `{token.value}` intrinsic")
                     exit(1)
                 a, a_type = stack.pop()
                 b, b_type = stack.pop()
@@ -1917,7 +1909,7 @@ def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, Data
                 elif a_type == DataType.PTR and b_type == DataType.INT:
                     stack.append((a + b, DataType.PTR))
                 else:
-                    compiler_error_with_expansion_stack(token, f"Invalid argument types for `{token.value}` intrinsic: {(a_type, b_type)}")
+                    compiler_error(token.loc, f"Invalid argument types for `{token.value}` intrinsic: {(a_type, b_type)}")
                     compiler_note(token.loc, f"Expected:")
                     compiler_note(token.loc, f"  {(DataType.INT, DataType.INT)}")
                     compiler_note(token.loc, f"  {(DataType.INT, DataType.PTR)}")
@@ -1925,7 +1917,7 @@ def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, Data
                     exit(1)
             elif token.value == INTRINSIC_NAMES[Intrinsic.MUL]:
                 if len(stack) < 2:
-                    compiler_error_with_expansion_stack(token, f"not enough arguments for `{token.value}` intrinsic")
+                    compiler_error(token.loc, f"not enough arguments for `{token.value}` intrinsic")
                     exit(1)
                 a, a_type = stack.pop()
                 b, b_type = stack.pop()
@@ -1933,13 +1925,13 @@ def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, Data
                 if a_type == b_type and a_type == DataType.INT:
                     stack.append((a * b, DataType.INT))
                 else:
-                    compiler_error_with_expansion_stack(token, f"Invalid argument types for `{token.value}` intrinsic: {(a_type, b_type)}")
+                    compiler_error(token.loc, f"Invalid argument types for `{token.value}` intrinsic: {(a_type, b_type)}")
                     compiler_note(token.loc, f"Expected:")
                     compiler_note(token.loc, f"  {(DataType.INT, DataType.INT)}")
                     exit(1)
             elif token.value == INTRINSIC_NAMES[Intrinsic.DIVMOD]:
                 if len(stack) < 2:
-                    compiler_error_with_expansion_stack(token, f"not enough arguments for `{token.value}` intrinsic")
+                    compiler_error(token.loc, f"not enough arguments for `{token.value}` intrinsic")
                     exit(1)
                 a, a_type = stack.pop()
                 b, b_type = stack.pop()
@@ -1948,56 +1940,56 @@ def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, Data
                     stack.append((b//a, DataType.INT))
                     stack.append((b%a, DataType.INT))
                 else:
-                    compiler_error_with_expansion_stack(token, f"Invalid argument types for `{token.value}` intrinsic: {(a_type, b_type)}")
+                    compiler_error(token.loc, f"Invalid argument types for `{token.value}` intrinsic: {(a_type, b_type)}")
                     compiler_note(token.loc, f"Expected:")
                     compiler_note(token.loc, f"  {(DataType.INT, DataType.INT)}")
                     exit(1)
             elif token.value == INTRINSIC_NAMES[Intrinsic.DROP]:
                 if len(stack) < 1:
-                    compiler_error_with_expansion_stack(token, f"not enough arguments for `{token.value}` intrinsic")
+                    compiler_error(token.loc, f"not enough arguments for `{token.value}` intrinsic")
                     exit(1)
                 stack.pop()
             elif token.value == INTRINSIC_NAMES[Intrinsic.CAST_BOOL]:
                 if len(stack) < 1:
-                    compiler_error_with_expansion_stack(token, f"not enough arguments for `{token.value}` intrinsic")
+                    compiler_error(token.loc, f"not enough arguments for `{token.value}` intrinsic")
                     exit(1)
                 value, typ = stack.pop()
                 stack.append((value, DataType.BOOL))
             elif token.value == INTRINSIC_NAMES[Intrinsic.CAST_INT]:
                 if len(stack) < 1:
-                    compiler_error_with_expansion_stack(token, f"not enough arguments for `{token.value}` intrinsic")
+                    compiler_error(token.loc, f"not enough arguments for `{token.value}` intrinsic")
                     exit(1)
                 value, typ = stack.pop()
                 stack.append((value, DataType.INT))
             elif token.value == INTRINSIC_NAMES[Intrinsic.CAST_PTR]:
                 if len(stack) < 1:
-                    compiler_error_with_expansion_stack(token, f"not enough arguments for `{token.value}` intrinsic")
+                    compiler_error(token.loc, f"not enough arguments for `{token.value}` intrinsic")
                     exit(1)
                 value, typ = stack.pop()
                 stack.append((value, DataType.PTR))
             elif token.value == INTRINSIC_NAMES[Intrinsic.EQ]:
                 if len(stack) < 2:
-                    compiler_error_with_expansion_stack(token, f"not enough arguments for `{token.value}` intrinsic")
+                    compiler_error(token.loc, f"not enough arguments for `{token.value}` intrinsic")
                     exit(1)
                 a, a_type = stack.pop()
                 b, b_type = stack.pop()
 
                 if a_type != b_type:
-                    compiler_error_with_expansion_stack(token, f"intrinsic `{token.value}` expects the arguments to have the same type. The actual types are")
+                    compiler_error(token.loc, f"intrinsic `{token.value}` expects the arguments to have the same type. The actual types are")
                     compiler_note(token.loc, f"    {(a_type, b_type)}")
                     exit(1)
 
                 stack.append((int(a == b), DataType.BOOL))
             elif token.value == INTRINSIC_NAMES[Intrinsic.MAX]:
                 if len(stack) < 2:
-                    compiler_error_with_expansion_stack(token, f"not enough arguments for `{token.value}` intrinsic")
+                    compiler_error(token.loc, f"not enough arguments for `{token.value}` intrinsic")
                     exit(1)
                 a, a_type = stack.pop()
                 b, b_type = stack.pop()
                 if a_type == b_type and a_type == DataType.INT:
                     stack.append((max(a, b), DataType.INT))
                 else:
-                    compiler_error_with_expansion_stack(token, f"Invalid argument types for `{token.value}` intrinsic: {(a_type, b_type)}")
+                    compiler_error(token.loc, f"Invalid argument types for `{token.value}` intrinsic: {(a_type, b_type)}")
                     compiler_note(token.loc, f"Expected:")
                     compiler_note(token.loc, f"  {(DataType.INT, DataType.INT)}")
                     exit(1)
@@ -2005,13 +1997,13 @@ def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, Data
                 const = ctx.consts[token.value]
                 stack.append((const.value, const.typ))
             else:
-                compiler_error_with_expansion_stack(token, f"unsupported word `{token.value}` in compile time evaluation")
+                compiler_error(token.loc, f"unsupported word `{token.value}` in compile time evaluation")
                 exit(1)
         else:
-            compiler_error_with_expansion_stack(token, f"{human(token.typ, HumanNumber.Plural)} are not supported in compile time evaluation")
+            compiler_error(token.loc, f"{human(token.typ, HumanNumber.Plural)} are not supported in compile time evaluation")
             exit(1)
     if len(stack) != 1:
-        compiler_error_with_expansion_stack(token, "The result of expression in compile time evaluation must be a single number")
+        compiler_error(token.loc, "The result of expression in compile time evaluation must be a single number")
         exit(1)
     return stack.pop()
 
@@ -2024,20 +2016,20 @@ def parse_contract_list(rtokens: List[Token], stoppers: List[Keyword]) -> Tuple[
             if token.value in DATATYPE_BY_NAME:
                 args.append(DATATYPE_BY_NAME[token.value])
             else:
-                compiler_error_with_expansion_stack(token, f"Unknown data type {token.value}")
+                compiler_error(token.loc, f"Unknown data type {token.value}")
                 exit(1)
         elif token.typ == TokenType.KEYWORD:
             assert isinstance(token.value, Keyword)
             if token.value in stoppers:
                 return (args, token.value)
             else:
-                compiler_error_with_expansion_stack(token, f"Unexpected keyword {KEYWORD_NAMES[token.value]}")
+                compiler_error(token.loc, f"Unexpected keyword {KEYWORD_NAMES[token.value]}")
                 exit(1)
         else:
-            compiler_error_with_expansion_stack(token, f"{human(token.typ, HumanNumber.Plural)} are not allowed in procedure definition.")
+            compiler_error(token.loc, f"{human(token.typ, HumanNumber.Plural)} are not allowed in procedure definition.")
             exit(1)
 
-    compiler_error_with_expansion_stack(token, f"Unexpected end of file. Expected keywords: ")
+    compiler_error(token.loc, f"Unexpected end of file. Expected keywords: ")
     for keyword in stoppers:
         compiler_note(token.loc, f"  {KEYWORD_NAMES[keyword]}")
     exit(1)
@@ -2082,7 +2074,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     assert False, "unreachable"
                 ctx.ip += 1
             else:
-                compiler_error_with_expansion_stack(token, "unknown word `%s`" % token.value)
+                compiler_error(token.loc, "unknown word `%s`" % token.value)
                 exit(1)
         elif token.typ == TokenType.INT:
             assert isinstance(token.value, int), "This could be a bug in the lexer"
@@ -2108,19 +2100,19 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 ctx.ip += 1
             elif token.value == Keyword.IFSTAR:
                 if len(ctx.stack) == 0:
-                    compiler_error_with_expansion_stack(token, '`if*` can only come after `else`')
+                    compiler_error(token.loc, '`if*` can only come after `else`')
                     exit(1)
 
                 else_ip = ctx.stack[-1]
                 if ctx.ops[else_ip].typ != OpType.ELSE:
-                    compiler_error_with_expansion_stack(ctx.ops[else_ip].token, '`if*` can only come after `else`')
+                    compiler_error(ctx.ops[else_ip].token.loc, '`if*` can only come after `else`')
                     exit(1)
                 ctx.ops.append(Op(typ=OpType.IFSTAR, token=token))
                 ctx.stack.append(ctx.ip)
                 ctx.ip += 1
             elif token.value == Keyword.ELSE:
                 if len(ctx.stack) == 0:
-                    compiler_error_with_expansion_stack(token, '`else` can only come after `if` or `if*`')
+                    compiler_error(token.loc, '`else` can only come after `if` or `if*`')
                     exit(1)
 
                 if_ip = ctx.stack.pop()
@@ -2140,7 +2132,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     ctx.ops.append(Op(typ=OpType.ELSE, token=token))
                     ctx.ip += 1
                 else:
-                    compiler_error_with_expansion_stack(ctx.ops[if_ip].token, f'`else` can only come after `if` or `if*`')
+                    compiler_error(ctx.ops[if_ip].token.loc, f'`else` can only come after `if` or `if*`')
                     exit(1)
             elif token.value == Keyword.END:
                 block_ip = ctx.stack.pop()
@@ -2156,7 +2148,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     assert isinstance(while_ip, OpAddr)
 
                     if ctx.ops[while_ip].typ != OpType.WHILE:
-                        compiler_error_with_expansion_stack(ctx.ops[while_ip].token, '`end` can only close `do` blocks that are preceded by `while`')
+                        compiler_error(ctx.ops[while_ip].token.loc, '`end` can only close `do` blocks that are preceded by `while`')
                         exit(1)
 
                     ctx.ops[ctx.ip].operand = while_ip
@@ -2182,7 +2174,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     ctx.ops[block_ip].operand = ctx.ip
                     ctx.ops[ctx.ip].operand = ctx.ip + 1
                 else:
-                    compiler_error_with_expansion_stack(ctx.ops[block_ip].token, '`end` can only close `if`, `else`, `do`, or `proc` blocks for now')
+                    compiler_error(ctx.ops[block_ip].token.loc, '`end` can only close `if`, `else`, `do`, or `proc` blocks for now')
                     exit(1)
                 ctx.ip += 1
             elif token.value == Keyword.WHILE:
@@ -2192,26 +2184,26 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
             elif token.value == Keyword.DO:
                 ctx.ops.append(Op(typ=OpType.DO, token=token))
                 if len(ctx.stack) == 0:
-                    compiler_error_with_expansion_stack(token, "`do` is not preceded by `while`")
+                    compiler_error(token.loc, "`do` is not preceded by `while`")
                     exit(1)
                 while_ip = ctx.stack.pop()
                 if ctx.ops[while_ip].typ != OpType.WHILE:
-                    compiler_error_with_expansion_stack(token, "`do` is not preceded by `while`")
+                    compiler_error(token.loc, "`do` is not preceded by `while`")
                     exit(1)
                 ctx.ops[ctx.ip].operand = while_ip
                 ctx.stack.append(ctx.ip)
                 ctx.ip += 1
             elif token.value == Keyword.INCLUDE:
                 if len(rtokens) == 0:
-                    compiler_error_with_expansion_stack(token, "expected path to the include file but found nothing")
+                    compiler_error(token.loc, "expected path to the include file but found nothing")
                     exit(1)
                 token = rtokens.pop()
                 if token.typ != TokenType.STR:
-                    compiler_error_with_expansion_stack(token, "expected path to the include file to be %s but found %s" % (human(TokenType.STR), human(token.typ)))
+                    compiler_error(token.loc, "expected path to the include file to be %s but found %s" % (human(TokenType.STR), human(token.typ)))
                     exit(1)
                 assert isinstance(token.value, str), "This is probably a bug in the lexer"
                 if included >= INCLUDE_LIMIT:
-                    compiler_error_with_expansion_stack(token, f"Include limit is exceeded. A file was included {included} times.")
+                    compiler_error(token.loc, f"Include limit is exceeded. A file was included {included} times.")
                     exit(1)
                 file_included = False
                 for include_path in include_paths:
@@ -2222,32 +2214,32 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     except FileNotFoundError:
                         continue
                 if not file_included:
-                    compiler_error_with_expansion_stack(token, "file `%s` not found" % token.value)
+                    compiler_error(token.loc, "file `%s` not found" % token.value)
                     exit(1)
             elif token.value == Keyword.ASSERT:
                 if len(rtokens) == 0:
-                    compiler_error_with_expansion_stack(token, "expected assert messsage but found nothing")
+                    compiler_error(token.loc, "expected assert messsage but found nothing")
                     exit(1)
                 token = rtokens.pop()
                 if token.typ != TokenType.STR:
-                    compiler_error_with_expansion_stack(token, "expected assert message to be %s but found %s" % (human(TokenType.STR), human(token.typ)))
+                    compiler_error(token.loc, "expected assert message to be %s but found %s" % (human(TokenType.STR), human(token.typ)))
                     exit(1)
                 assert isinstance(token.value, str), "This is probably a bug in the lexer"
                 assert_message = token.value
                 assert_value, assert_typ = eval_const_value(ctx, rtokens)
                 if assert_typ != DataType.BOOL:
-                    compiler_error_with_expansion_stack(token, "assertion expects the expresion to be of type `bool`")
+                    compiler_error(token.loc, "assertion expects the expresion to be of type `bool`")
                     exit(1)
                 if assert_value == 0:
-                    compiler_error_with_expansion_stack(token, f"Static Assertion Failed: {assert_message}");
+                    compiler_error(token.loc, f"Static Assertion Failed: {assert_message}");
                     exit(1)
             elif token.value == Keyword.CONST:
                 if len(rtokens) == 0:
-                    compiler_error_with_expansion_stack(token, "expected const name but found nothing")
+                    compiler_error(token.loc, "expected const name but found nothing")
                     exit(1)
                 token = rtokens.pop()
                 if token.typ != TokenType.WORD:
-                    compiler_error_with_expansion_stack(token, "expected const name to be %s but found %s" % (human(TokenType.WORD), human(token.typ)))
+                    compiler_error(token.loc, "expected const name to be %s but found %s" % (human(TokenType.WORD), human(token.typ)))
                     exit(1)
                 assert isinstance(token.value, str), "This is probably a bug in the lexer"
                 const_name = token.value
@@ -2258,18 +2250,18 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
             elif token.value == Keyword.MEMORY:
 
                 if len(rtokens) == 0:
-                    compiler_error_with_expansion_stack(token, "expected memory name but found nothing")
+                    compiler_error(token.loc, "expected memory name but found nothing")
                     exit(1)
                 token = rtokens.pop()
                 if token.typ != TokenType.WORD:
-                    compiler_error_with_expansion_stack(token, "expected memory name to be %s but found %s" % (human(TokenType.WORD), human(token.typ)))
+                    compiler_error(token.loc, "expected memory name to be %s but found %s" % (human(TokenType.WORD), human(token.typ)))
                     exit(1)
                 assert isinstance(token.value, str), "This is probably a bug in the lexer"
                 memory_name = token.value
                 memory_loc = token.loc
                 memory_size, memory_size_type = eval_const_value(ctx, rtokens)
                 if memory_size_type != DataType.INT:
-                    compiler_error_with_expansion_stack(token, f"Memory size must be of type {DataType.INT} but it is of type {memory_size_type}")
+                    compiler_error(token.loc, f"Memory size must be of type {DataType.INT} but it is of type {memory_size_type}")
                     exit(1)
                 check_word_redefinition(ctx, token)
                 if ctx.current_proc is None:
@@ -2293,11 +2285,11 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     ctx.ip += 1
 
                     if len(rtokens) == 0:
-                        compiler_error_with_expansion_stack(token, "expected procedure name but found nothing")
+                        compiler_error(token.loc, "expected procedure name but found nothing")
                         exit(1)
                     token = rtokens.pop()
                     if token.typ != TokenType.WORD:
-                        compiler_error_with_expansion_stack(token, "expected procedure name to be %s but found %s" % (human(TokenType.WORD), human(token.typ)))
+                        compiler_error(token.loc, "expected procedure name to be %s but found %s" % (human(TokenType.WORD), human(token.typ)))
                         exit(1)
                     assert isinstance(token.value, str), "This is probably a bug in the lexer"
                     proc_loc = token.loc
@@ -2310,14 +2302,14 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     ctx.current_proc = ctx.procs[proc_name]
                 else:
                     # TODO: forbid constant definition inside of proc
-                    compiler_error_with_expansion_stack(token, "defining procedures inside of procedures is not allowed")
+                    compiler_error(token.loc, "defining procedures inside of procedures is not allowed")
                     compiler_note(ctx.current_proc.loc, "the current procedure starts here")
                     exit(1)
             elif token.value in [Keyword.OFFSET, Keyword.RESET]:
-                compiler_error_with_expansion_stack(token, f"keyword `{token.text}` is supported only in compile time evaluation context")
+                compiler_error(token.loc, f"keyword `{token.text}` is supported only in compile time evaluation context")
                 exit(1)
             elif token.value in [Keyword.IN, Keyword.BIKESHEDDER]:
-                compiler_error_with_expansion_stack(token, f"Unexpected keyword `{token.text}`")
+                compiler_error(token.loc, f"Unexpected keyword `{token.text}`")
                 exit(1)
             else:
                 assert False, 'unreachable';
@@ -2325,7 +2317,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
             assert False, 'unreachable'
 
     if len(ctx.stack) > 0:
-        compiler_error_with_expansion_stack(ctx.ops[ctx.stack.pop()].token, 'unclosed block')
+        compiler_error(ctx.ops[ctx.stack.pop()].token.loc, 'unclosed block')
         exit(1)
 
 def find_col(line: str, start: int, predicate: Callable[[str], bool]) -> int:
