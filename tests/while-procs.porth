@@ -1,10 +1,10 @@
 include "std.porth"
 
-proc fibs
+proc fibs in
   0 1 while over 100 < do
     over print
-    2dup + rot drop
-  end 2drop
+    over over + rot drop
+  end drop drop
 end
 
 fibs

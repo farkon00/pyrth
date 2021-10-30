@@ -13,21 +13,21 @@ memory value sizeof(u64) end
 memory board_base BOARD_SIZE 2 * end
 memory display COLS 1 + end
 
-proc board_current
+proc board_current -- ptr in
   board_base board_current_index @64 BOARD_SIZE * +
 end
 
-proc board_next
+proc board_next -- ptr in
   board_base 1 board_current_index @64 - BOARD_SIZE * +
 end
 
-proc swap_boards
+proc swap_boards in
   1 board_current_index @64 - board_current_index !64
 end
 
-proc display_row
+proc display_row ptr in
   0 while dup COLS < do
-    2dup + @8 0 = if
+    over over + @8 0 = if
       display over + '.' swap !8
     else
       display over + '#' swap !8
@@ -39,90 +39,90 @@ proc display_row
   drop
 end
 
-proc display_board
+proc display_board ptr in
   0 while dup ROWS < do
-    2dup COLS * + display_row
+    over over COLS * + display_row
     1 +
   end drop
   drop
 end
 
-proc display_current_board
+proc display_current_board in
   board_current display_board
 end
 
-proc get_current_cell
+proc get_current_cell int int -- int in
   swap COLS * + board_current + @8
 end
 
-proc set_next_cell
+proc set_next_cell int int int in
   value !64
   swap COLS * + board_next +
   value @64
   swap !8
 end
 
-proc in_bounds
+proc in_bounds int int -- bool in
   dup 0 >= swap COLS < and
   swap
   dup 0 >= swap ROWS < and
   and
 end
 
-proc count_current_nbors
+proc count_current_nbors int int -- int in
   0 nbors !64
 
-  2dup 1 - swap 1 - swap 2dup in_bounds
+  over over 1 - swap 1 - swap over over in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  2dup 1 - 2dup in_bounds
+  over over 1 - over over in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  2dup 1 - swap 1 + swap 2dup in_bounds
+  over over 1 - swap 1 + swap over over in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  2dup swap 1 - swap 2dup in_bounds
+  over over swap 1 - swap over over in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  2dup swap 1 + swap 2dup in_bounds
+  over over swap 1 + swap over over in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  2dup 1 + swap 1 - swap 2dup in_bounds
+  over over 1 + swap 1 - swap over over in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  2dup 1 + 2dup in_bounds
+  over over 1 + over over in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  2dup 1 + swap 1 + swap 2dup in_bounds
+  over over 1 + swap 1 + swap over over in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  2drop
+  drop drop
   nbors @64
 end
 
-proc compute_next_board
+proc compute_next_board in
   0 while dup ROWS < do
     0 while dup COLS < do
-      2dup get_current_cell 1 = if
-        2dup count_current_nbors
+      over over get_current_cell 1 = if
+        over over count_current_nbors
         dup 2 = swap 3 = or if
-          2dup 1 set_next_cell
+          over over 1 set_next_cell
         else
-          2dup 0 set_next_cell
+          over over 0 set_next_cell
         end
       else
-        2dup count_current_nbors 3 = if
-          2dup 1 set_next_cell
+        over over count_current_nbors 3 = if
+          over over 1 set_next_cell
         else
-          2dup 0 set_next_cell
+          over over 0 set_next_cell
         end
       end
 
@@ -135,7 +135,7 @@ end
 // .*.
 // ..*
 // ***
-proc put_glider
+proc put_glider ptr in
    dup 0 COLS * 1 + + 1 swap !8
    dup 1 COLS * 2 + + 1 swap !8
    dup 2 COLS * 0 + + 1 swap !8
@@ -144,7 +144,7 @@ proc put_glider
    drop
 end
 
-proc main
+proc main in
   100000000 delta_time 8 + !64
 
   board_current put_glider

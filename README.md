@@ -12,6 +12,7 @@ Porth is planned to be
 - [x] Statically typed (the type checking is similar to [WASM validation](https://binji.github.io/posts/webassembly-type-checking/))
 - [ ] Self-hosted (See [./porth.porth](./porth.porth) for the current progress)
 - [ ] Optimized
+- [ ] Crossplatform
 
 (these are not the selling points, but rather milestones of the development)
 

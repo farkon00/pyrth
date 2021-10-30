@@ -1,6 +1,6 @@
 include "std.porth"
 
-proc test-try-parse-int
+proc test-try-parse-int int ptr in
   memory a sizeof(Str) end
   a !Str
   a @Str try-parse-int if print else

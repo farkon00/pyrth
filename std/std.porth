@@ -12,7 +12,7 @@ const stdin  0 end
 const stdout 1 end
 const stderr 2 end
 
-proc @ptr @64 cast(ptr) end
+proc @ptr ptr -- ptr in @64 cast(ptr) end
 
 /// Syscalls
 // Stolen from https://filippo.io/linux-syscall-table/
@@ -349,20 +349,20 @@ const PROT_READ 1 end
 const sizeof(timespec) 16 end
 
 const sizeof(stat) 144 end
-proc stat.st_dev 0 + end
-proc stat.st_ino 8 + end
-proc stat.st_mode 24 + end
-proc stat.st_nlink 16 + end
-proc stat.st_uid 28 + end
-proc stat.st_gid 32 + end
-proc stat.st_rdev 40 + end
-proc stat.st_size 48 + end
-proc @stat.st_size stat.st_size @64 end
-proc stat.st_blksize 56 + end
-proc stat.st_blocks 64 + end
-proc stat.st_atim 72 + end
-proc stat.st_mtim 88 + end
-proc stat.st_ctim 104 + end
+proc stat.st_dev     ptr -- ptr in 0 + end
+proc stat.st_ino     ptr -- ptr in 8 + end
+proc stat.st_mode    ptr -- ptr in 24 + end
+proc stat.st_nlink   ptr -- ptr in 16 + end
+proc stat.st_uid     ptr -- ptr in 28 + end
+proc stat.st_gid     ptr -- ptr in 32 + end
+proc stat.st_rdev    ptr -- ptr in 40 + end
+proc stat.st_size    ptr -- ptr in 48 + end
+proc @stat.st_size   ptr -- int in stat.st_size @64 end
+proc stat.st_blksize ptr -- ptr in 56 + end
+proc stat.st_blocks  ptr -- ptr in 64 + end
+proc stat.st_atim    ptr -- ptr in 72 + end
+proc stat.st_mtim    ptr -- ptr in 88 + end
+proc stat.st_ctim    ptr -- ptr in 104 + end
 const sizeof(stat.st_dev) sizeof(u64) end
 const sizeof(stat.st_ino) sizeof(u64) end
 const sizeof(stat.st_mode) sizeof(u32) end
@@ -378,43 +378,44 @@ const sizeof(stat.st_mtim) sizeof(timespec) end
 const sizeof(stat.st_ctim) sizeof(timespec) end
 
 // Wrappers for common syscalls
-proc write SYS_write syscall3 end
-proc read SYS_read syscall3 end
-proc openat SYS_openat syscall4 end
-proc fstat SYS_fstat syscall2 end
-proc close SYS_close syscall1 end
-proc exit SYS_exit syscall1 drop end
-proc mmap SYS_mmap syscall6 end
-proc clock_nanosleep SYS_clock_nanosleep syscall4 end
-proc fork SYS_fork syscall0 end
-proc getpid SYS_getpid syscall0 end
-proc execve SYS_execve syscall3 end
-proc wait4 SYS_wait4 syscall4 end
+proc write int ptr int -- int in SYS_write syscall3 end
+proc read int ptr int -- int in SYS_read syscall3 end
+proc openat int int ptr int -- int in SYS_openat syscall4 end
+proc fstat ptr int -- int in SYS_fstat syscall2 end
+proc close int -- int in SYS_close syscall1 end
+proc exit int in SYS_exit syscall1 drop end
+proc mmap int int int int int ptr -- int in SYS_mmap syscall6 end
+proc clock_nanosleep ptr ptr int int -- int in SYS_clock_nanosleep syscall4 end
+proc fork -- int in SYS_fork syscall0 end
+proc getpid -- int in SYS_getpid syscall0 end
+proc execve ptr ptr ptr -- int in SYS_execve syscall3 end
+proc wait4 ptr int ptr int -- int in SYS_wait4 syscall4 end
 
-proc 2dup over over end
-proc 2drop drop drop end
+// TODO: generics are not supported
+// proc 2dup any any -- any any any any in over over end
+// proc 2drop in drop drop end
 
-proc / divmod drop end
-proc % divmod swap drop end
-proc mod % end
-proc div / end
+proc /   int int -- int in divmod drop end
+proc %   int int -- int in divmod swap drop end
+proc mod int int -- int in % end
+proc div int int -- int in / end
 
-proc nth_argv
+proc nth_argv int -- ptr in
   8 * argv + @64 cast(ptr)
 end
 
-proc inc64 dup @64 1 + swap !64 end
-proc dec64 dup @64 1 - swap !64 end
-proc inc32 dup @32 1 + swap !32 end
-proc dec32 dup @32 1 - swap !32 end
+proc inc64 ptr in dup @64 1 + swap !64 end
+proc dec64 ptr in dup @64 1 - swap !64 end
+proc inc32 ptr in dup @32 1 + swap !32 end
+proc dec32 ptr in dup @32 1 - swap !32 end
 
-proc cstrlen
+proc cstrlen ptr -- int in
   dup
   while dup @8 0 != do 1 + end
   swap -
 end
 
-proc cstreq
+proc cstreq ptr ptr -- bool in
   while
     over @8 0 != over @8 0 != and if
        over @8 over @8 =
@@ -429,41 +430,41 @@ proc cstreq
   and
 end
 
-proc cstr-to-str dup cstrlen swap end
+proc cstr-to-str ptr -- int ptr in dup cstrlen swap end
 
 // TODO: fputs should crash the app if write fails
-proc fputs write drop end
-proc puts stdout fputs end
-proc eputs stderr fputs end
+proc fputs int ptr int in write drop end
+proc puts int ptr in stdout fputs end
+proc eputs int ptr in stderr fputs end
 
 const offsetof(Str.count) sizeof(u64) offset end
 const offsetof(Str.data) sizeof(ptr) offset end
 const sizeof(Str) reset end
 
-proc Str.count offsetof(Str.count) + end
-proc Str.data offsetof(Str.data) + end
-proc @Str.count Str.count @64 end
-proc @Str.data Str.data  @64 cast(ptr) end
-proc !Str.count Str.count !64 end
-proc !Str.data Str.data  !64 end
+proc Str.count ptr -- ptr in offsetof(Str.count) + end
+proc Str.data ptr -- ptr in offsetof(Str.data) + end
+proc @Str.count ptr -- int in Str.count @64 end
+proc @Str.data ptr -- ptr in Str.data  @64 cast(ptr) end
+proc !Str.count int ptr in Str.count !64 end
+proc !Str.data ptr ptr in Str.data  !64 end
 
-proc @Str
+proc @Str ptr -- int ptr in
   dup @Str.count
   swap @Str.data
 end
 
-proc !Str // count data dst -
+proc !Str int ptr ptr in
   dup rot swap
   !Str.data
   !Str.count
 end
 
-proc str-chop-one-left
+proc str-chop-one-left ptr in
    dup Str.count dec64
        Str.data inc64
 end
 
-proc str-trim-left // input --
+proc str-trim-left ptr in // input --
   while 
     dup @Str.count 0 > if
       dup @Str.data @8 ' ' =
@@ -474,10 +475,10 @@ proc str-trim-left // input --
   drop
 end
 
-proc str-chop-by-delim // delim line input
+proc str-chop-by-delim int ptr ptr in
   memory delim sizeof(u64) end
   rot delim !64
-  2dup @Str.data swap !Str.data
+  over over @Str.data swap !Str.data
   over 0 swap !Str.count
   while
     dup @Str.count 0 > if
@@ -490,10 +491,14 @@ proc str-chop-by-delim // delim line input
   dup @Str.count 0 > if
     dup str-chop-one-left
   end
-  2drop
+  drop drop
 end
 
-proc streq // n1 s1 n2 s2
+proc streq
+  int ptr int ptr
+  --
+  bool
+in
   memory a sizeof(Str) end
   a !Str
   memory b sizeof(Str) end
@@ -511,13 +516,13 @@ proc streq // n1 s1 n2 s2
   else false end
 end
 
-proc isdigit
+proc isdigit int -- bool in
   dup  '0' >=
   swap '9' <=
   and
 end
 
-proc try-parse-int // int ptr -- int err
+proc try-parse-int int ptr -- int bool in
   memory input sizeof(Str) end
   input !Str
 
@@ -535,14 +540,14 @@ end
 
 // Custom logical not, since the intrinsic `not` is the bitwise one and does not allow
 // to properly invert a boolean.
-proc lnot
+proc lnot bool -- bool in
   cast(int) 1 - cast(bool)
 end
 
 const PUTU_BUFFER_CAP 32 end
 // TODO: fputu should fail if write call fails
 // TODO: fputu does not print negative numbers
-proc fputu // value fd --
+proc fputu int int in
   memory buffer PUTU_BUFFER_CAP end
   memory fd sizeof(u64) end
   fd !64
@@ -563,12 +568,12 @@ proc fputu // value fd --
   drop
 end
 
-proc putu stdout fputu end
-proc eputu stderr fputu end
+proc putu int in stdout fputu end
+proc eputu int in stderr fputu end
 
 // TODO: there is no fputi function that would print signed integers
 
-proc memcpy // size src dst --
+proc memcpy int ptr ptr in
   memory src sizeof(ptr) end
   memory dst sizeof(ptr) end
   dst !64

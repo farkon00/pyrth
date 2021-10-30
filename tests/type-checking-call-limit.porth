@@ -1,9 +1,0 @@
-proc foo // n --
-  dup 0 >= if
-    dup print
-    1 -
-    foo
-  end
-end
-
-10 foo drop

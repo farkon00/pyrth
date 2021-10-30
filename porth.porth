@@ -59,12 +59,12 @@ const COUNT_INTRINSICS       reset end
 const offsetof(Op.type) sizeof(u64) offset end
 const offsetof(Op.operand) sizeof(u64) offset end
 const sizeof(Op) reset end
-proc Op.type offsetof(Op.type) + end
-proc @Op.type Op.type @64 end
-proc !Op.type Op.type !64 end
-proc Op.operand offsetof(Op.operand) + end
-proc @Op.operand Op.operand @64 end
-proc !Op.operand Op.operand !64 end
+proc Op.type ptr -- ptr     in offsetof(Op.type) + end
+proc @Op.type ptr -- int    in Op.type @64 end
+proc !Op.type int ptr       in Op.type !64 end
+proc Op.operand ptr -- ptr  in offsetof(Op.operand) + end
+proc @Op.operand ptr -- int in Op.operand @64 end
+proc !Op.operand int ptr    in Op.operand !64 end
 
 // TODO: implement reusable stack data structure
 
@@ -72,10 +72,10 @@ memory sim-stack-count sizeof(u64) end
 memory sim-stack sizeof(u64) SIM_STACK_CAP * end
 const OPS_CAP 1024 end
 memory ops-count sizeof(u64) end
-proc @ops-count ops-count @64 end
+proc @ops-count -- int in ops-count @64 end
 memory ops sizeof(Op) OPS_CAP * end
 
-proc cmd-echoed // argv
+proc cmd-echoed ptr in
   memory wstatus sizeof(u64) end
   memory empty_envp sizeof(ptr) end
   0 empty_envp !64
@@ -113,8 +113,7 @@ proc cmd-echoed // argv
   drop
 end
 
-proc sim-stack-push // u64 --
-  cast(int)
+proc sim-stack-push int in
   sim-stack-count @64 SIM_STACK_CAP >= if
     here eputs ": ERROR: data stack overflow in simulation mode\n" eputs 1 exit
   end
@@ -122,7 +121,7 @@ proc sim-stack-push // u64 --
   sim-stack-count inc64
 end
 
-proc sim-stack-pop // -- u64
+proc sim-stack-pop -- int in
   sim-stack-count @64 0 = if
     here eputs ": ERROR: data stack underflow in simulation mode\n" eputs 1 exit
   end
@@ -130,7 +129,7 @@ proc sim-stack-pop // -- u64
   sim-stack sim-stack-count @64 8 * + @64
 end
 
-proc push-op // type operand --
+proc push-op int int in
   @ops-count OPS_CAP >= if
     here eputs ": ERROR: ops overflow\n" eputs 1 exit
   end
@@ -141,7 +140,7 @@ proc push-op // type operand --
   ops-count inc64
 end
 
-proc print-op-type
+proc print-op-type int in
   assert "Exhaustive handling of Op types in print-op-type"
     COUNT_OPS 5 =
   end
@@ -162,7 +161,7 @@ proc print-op-type
   drop
 end
 
-proc dump-ops // --
+proc dump-ops in
   0 while dup @ops-count < do
     // ptr ptr
     dup sizeof(Op) * ops +
@@ -175,7 +174,7 @@ proc dump-ops // --
   drop
 end
 
-proc compile-ops // --
+proc compile-ops in
   "[INFO] Generating output.asm\n" puts
 
   memory out-fd sizeof(u64) end
@@ -572,7 +571,7 @@ proc compile-ops // --
   output-argv cmd-echoed
 end
 
-proc simulate-ops // --
+proc simulate-ops in
   memory sim-ip sizeof(u64) end
   memory sim-op sizeof(Op) end
 
@@ -662,35 +661,41 @@ proc simulate-ops // --
         sim-stack-pop
         sim-stack-pop
         =
+        cast(int)
         sim-stack-push
       else sim-op @Op.operand INTRINSIC_GT = if*
         sim-stack-pop
         sim-stack-pop
         swap
         >
+        cast(int)
         sim-stack-push
       else sim-op @Op.operand INTRINSIC_LT = if*
         sim-stack-pop
         sim-stack-pop
         swap
         <
+        cast(int)
         sim-stack-push
       else sim-op @Op.operand INTRINSIC_GE = if*
         sim-stack-pop
         sim-stack-pop
         swap
         >=
+        cast(int)
         sim-stack-push
       else sim-op @Op.operand INTRINSIC_LE = if*
         sim-stack-pop
         sim-stack-pop
         swap
         <=
+        cast(int)
         sim-stack-push
       else sim-op @Op.operand INTRINSIC_NE = if*
         sim-stack-pop
         sim-stack-pop
         !=
+        cast(int)
         sim-stack-push
       else sim-op @Op.operand INTRINSIC_DUP = if*
         sim-stack-pop
@@ -776,10 +781,10 @@ end
 
 const PARSE_BLOCK_STACK_CAP 1024 end
 memory parse-block-stack-count sizeof(u64) end
-proc @parse-block-stack-count parse-block-stack-count @64 end
+proc @parse-block-stack-count -- int in  parse-block-stack-count @64 end
 memory parse-block-stack sizeof(u64) PARSE_BLOCK_STACK_CAP * end
 
-proc parse-block-stack-push
+proc parse-block-stack-push int in
   @parse-block-stack-count PARSE_BLOCK_STACK_CAP >= if
     here eputs ": ERROR: parse block stack overflow\n" eputs 1 exit
   end
@@ -787,7 +792,7 @@ proc parse-block-stack-push
   parse-block-stack-count inc64
 end
 
-proc parse-block-stack-pop
+proc parse-block-stack-pop -- int in
   @parse-block-stack-count 0 = if
     here eputs ": ERROR: parse block stack underflow\n" eputs 1 exit
   end
@@ -795,7 +800,12 @@ proc parse-block-stack-pop
   parse-block-stack @parse-block-stack-count sizeof(u64) * + @64
 end
 
-proc str-starts-with // prefix-count prefix-data input-count input-data
+proc str-starts-with
+  int ptr // prefix
+  int ptr // input
+  --
+  bool
+in
   memory ssw-prefix sizeof(Str) end
   memory ssw-input sizeof(Str) end
   ssw-input  !Str
@@ -815,11 +825,11 @@ proc str-starts-with // prefix-count prefix-data input-count input-data
   else false end
 end
 
-proc remove-comment // output input
+proc remove-comment ptr ptr in
   memory comment sizeof(Str) end "//" comment !Str
 
   over 0 swap !Str.count
-  2dup @Str.data swap !Str.data
+  over over @Str.data swap !Str.data
   while
     dup @Str.count 0 > if
       dup comment @Str rot @Str str-starts-with lnot
@@ -828,10 +838,10 @@ proc remove-comment // output input
     dup str-chop-one-left
     over Str.count inc64
   end
-  2drop
+  drop drop
 end
 
-proc memset // ( int int ptr -- )
+proc memset int int ptr in
   memory data sizeof(ptr) end
   data !64
   memory byte sizeof(u64) end
@@ -849,7 +859,7 @@ const Loc.col sizeof(u64) offset end
 const sizeof(Loc) reset end
 
 // TODO: introduce eputloc and fputloc variants
-proc putloc
+proc putloc ptr in
   dup Loc.file-path + @Str puts
   ":" puts
   dup Loc.row + @64 putu
@@ -881,13 +891,13 @@ const Lexer.file-path  sizeof(Str) offset end
 const Lexer.row        sizeof(u64) offset end
 const sizeof(Lexer) reset end
 
-proc ?str-empty
+proc ?str-empty ptr -- bool in
   offsetof(Str.count) +
   @64
   0 =
 end
 
-proc lexer-next-line // ( lexer:ptr -- )
+proc lexer-next-line ptr in
   memory lexer sizeof(ptr) end
   lexer !64
 
@@ -909,7 +919,12 @@ proc lexer-next-line // ( lexer:ptr -- )
   lexer @ptr Lexer.row + inc64
 end
 
-proc lexer-next-token // ( token:ptr lexer:ptr -- bool )
+proc lexer-next-token
+  ptr // token
+  ptr // lexer
+  --
+  bool
+in
   memory lexer sizeof(ptr) end
   lexer !64
   memory token sizeof(ptr) end
@@ -989,7 +1004,11 @@ proc lexer-next-token // ( token:ptr lexer:ptr -- bool )
   end
 end
 
-proc map-file // file-path-cstr -- int str
+proc map-file
+  ptr // file-path-cstr
+  --
+  int ptr
+in
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
 
@@ -1023,6 +1042,7 @@ proc map-file // file-path-cstr -- int str
   content @Str.count       // length
   NULL                     // addr
   mmap
+  cast(ptr)
   content !Str.data
 
   content @Str.data cast(int) 0 < if
@@ -1033,7 +1053,7 @@ proc map-file // file-path-cstr -- int str
   content @Str
 end
 
-proc lex-file // ( file-path-cstr -- )
+proc lex-file ptr in 
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
 
@@ -1074,7 +1094,7 @@ proc lex-file // ( file-path-cstr -- )
   end
 end
 
-proc parse_file_path_cstr_into_ops // file-path-cstr
+proc parse_file_path_cstr_into_ops ptr in
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
 
@@ -1279,7 +1299,7 @@ proc parse_file_path_cstr_into_ops // file-path-cstr
   // TODO: parse_file_path does not clean up resources after itself
 end
 
-proc usage // ( fd -- )
+proc usage int in
   memory fd sizeof(u64) end
   fd !64
 
@@ -1292,7 +1312,7 @@ proc usage // ( fd -- )
   "    help             Print this help to stdout and exit with 0 code\n" fd @64 fputs
 end
 
-proc main // --
+proc main in
   argc 2 < if
     stderr usage
     "ERROR: subcommand is not provided\n" eputs
@@ -1350,3 +1370,4 @@ proc main // --
 end
 
 main
+

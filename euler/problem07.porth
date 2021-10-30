@@ -5,11 +5,11 @@ const N 10001 end
 memory primes-count sizeof(u64) end
 memory primes sizeof(u64) N * 10 + end
 
-proc is-prime
+proc is-prime int -- bool in
   0
   while
-    2dup 8 * primes + @64 dup * >= if
-       2dup 8 * primes + @64 mod 0 !=
+    over over 8 * primes + @64 dup * >= if
+       over over 8 * primes + @64 mod 0 !=
     else
        false
     end
@@ -17,7 +17,7 @@ proc is-prime
   8 * primes + @64 dup * <
 end
 
-proc add-prime
+proc add-prime int in
   primes primes-count @64 8 * + !64
   primes-count inc64
 end
