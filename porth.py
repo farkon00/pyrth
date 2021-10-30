@@ -620,6 +620,151 @@ def type_check_contract(intro_token: Token, ctx: Context, contract: Contract):
         exit(1)
     ctx.stack += [(typ, intro_token) for typ in contract.outs]
 
+# # TODO: use Contract-s for type checking intrinsics
+# INTRINSIC_CONTRACTS: Dict[Intrinsic, List[Contract]] = {
+#     Intrinsic.PLUS: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.INT]),
+#         Contract(ins=[DataType.PTR, DataType.INT], outs=[DataType.PTR]),
+#         Contract(ins=[DataType.INT, DataType.PTR], outs=[DataType.PTR]),
+#     ],
+#     Intrinsic.MINUS: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.INT]),
+#         Contract(ins=[DataType.PTR, DataType.INT], outs=[DataType.PTR]),
+#         Contract(ins=[DataType.PTR, DataType.PTR], outs=[DataType.INT]),
+#     ],
+#     Intrinsic.MUL: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.INT]),
+#     ],
+#     Intrinsic.DIVMOD: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.INT, DataType.INT]),
+#     ],
+#     Intrinsic.MAX: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.INT]),
+#     ],
+#     Intrinsic.EQ: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.BOOL]),
+#         Contract(ins=[DataType.PTR, DataType.PTR], outs=[DataType.BOOL]),
+#     ],
+#     Intrinsic.GT: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.BOOL]),
+#         Contract(ins=[DataType.PTR, DataType.PTR], outs=[DataType.BOOL]),
+#     ],
+#     Intrinsic.LT: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.BOOL]),
+#         Contract(ins=[DataType.PTR, DataType.PTR], outs=[DataType.BOOL]),
+#     ],
+#     Intrinsic.GE: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.BOOL]),
+#         Contract(ins=[DataType.PTR, DataType.PTR], outs=[DataType.BOOL]),
+#     ],
+#     Intrinsic.LE: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.BOOL]),
+#         Contract(ins=[DataType.PTR, DataType.PTR], outs=[DataType.BOOL]),
+#     ],
+#     Intrinsic.NE: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.BOOL]),
+#         Contract(ins=[DataType.PTR, DataType.PTR], outs=[DataType.BOOL]),
+#     ],
+#     Intrinsic.SHR: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.INT]),
+#     ],
+#     Intrinsic.SHL: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.INT]),
+#     ],
+#     Intrinsic.OR: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.INT]),
+#         Contract(ins=[DataType.BOOL, DataType.BOOL], outs=[DataType.BOOL]),
+#     ],
+#     Intrinsic.AND: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.INT]),
+#         Contract(ins=[DataType.BOOL, DataType.BOOL], outs=[DataType.BOOL]),
+#     ],
+#     Intrinsic.NOT: [
+#         Contract(ins=[DataType.INT, DataType.INT], outs=[DataType.INT]),
+#     ],
+#     Intrinsic.PRINT: [
+#         Contract(ins=["a"], outs=[]),
+#     ],
+#     Intrinsic.DUP: [
+#         Contract(ins=["a"], outs=["a", "a"]),
+#     ],
+#     Intrinsic.SWAP: [
+#         Contract(ins=["a", "b"], outs=["b", "a"]),
+#     ],
+#     Intrinsic.DROP: [
+#         Contract(ins=["a"], outs=[]),
+#     ],
+#     Intrinsic.OVER: [
+#         Contract(ins=["a", "b"], outs=["a", "b", "a"])
+#     ],
+#     Intrinsic.ROT: [
+#         Contract(ins=["a", "b", "c"], outs=["b", "c", "a"])
+#     ],
+#     Intrinsic.LOAD8: [
+#         Contract(ins=[DataType.PTR], outs=[DataType.INT])
+#     ],
+#     Intrinsic.STORE8: [
+#         Contract(ins=[DataType.INT, DataType.PTR], outs=[])
+#     ],
+#     Intrinsic.LOAD16: [
+#         Contract(ins=[DataType.PTR], outs=[DataType.INT])
+#     ],
+#     Intrinsic.STORE16: [
+#         Contract(ins=[DataType.INT, DataType.PTR], outs=[])
+#     ],
+#     Intrinsic.LOAD32: [
+#         Contract(ins=[DataType.PTR], outs=[DataType.INT])
+#     ],
+#     Intrinsic.STORE32: [
+#         Contract(ins=[DataType.INT, DataType.PTR], outs=[])
+#     ],
+#     Intrinsic.LOAD64: [
+#         Contract(ins=[DataType.PTR], outs=[DataType.INT])
+#     ],
+#     Intrinsic.STORE64: [
+#         Contract(ins=[DataType.INT, DataType.PTR], outs=[])
+#     ],
+#     Intrinsic.CAST_PTR: [
+#         Contract(ins=["a"], outs=[DataType.PTR])
+#     ],
+#     Intrinsic.CAST_INT: [
+#         Contract(ins=["a"], outs=[DataType.INT])
+#     ],
+#     Intrinsic.CAST_BOOL: [
+#         Contract(ins=["a"], outs=[DataType.BOOL])
+#     ],
+#     Intrinsic.ARGC: [
+#         Contract(ins=[], outs=[DataType.INT])
+#     ],
+#     Intrinsic.ARGV: [
+#         Contract(ins=[], outs=[DataType.PTR])
+#     ],
+#     Intrinsic.HERE: [
+#         Contract(ins=[], outs=[DataType.INT, DataType.PTR])
+#     ],
+#     Intrinsic.SYSCALL0: [
+#         Contract(ins=[], outs=[DataType.INT])
+#     ],
+#     Intrinsic.SYSCALL1: [
+#         Contract(ins=["a"], outs=[DataType.INT])
+#     ],
+#     Intrinsic.SYSCALL2: [
+#         Contract(ins=["a", "b"], outs=[DataType.INT])
+#     ],
+#     Intrinsic.SYSCALL3: [
+#         Contract(ins=["a", "b", "c"], outs=[DataType.INT])
+#     ],
+#     Intrinsic.SYSCALL4: [
+#         Contract(ins=["a", "b", "c", "d"], outs=[DataType.INT])
+#     ],
+#     Intrinsic.SYSCALL5: [
+#         Contract(ins=["a", "b", "c", "d", "e"], outs=[DataType.INT])
+#     ],
+#     Intrinsic.SYSCALL6: [
+#         Contract(ins=["a", "b", "c", "d", "e", "f"], outs=[DataType.INT])
+#     ],
+# }
+
 # TODO: better error reporting on type checking errors of intrinsics
 # Reported expected and actual types with the location that introduced the actual type
 def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract]):
