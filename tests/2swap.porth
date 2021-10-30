@@ -1,6 +1,12 @@
 include "std.porth"
  
+// TODO: 2swap should be generic
+// but we don't have generics at the moment
 proc 2swap
+  int int int int
+  --
+  int int int int
+in
   memory a sizeof(u64) end
   memory b sizeof(u64) end
   memory c sizeof(u64) end

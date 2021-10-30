@@ -616,7 +616,7 @@ def type_check_contract(intro_token: Token, ctx: Context, contract: Contract):
     if len(ctx.stack) < len(ins):
         compiler_error_with_expansion_stack(intro_token, f"Not enough arguments provided. Expected:")
         for typ in ins:
-            compiler_note(intro_token.loc, f"  {typ}")
+            compiler_note(intro_token.loc, f"  {repr(typ)}")
         exit(1)
     ctx.stack += [(typ, intro_token) for typ in contract.outs]
 
