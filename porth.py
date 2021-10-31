@@ -47,11 +47,13 @@ class DataType(IntEnum):
     BOOL=auto()
     PTR=auto()
 
+assert len(DataType) == 3, "Exhaustive data type definition"
 DATATYPE_BY_NAME: Dict[str, DataType] = {
     "int" : DataType.INT ,
     "bool": DataType.BOOL,
     "ptr" : DataType.PTR ,
 }
+DATATYPE_NAMES: Dict[DataType, str] = {v: k for k, v in DATATYPE_BY_NAME.items()}
 
 assert len(DataType) == 3, 'Exhaustive casts for all data types'
 class Intrinsic(Enum):
@@ -580,27 +582,29 @@ DataStack=List[Tuple[DataType, Loc]]
 class Context:
     stack: DataStack
     ip: OpAddr
-    outs: List[DataType]
+    outs: List[Tuple[DataType, Loc]]
 
 @dataclass
 class Contract:
-    ins: List[DataType]
-    outs: List[DataType]
+    ins: List[Tuple[DataType, Loc]]
+    outs: List[Tuple[DataType, Loc]]
 
-def type_check_contract(intro_loc: Loc, ctx: Context, contract: Contract):
+def type_check_contract(intro_token: Token, ctx: Context, contract: Contract):
     ins = copy(contract.ins)
     while len(ctx.stack) > 0 and len(ins) > 0:
-        actual, loc = ctx.stack.pop()
-        expected = ins.pop()
+        actual, actual_loc = ctx.stack.pop()
+        expected, expected_loc = ins.pop()
         if actual != expected:
-            compiler_error(loc, f"Unexpected data type {repr(actual)}. Expected {repr(expected)}")
+            compiler_error(actual_loc, f"Unexpected data type `{DATATYPE_NAMES[actual]}`.")
+            compiler_note(expected_loc, f"Expected `{DATATYPE_NAMES[expected]}`")
             exit(1)
     if len(ctx.stack) < len(ins):
-        compiler_error(intro_loc, f"Not enough arguments provided. Expected:")
-        for typ in ins:
-            compiler_note(intro_loc, f"  {repr(typ)}")
+        compiler_error(intro_token.loc, f"Not enough arguments provided for `{intro_token.value}`. Expected:")
+        while len(ins) > 0:
+            typ, loc = ins.pop()
+            compiler_note(loc, f"{DATATYPE_NAMES[typ]}")
         exit(1)
-    ctx.stack += [(typ, intro_loc) for typ in contract.outs]
+    ctx.stack += [(typ, intro_token.loc) for typ, loc in contract.outs]
 
 # # TODO: use Contract-s for type checking intrinsics
 # INTRINSIC_CONTRACTS: Dict[Intrinsic, List[Contract]] = {
@@ -747,6 +751,29 @@ def type_check_contract(intro_loc: Loc, ctx: Context, contract: Contract):
 #     ],
 # }
 
+def type_check_context_outs(ctx: Context):
+    while len(ctx.stack) > 0 and len(ctx.outs) > 0:
+        actual_typ, actual_loc = ctx.stack.pop()
+        expected_typ, expected_loc = ctx.outs.pop()
+        if expected_typ != actual_typ:
+            compiler_error(actual_loc, f"Unexpected data on the stack `{DATATYPE_NAMES[actual_typ]}`")
+            compiler_note(expected_loc, f"Expected: `{DATATYPE_NAMES[expected_typ]}`")
+            exit(1)
+    if len(ctx.stack) > len(ctx.outs):
+        top_typ, top_loc = ctx.stack.pop()
+        compiler_error(top_loc, f"Unhandled data on the stack `{DATATYPE_NAMES[top_typ]}`")
+        while len(ctx.stack) > 0:
+            typ, loc = ctx.stack.pop()
+            compiler_note(loc, f"and `{DATATYPE_NAMES[typ]}`")
+        exit(1)
+    elif len(ctx.stack) < len(ctx.outs):
+        top_typ, top_loc = ctx.outs.pop()
+        compiler_error(top_loc, f"`{DATATYPE_NAMES[top_typ]}` is not provided")
+        while len(ctx.outs) > 0:
+            typ, loc = ctx.outs.pop()
+            compiler_note(loc, f"and `{DATATYPE_NAMES[typ]}`")
+        exit(1)
+
 # TODO: better error reporting on type checking errors of intrinsics
 # Reported expected and actual types with the location that introduced the actual type
 def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract]):
@@ -754,17 +781,14 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
     contexts: List[Context] = [Context(stack=[], ip=0, outs=[])]
     for proc_addr, proc_contract in reversed(list(proc_contracts.items())):
         contexts.append(Context(
-            stack=[(typ, program.ops[proc_addr].token.loc) for typ in proc_contract.ins],
+            stack=copy(proc_contract.ins),
             ip=proc_addr,
-            outs=proc_contract.outs
+            outs=copy(proc_contract.outs)
         ))
     while len(contexts) > 0:
         ctx = contexts[-1];
         if ctx.ip >= len(program.ops):
-            if len(ctx.stack) != 0:
-                # TODO: report where the unhandled data was introduced
-                compiler_error(ctx.stack[-1][1], "unhandled data on the data stack: %s" % list(map(lambda x: x[0], ctx.stack)))
-                exit(1)
+            type_check_context_outs(ctx)
             contexts.pop()
             continue
         op = program.ops[ctx.ip]
@@ -798,16 +822,10 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             ctx.ip += 1
         elif op.typ == OpType.CALL:
             assert isinstance(op.operand, OpAddr)
-            type_check_contract(op.token.loc, ctx, proc_contracts[op.operand])
+            type_check_contract(op.token, ctx, proc_contracts[op.operand])
             ctx.ip += 1
         elif op.typ == OpType.RET:
-            if [typ for typ, _ in ctx.stack] != ctx.outs:
-                compiler_error(op.token.loc, "Unexpected data on the stack")
-                compiler_note(op.token.loc, f"Expected: {ctx.outs}")
-                compiler_note(op.token.loc, f"Actual:")
-                for typ, loc in ctx.stack:
-                    compiler_note(loc, f"{repr(typ)}")
-                exit(1)
+            type_check_context_outs(ctx)
             contexts.pop()
         elif op.typ == OpType.INTRINSIC:
             assert len(Intrinsic) == 43, "Exhaustive intrinsic handling in type_check_program()"
@@ -1197,7 +1215,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
 
                 a_type, a_token = ctx.stack.pop()
 
-                ctx.stack.append((DataType.PTR, a_token))
+                ctx.stack.append((DataType.PTR, op.token.loc))
             elif op.operand == Intrinsic.CAST_INT:
                 if len(ctx.stack) < 1:
                     not_enough_arguments(op)
@@ -1205,7 +1223,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
 
                 a_type, a_token = ctx.stack.pop()
 
-                ctx.stack.append((DataType.INT, a_token))
+                ctx.stack.append((DataType.INT, op.token.loc))
             elif op.operand == Intrinsic.CAST_BOOL:
                 if len(ctx.stack) < 1:
                     not_enough_arguments(op)
@@ -1213,7 +1231,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
 
                 a_type, a_token = ctx.stack.pop()
 
-                ctx.stack.append((DataType.BOOL, a_token))
+                ctx.stack.append((DataType.BOOL, op.token.loc))
             elif op.operand == Intrinsic.ARGC:
                 ctx.stack.append((DataType.INT, op.token.loc))
             elif op.operand == Intrinsic.ARGV:
@@ -2006,14 +2024,14 @@ def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, Data
         exit(1)
     return stack.pop()
 
-def parse_contract_list(rtokens: List[Token], stoppers: List[Keyword]) -> Tuple[List[DataType], Keyword]:
-    args: List[DataType] = []
+def parse_contract_list(rtokens: List[Token], stoppers: List[Keyword]) -> Tuple[List[Tuple[DataType, Loc]], Keyword]:
+    args: List[Tuple[DataType, Loc]] = []
     while len(rtokens) > 0:
         token = rtokens.pop()
         if token.typ == TokenType.WORD:
             assert isinstance(token.value, str)
             if token.value in DATATYPE_BY_NAME:
-                args.append(DATATYPE_BY_NAME[token.value])
+                args.append((DATATYPE_BY_NAME[token.value], token.loc))
             else:
                 compiler_error(token.loc, f"Unknown data type {token.value}")
                 exit(1)
