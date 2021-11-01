@@ -613,3 +613,25 @@ in
   end
   drop
 end
+
+memory rand-state sizeof(u64) end
+
+proc srand int in
+  rand-state !64
+end
+
+// Stolen from https://en.wikipedia.org/wiki/Linear_congruential_generator
+// Using the values of MMIX by Donald Knuth
+const RAND_A 6364136223846793005 end
+const RAND_C 1442695040888963407 end
+
+// TODO: rand is not tested
+// It relies on 64 bit integer overflows which are not
+// supported by the simulation mode at the moment.
+proc rand -- int in
+  rand-state @64
+  RAND_A *
+  RAND_C +
+  dup
+  rand-state !64
+end
