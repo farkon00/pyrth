@@ -16,7 +16,7 @@ end drop
 
 0 while dup K < do
   dup M * a +
-  M b rot memcpy
+  M b rot memcpy drop
   1 +
 end drop
 

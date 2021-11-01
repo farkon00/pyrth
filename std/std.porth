@@ -572,7 +572,13 @@ proc eputu int in stderr fputu end
 
 // TODO: there is no fputi function that would print signed integers
 
-proc memcpy int ptr ptr in
+proc memcpy
+  int // size
+  ptr // src
+  ptr // dst
+  --
+  ptr // dst
+in
   memory src sizeof(ptr) end
   memory dst sizeof(ptr) end
   dst !64
@@ -584,4 +590,5 @@ proc memcpy int ptr ptr in
     dst inc64
     1 -
   end drop
+  dst @ptr
 end
