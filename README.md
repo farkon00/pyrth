@@ -328,7 +328,7 @@ include "file.porth"
 <!-- TODO: Document Procedures Properly -->
 
 ```porth
-proc seq // n --
+proc seq int in
   while dup 0 > do
     dup print
     1 -
@@ -428,5 +428,9 @@ TBD
 - `int` - 64 bit integer
 - `bool` - boolean
 - `ptr` - pointer
+
+TBD
+
+#### Procedure Signatures
 
 TBD
