@@ -391,9 +391,8 @@ proc getpid -- int in SYS_getpid syscall0 end
 proc execve ptr ptr ptr -- int in SYS_execve syscall3 end
 proc wait4 ptr int ptr int -- int in SYS_wait4 syscall4 end
 
-// TODO: generics are not supported
-// proc 2dup any any -- any any any any in over over end
-// proc 2drop in drop drop end
+proc 2dup "a" "b" -- "a" "b" "a" "b" in over over end
+proc 2drop "a" "b" in drop drop end
 
 proc /   int int -- int in divmod drop end
 proc %   int int -- int in divmod swap drop end
@@ -478,7 +477,7 @@ end
 proc str-chop-by-delim int ptr ptr in
   memory delim sizeof(u64) end
   rot delim !64
-  over over @Str.data swap !Str.data
+  2dup @Str.data swap !Str.data
   over 0 swap !Str.count
   while
     dup @Str.count 0 > if
@@ -491,7 +490,7 @@ proc str-chop-by-delim int ptr ptr in
   dup @Str.count 0 > if
     dup str-chop-one-left
   end
-  drop drop
+  2drop
 end
 
 proc streq

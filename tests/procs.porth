@@ -14,7 +14,7 @@ proc even_fibs in
     end
     swap over +
   end
-  drop drop
+  2drop
 end
 
 "------------------------------\n" puts

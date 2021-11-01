@@ -20,17 +20,17 @@ memory canvas sizeof(pixel) WIDTH * HEIGHT * end
 
 0 while dup HEIGHT < do
   0 while dup WIDTH < do
-    over over CELL_WIDTH /
+    2dup CELL_WIDTH /
     swap CELL_HEIGHT /
     + 
     2 %
     0 = if
-      over over swap WIDTH * + sizeof(pixel) * canvas +
+      2dup swap WIDTH * + sizeof(pixel) * canvas +
       dup 255 swap !8 1 +
       dup 0   swap !8 1 +
       dup 255 swap !8 drop
     else
-      over over swap WIDTH * + sizeof(pixel) * canvas +
+      2dup swap WIDTH * + sizeof(pixel) * canvas +
       dup 0   swap !8 1 +
       dup 0   swap !8 1 +
       dup 0   swap !8 drop

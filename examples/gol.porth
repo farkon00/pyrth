@@ -27,7 +27,7 @@ end
 
 proc display_row ptr in
   0 while dup COLS < do
-    over over + @8 0 = if
+    2dup + @8 0 = if
       display over + '.' swap !8
     else
       display over + '#' swap !8
@@ -41,7 +41,7 @@ end
 
 proc display_board ptr in
   0 while dup ROWS < do
-    over over COLS * + display_row
+    2dup COLS * + display_row
     1 +
   end drop
   drop
@@ -72,57 +72,57 @@ end
 proc count_current_nbors int int -- int in
   0 nbors !64
 
-  over over 1 - swap 1 - swap over over in_bounds
+  2dup 1 - swap 1 - swap 2dup in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  over over 1 - over over in_bounds
+  2dup 1 - 2dup in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  over over 1 - swap 1 + swap over over in_bounds
+  2dup 1 - swap 1 + swap 2dup in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  over over swap 1 - swap over over in_bounds
+  2dup swap 1 - swap 2dup in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  over over swap 1 + swap over over in_bounds
+  2dup swap 1 + swap 2dup in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  over over 1 + swap 1 - swap over over in_bounds
+  2dup 1 + swap 1 - swap 2dup in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  over over 1 + over over in_bounds
+  2dup 1 + 2dup in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  over over 1 + swap 1 + swap over over in_bounds
+  2dup 1 + swap 1 + swap 2dup in_bounds
   rot rot swap COLS * + board_current + @8 1 =
   and if nbors inc64 end
 
-  drop drop
+  2drop
   nbors @64
 end
 
 proc compute_next_board in
   0 while dup ROWS < do
     0 while dup COLS < do
-      over over get_current_cell 1 = if
-        over over count_current_nbors
+      2dup get_current_cell 1 = if
+        2dup count_current_nbors
         dup 2 = swap 3 = or if
-          over over 1 set_next_cell
+          2dup 1 set_next_cell
         else
-          over over 0 set_next_cell
+          2dup 0 set_next_cell
         end
       else
-        over over count_current_nbors 3 = if
-          over over 1 set_next_cell
+        2dup count_current_nbors 3 = if
+          2dup 1 set_next_cell
         else
-          over over 0 set_next_cell
+          2dup 0 set_next_cell
         end
       end
 
