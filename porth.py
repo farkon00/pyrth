@@ -964,9 +964,19 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 expected_types = list(map(lambda x: x[0], visited_dos[ctx.ip]))
                 actual_types = list(map(lambda x: x[0], ctx.stack))
                 if expected_types != actual_types:
-                    compiler_error(op.token.loc, 'Loops are not allowed to alter types and amount of elements on the stack.')
-                    compiler_note(op.token.loc, 'Expected elements: %s' % expected_types)
-                    compiler_note(op.token.loc, 'Actual elements: %s' % actual_types)
+                    compiler_error(op.token.loc, 'Loops are not allowed to alter types and amount of elements on the stack between iterations!')
+                    compiler_note(op.token.loc, '-- Stack BEFORE a single iteration --')
+                    if len(visited_dos[ctx.ip]) == 0:
+                        compiler_note(op.token.loc, '<empty>')
+                    else:
+                        for typ, loc in visited_dos[ctx.ip]:
+                            compiler_note(loc, human_type_name(typ))
+                    compiler_note(op.token.loc, '-- Stack AFTER a single iteration --')
+                    if len(ctx.stack) == 0:
+                        compiler_note(op.token.loc, '<empty>')
+                    else:
+                        for typ, loc in ctx.stack:
+                            compiler_note(loc, human_type_name(typ))
                     exit(1)
                 contexts.pop()
             else:
