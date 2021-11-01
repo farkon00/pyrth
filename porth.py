@@ -589,22 +589,39 @@ class Contract:
     ins: List[Tuple[DataType, Loc]]
     outs: List[Tuple[DataType, Loc]]
 
-def type_check_contract(intro_token: Token, ctx: Context, contract: Contract):
-    ins = copy(contract.ins)
-    while len(ctx.stack) > 0 and len(ins) > 0:
-        actual, actual_loc = ctx.stack.pop()
-        expected, expected_loc = ins.pop()
-        if actual != expected:
-            compiler_error(actual_loc, f"Unexpected data type `{DATATYPE_NAMES[actual]}`.")
-            compiler_note(expected_loc, f"Expected `{DATATYPE_NAMES[expected]}`")
-            exit(1)
-    if len(ctx.stack) < len(ins):
-        compiler_error(intro_token.loc, f"Not enough arguments provided for `{intro_token.value}`. Expected:")
-        while len(ins) > 0:
-            typ, loc = ins.pop()
-            compiler_note(loc, f"{DATATYPE_NAMES[typ]}")
-        exit(1)
-    ctx.stack += [(typ, intro_token.loc) for typ, loc in contract.outs]
+@dataclass
+class CompilerMessage:
+    loc: Loc
+    label: str
+    text: str
+
+def type_check_contracts(intro_token: Token, ctx: Context, contracts: List[Contract]):
+    log = []
+    for contract in contracts:
+        ins = copy(contract.ins)
+        stack = copy(ctx.stack)
+        error = False
+        while len(stack) > 0 and len(ins) > 0:
+            actual, actual_loc = stack.pop()
+            expected, expected_loc = ins.pop()
+            if actual != expected:
+                error = True
+                log.append(CompilerMessage(loc=actual_loc, label="ERROR", text=f"Unexpected data type `{DATATYPE_NAMES[actual]}`."))
+                log.append(CompilerMessage(loc=expected_loc, label="NOTE", text=f"Expected `{DATATYPE_NAMES[expected]}`"))
+                break;
+        if error:
+            continue
+        if len(stack) < len(ins):
+            log.append(CompilerMessage(loc=intro_token.loc, label="ERROR", text=f"Not enough arguments provided for `{intro_token.value}`. Expected:"))
+            while len(ins) > 0:
+                typ, loc = ins.pop()
+                log.append(CompilerMessage(loc=loc, label="NOTE", text=f"{DATATYPE_NAMES[typ]}"))
+            continue
+        ctx.stack = stack + [(typ, intro_token.loc) for typ, loc in contract.outs]
+        return
+    for msg in log:
+        compiler_diagnostic(msg.loc, msg.label, msg.text)
+    exit(1)
 
 def type_check_context_outs(ctx: Context):
     while len(ctx.stack) > 0 and len(ctx.outs) > 0:
@@ -677,7 +694,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             ctx.ip += 1
         elif op.typ == OpType.CALL:
             assert isinstance(op.operand, OpAddr)
-            type_check_contract(op.token, ctx, proc_contracts[op.operand])
+            type_check_contracts(op.token, ctx, [proc_contracts[op.operand]])
             ctx.ip += 1
         elif op.typ == OpType.RET:
             type_check_context_outs(ctx)
@@ -686,183 +703,83 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             assert len(Intrinsic) == 43, "Exhaustive intrinsic handling in type_check_program()"
             assert isinstance(op.operand, Intrinsic), "This could be a bug in compilation step"
             if op.operand == Intrinsic.PLUS:
-                assert len(DataType) == 3, "Exhaustive type handling in PLUS intrinsic"
-                if len(ctx.stack) < 2:
-                    not_enough_arguments(op)
-                    exit(1)
-                a_type, a_loc = ctx.stack.pop()
-                b_type, b_loc = ctx.stack.pop()
-
-                if a_type == DataType.INT and b_type == DataType.INT:
-                    ctx.stack.append((DataType.INT, op.token.loc))
-                elif a_type == DataType.INT and b_type == DataType.PTR:
-                    ctx.stack.append((DataType.PTR, op.token.loc))
-                elif a_type == DataType.PTR and b_type == DataType.INT:
-                    ctx.stack.append((DataType.PTR, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument types for PLUS intrinsic. Expected INT or PTR")
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
+                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.PTR, op.token.loc)]),
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.PTR, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.MINUS:
-                assert len(DataType) == 3, "Exhaustive type handling in MINUS intrinsic"
-                if len(ctx.stack) < 2:
-                    not_enough_arguments(op)
-                    exit(1)
-                a_type, a_loc = ctx.stack.pop()
-                b_type, b_loc = ctx.stack.pop()
-
-                if a_type == b_type and (a_type == DataType.INT or a_type == DataType.PTR):
-                    ctx.stack.append((DataType.INT, op.token.loc))
-                elif b_type == DataType.PTR and a_type == DataType.INT:
-                    ctx.stack.append((DataType.PTR, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument types fo MINUS intrinsic: %s" % [b_type, a_type])
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
+                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.PTR, op.token.loc)]),
+                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.MUL:
-                type_check_contract(op.token, ctx, Contract(
-                    ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)],
-                    outs=[(DataType.INT, op.token.loc)]
-                ))
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)])
+                ])
             elif op.operand == Intrinsic.DIVMOD:
-                type_check_contract(op.token, ctx, Contract(
-                    ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)],
-                    outs=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)]
-                ))
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)])
+                ])
             elif op.operand == Intrinsic.MAX:
-                type_check_contract(op.token, ctx, Contract(
-                    ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)],
-                    outs=[(DataType.INT, op.token.loc)]
-                ))
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)])
+                ])
             elif op.operand == Intrinsic.EQ:
-                assert len(DataType) == 3, "Exhaustive type handling in EQ intrinsic"
-                if len(ctx.stack) < 2:
-                    not_enough_arguments(op)
-                    exit(1)
-                a_type, a_loc = ctx.stack.pop()
-                b_type, b_loc = ctx.stack.pop()
-
-                if a_type == b_type:
-                    ctx.stack.append((DataType.BOOL, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument types fo EQ intrinsic.")
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                    Contract(ins=[(DataType.BOOL, op.token.loc), (DataType.BOOL, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.GT:
-                assert len(DataType) == 3, "Exhaustive type handling in GT intrinsic"
-                if len(ctx.stack) < 2:
-                    not_enough_arguments(op)
-                    exit(1)
-
-                a_type, a_loc = ctx.stack.pop()
-                b_type, b_loc = ctx.stack.pop()
-
-                if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.BOOL, op.token.loc))
-                else:
-                    print(a_type, b_type)
-                    compiler_error(op.token.loc, "invalid argument type for GT intrinsic")
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.LT:
-                assert len(DataType) == 3, "Exhaustive type handling in LT intrinsic"
-                if len(ctx.stack) < 2:
-                    not_enough_arguments(op)
-                    exit(1)
-
-                a_type, a_loc = ctx.stack.pop()
-                b_type, b_loc = ctx.stack.pop()
-
-                if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.BOOL, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument type for LT intrinsic")
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.GE:
-                assert len(DataType) == 3, "Exhaustive type handling in GE intrinsic"
-                if len(ctx.stack) < 2:
-                    not_enough_arguments(op)
-                    exit(1)
-
-                a_type, a_loc = ctx.stack.pop()
-                b_type, b_loc = ctx.stack.pop()
-
-                if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.BOOL, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument type for GE intrinsic")
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.LE:
-                assert len(DataType) == 3, "Exhaustive type handling in LE intrinsic"
-                if len(ctx.stack) < 2:
-                    not_enough_arguments(op)
-                    exit(1)
-
-                a_type, a_loc = ctx.stack.pop()
-                b_type, b_loc = ctx.stack.pop()
-
-                if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.BOOL, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument type for LE intrinsic")
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.NE:
-                assert len(DataType) == 3, "Exhaustive type handling in NE intrinsic"
-                if len(ctx.stack) < 2:
-                    not_enough_arguments(op)
-                    exit(1)
-
-                a_type, a_loc = ctx.stack.pop()
-                b_type, b_loc = ctx.stack.pop()
-
-                if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.BOOL, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument type for NE intrinsic")
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                    Contract(ins=[(DataType.BOOL, op.token.loc), (DataType.BOOL, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.SHR:
-                type_check_contract(op.token, ctx, Contract(
-                    ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)],
-                    outs=[(DataType.INT, op.token.loc)]
-                ))
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)])
+                ])
             elif op.operand == Intrinsic.SHL:
-                type_check_contract(op.token, ctx, Contract(
-                    ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)],
-                    outs=[(DataType.INT, op.token.loc)]
-                ))
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)])
+                ])
             elif op.operand == Intrinsic.OR:
-                assert len(DataType) == 3, "Exhaustive type handling in OR intrinsic"
-                if len(ctx.stack) < 2:
-                    not_enough_arguments(op)
-                    exit(1)
-
-                a_type, a_loc = ctx.stack.pop()
-                b_type, b_loc = ctx.stack.pop()
-
-                if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.INT, op.token.loc))
-                elif a_type == b_type and a_type == DataType.BOOL:
-                    ctx.stack.append((DataType.BOOL, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument type for OR intrinsic")
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
+                    Contract(ins=[(DataType.BOOL, op.token.loc), (DataType.BOOL, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.AND:
-                assert len(DataType) == 3, "Exhaustive type handling in AND intrinsic"
-                if len(ctx.stack) < 2:
-                    not_enough_arguments(op)
-                    exit(1)
-
-                a_type, a_loc = ctx.stack.pop()
-                b_type, b_loc = ctx.stack.pop()
-
-                if a_type == b_type and a_type == DataType.INT:
-                    ctx.stack.append((DataType.INT, op.token.loc))
-                elif a_type == b_type and a_type == DataType.BOOL:
-                    ctx.stack.append((DataType.BOOL, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument type for AND intrinsic")
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
+                    Contract(ins=[(DataType.BOOL, op.token.loc), (DataType.BOOL, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.NOT:
-                type_check_contract(op.token, ctx, Contract(
-                    ins=[(DataType.INT, op.token.loc)],
-                    outs=[(DataType.INT, op.token.loc)]
-                ))
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)])
+                ])
             elif op.operand == Intrinsic.PRINT:
                 if len(ctx.stack) < 1:
                     not_enough_arguments(op)
@@ -908,17 +825,10 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 ctx.stack.append(a)
                 ctx.stack.append(c)
             elif op.operand == Intrinsic.LOAD8:
-                assert len(DataType) == 3, "Exhaustive type handling in LOAD8 intrinsic"
-                if len(ctx.stack) < 1:
-                    not_enough_arguments(op)
-                    exit(1)
-                a_type, a_loc = ctx.stack.pop()
-
-                if a_type == DataType.PTR:
-                    ctx.stack.append((DataType.INT, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument type for LOAD8 intrinsic: %s" % a_type)
-                    exit(1)
+                # TODO: maybe we should introduce type any for load functions to return
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.STORE8:
                 assert len(DataType) == 3, "Exhaustive type handling in STORE8 intrinsic"
                 if len(ctx.stack) < 2:
@@ -934,17 +844,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                     compiler_error(op.token.loc, "invalid argument type for STORE8 intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.LOAD16:
-                assert len(DataType) == 3, "Exhaustive type handling in LOAD16 intrinsic"
-                if len(ctx.stack) < 1:
-                    not_enough_arguments(op)
-                    exit(1)
-                a_type, a_loc = ctx.stack.pop()
-
-                if a_type == DataType.PTR:
-                    ctx.stack.append((DataType.INT, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument type for LOAD16 intrinsic: %s" % a_type)
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.STORE16:
                 assert len(DataType) == 3, "Exhaustive type handling in STORE16 intrinsic"
                 if len(ctx.stack) < 2:
@@ -960,17 +862,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                     compiler_error(op.token.loc, "invalid argument type for STORE16 intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.LOAD32:
-                assert len(DataType) == 3, "Exhaustive type handling in LOAD32 intrinsic"
-                if len(ctx.stack) < 1:
-                    not_enough_arguments(op)
-                    exit(1)
-                a_type, a_loc = ctx.stack.pop()
-
-                if a_type == DataType.PTR:
-                    ctx.stack.append((DataType.INT, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument type for LOAD32 intrinsic: %s" % a_type)
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.STORE32:
                 assert len(DataType) == 3, "Exhaustive type handling in STORE32 intrinsic"
                 if len(ctx.stack) < 2:
@@ -986,17 +880,9 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                     compiler_error(op.token.loc, "invalid argument type for STORE32 intrinsic")
                     exit(1)
             elif op.operand == Intrinsic.LOAD64:
-                assert len(DataType) == 3, "Exhaustive type handling in LOAD64 intrinsic"
-                if len(ctx.stack) < 1:
-                    not_enough_arguments(op)
-                    exit(1)
-                a_type, a_loc = ctx.stack.pop()
-
-                if a_type == DataType.PTR:
-                    ctx.stack.append((DataType.INT, op.token.loc))
-                else:
-                    compiler_error(op.token.loc, "invalid argument type for LOAD64 intrinsic")
-                    exit(1)
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
+                ])
             elif op.operand == Intrinsic.STORE64:
                 assert len(DataType) == 3, "Exhaustive type handling in STORE64 intrinsic"
                 if len(ctx.stack) < 2:
@@ -1036,20 +922,17 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
 
                 ctx.stack.append((DataType.BOOL, op.token.loc))
             elif op.operand == Intrinsic.ARGC:
-                type_check_contract(op.token, ctx, Contract(
-                    ins=[],
-                    outs=[(DataType.INT, op.token.loc)]
-                ))
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[], outs=[(DataType.INT, op.token.loc)])
+                ])
             elif op.operand == Intrinsic.ARGV:
-                type_check_contract(op.token, ctx, Contract(
-                    ins=[],
-                    outs=[(DataType.PTR, op.token.loc)]
-                ))
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[], outs=[(DataType.PTR, op.token.loc)])
+                ])
             elif op.operand == Intrinsic.HERE:
-                type_check_contract(op.token, ctx, Contract(
-                    ins=[],
-                    outs=[(DataType.INT, op.token.loc), (DataType.PTR, op.token.loc)]
-                ))
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[], outs=[(DataType.INT, op.token.loc), (DataType.PTR, op.token.loc)])
+                ])
             # TODO: figure out how to type check syscall arguments and return types
             elif op.operand == Intrinsic.SYSCALL0:
                 if len(ctx.stack) < 1:
@@ -1104,19 +987,17 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 assert False, "unreachable"
             ctx.ip += 1
         elif op.typ == OpType.IF:
-            type_check_contract(op.token, ctx, Contract(
-                ins=[(DataType.BOOL, op.token.loc)],
-                outs=[]
-            ))
+            type_check_contracts(op.token, ctx, [
+                Contract(ins=[(DataType.BOOL, op.token.loc)], outs=[])
+            ])
             ctx.ip += 1
             assert isinstance(op.operand, OpAddr)
             contexts.append(Context(stack=copy(ctx.stack), ip=op.operand, outs=copy(ctx.outs)))
             ctx = contexts[-1]
         elif op.typ == OpType.IFSTAR:
-            type_check_contract(op.token, ctx, Contract(
-                ins=[(DataType.BOOL, op.token.loc)],
-                outs=[]
-            ))
+            type_check_contracts(op.token, ctx, [
+                Contract(ins=[(DataType.BOOL, op.token.loc)], outs=[])
+            ])
             ctx.ip += 1
             assert isinstance(op.operand, OpAddr)
             contexts.append(Context(stack=copy(ctx.stack), ip=op.operand, outs=copy(ctx.outs)))
@@ -1130,11 +1011,10 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             assert isinstance(op.operand, OpAddr)
             ctx.ip = op.operand
         elif op.typ == OpType.DO:
+            type_check_contracts(op.token, ctx, [
+                Contract(ins=[(DataType.BOOL, op.token.loc)], outs=[])
+            ])
             assert isinstance(op.operand, OpAddr)
-            type_check_contract(op.token, ctx, Contract(
-                ins=[(DataType.BOOL, op.token.loc)],
-                outs=[]
-            ))
             if ctx.ip in visited_dos:
                 expected_types = list(map(lambda x: x[0], visited_dos[ctx.ip]))
                 actual_types = list(map(lambda x: x[0], ctx.stack))
