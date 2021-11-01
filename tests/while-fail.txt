@@ -4,6 +4,7 @@
 :i returncode 1
 :b stdout 0
 
-:b stderr 71
-./tests/while-fail.porth:1:1: ERROR: Unhandled type `int` on the stack
+:b stderr 113
+./tests/while-fail.porth:1:1: ERROR: Unhandled data on the stack:
+./tests/while-fail.porth:1:1: NOTE: type `int`
 

@@ -653,8 +653,9 @@ def type_check_contracts(intro_token: Token, ctx: Context, contracts: List[Contr
                 if typ in generics:
                     stack.append((generics[typ], intro_token.loc))
                 else:
-                    log.append(CompilerMessage(loc=loc, label="ERROR", text=f"Unknown generic {repr(typ)} in output parameters. All generics should appear at least once in input parameters first."))
-                    continue
+                    # log.append(CompilerMessage(loc=loc, label="ERROR", text=f"Unknown generic {repr(typ)} in output parameters. All generics should appear at least once in input parameters first."))
+                    # continue
+                    assert False, "Unreachable. Such function won't compile in the first place since you can't prodice an instance of a generic type at the moment"
             else:
                 assert False, "unreachable"
         ctx.stack = stack
@@ -669,25 +670,25 @@ def type_check_context_outs(ctx: Context):
         expected_typ, expected_loc = ctx.outs.pop()
         if expected_typ != actual_typ:
             compiler_error(actual_loc, f"Unexpected {human_type_name(actual_typ)} on the stack")
-            compiler_note(expected_loc, f"Expected: {human_type_name(expected_typ)}")
+            compiler_note(expected_loc, f"Expected {human_type_name(expected_typ)}")
             exit(1)
     if len(ctx.stack) > len(ctx.outs):
         top_typ, top_loc = ctx.stack.pop()
-        compiler_error(top_loc, f"Unhandled {human_type_name(top_typ)} on the stack")
+        compiler_error(top_loc, f"Unhandled data on the stack:")
+        compiler_note(top_loc, f"{human_type_name(top_typ)}")
         while len(ctx.stack) > 0:
             typ, loc = ctx.stack.pop()
-            compiler_note(loc, f"and {human_type_name(typ)}")
+            compiler_note(loc, f"{human_type_name(typ)}")
         exit(1)
     elif len(ctx.stack) < len(ctx.outs):
         top_typ, top_loc = ctx.outs.pop()
-        compiler_error(top_loc, f"{human_type_name(top_typ)} is not provided")
+        compiler_error(top_loc, f"Insufficient data on the stack. Expected:")
+        compiler_note(top_loc, f"{human_type_name(top_typ)}")
         while len(ctx.outs) > 0:
             typ, loc = ctx.outs.pop()
             compiler_note(loc, f"and {human_type_name(typ)}")
         exit(1)
 
-# TODO: better error reporting on type checking errors of intrinsics
-# Reported expected and actual types with the location that introduced the actual type
 def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract]):
     visited_dos: Dict[OpAddr, DataStack] = {}
     contexts: List[Context] = [Context(stack=[], ip=0, outs=[])]
