@@ -5,5 +5,5 @@
 :b stdout 0
 
 :b stderr 74
-./tests/if-else-fail.porth:1:31: ERROR: Unhandled data on the stack `int`
+./tests/if-else-fail.porth:1:31: ERROR: Unhandled type `int` on the stack
 

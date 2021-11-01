@@ -829,7 +829,7 @@ proc remove-comment ptr ptr in
   memory comment sizeof(Str) end "//" comment !Str
 
   over 0 swap !Str.count
-  over over @Str.data swap !Str.data
+  2dup @Str.data swap !Str.data
   while
     dup @Str.count 0 > if
       dup comment @Str rot @Str str-starts-with lnot
@@ -838,7 +838,7 @@ proc remove-comment ptr ptr in
     dup str-chop-one-left
     over Str.count inc64
   end
-  drop drop
+  2drop
 end
 
 proc memset int int ptr in

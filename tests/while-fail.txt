@@ -5,5 +5,5 @@
 :b stdout 0
 
 :b stderr 71
-./tests/while-fail.porth:1:1: ERROR: Unhandled data on the stack `int`
+./tests/while-fail.porth:1:1: ERROR: Unhandled type `int` on the stack
 
