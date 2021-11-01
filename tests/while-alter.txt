@@ -4,8 +4,10 @@
 :i returncode 1
 :b stdout 0
 
-:b stderr 248
-./tests/while-alter.porth:1:20: ERROR: Loops are not allowed to alter types and amount of elements on the stack.
-./tests/while-alter.porth:1:20: NOTE: Expected elements: []
-./tests/while-alter.porth:1:20: NOTE: Actual elements: [<DataType.INT: 1>]
+:b stderr 377
+./tests/while-alter.porth:1:20: ERROR: Loops are not allowed to alter types and amount of elements on the stack between iterations!
+./tests/while-alter.porth:1:20: NOTE: -- Stack BEFORE a single iteration --
+./tests/while-alter.porth:1:20: NOTE: <empty>
+./tests/while-alter.porth:1:20: NOTE: -- Stack AFTER a single iteration --
+./tests/while-alter.porth:2:3: NOTE: type `int`
 
