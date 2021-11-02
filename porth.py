@@ -1518,6 +1518,7 @@ def check_name_redefinition(ctx: ParseContext, name: str, loc: Loc):
         compiler_note(ctx.consts[name].loc, "the original definition is located here")
         exit(1)
 
+# TODO: use type contracts for eval_const_value ffs
 def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, DataType]:
     stack: List[Tuple[int, DataType]] = []
     while len(rtokens) > 0:
