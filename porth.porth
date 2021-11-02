@@ -3,15 +3,60 @@
 // TODO: support for include path searching
 include "./std/std.porth"
 
-const MEM_CAPACITY 640000 end
-const SIM_STACK_CAP 1024 end
-
 const OP_PUSH_INT  1 offset end
 const OP_IF        1 offset end
 const OP_ELSE      1 offset end
 const OP_END       1 offset end
 const OP_INTRINSIC 1 offset end
 const COUNT_OPS       reset end
+
+proc op-type-as-str
+  int // Op type
+  --
+  int ptr // str
+in
+  assert "Exhaustive handling of Op types in print-op-type"
+    COUNT_OPS 5 =
+  end
+
+  dup OP_PUSH_INT = if
+    "OP_PUSH_INT"
+  else dup OP_INTRINSIC = if*
+    "OP_INTRINSIC"
+  else dup OP_IF = if*
+    "OP_IF"
+  else dup OP_ELSE = if*
+    "OP_ELSE"
+  else dup OP_END = if*
+    "OP_END"
+  else
+    here eputs ": Unknown op type\n" eputs 1 exit
+    0 NULL
+  end
+  rot drop
+end
+
+const Op.type sizeof(u64) offset end
+const Op.operand sizeof(u64) offset end
+const sizeof(Op) reset end
+
+const OPS_CAP 1024 end
+memory ops-count sizeof(u64) end
+memory ops sizeof(Op) OPS_CAP * end
+
+proc push-op
+  int // type
+  int // operand
+in
+  ops-count @64 OPS_CAP >= if
+    here eputs ": ERROR: ops overflow\n" eputs 1 exit
+  end
+
+  ops-count @64 sizeof(Op) * ops +
+  dup rot swap Op.operand + !64
+  Op.type + !64
+  ops-count inc64
+end
 
 const INTRINSIC_PLUS      1 offset end
 const INTRINSIC_MINUS     1 offset end
@@ -57,18 +102,6 @@ const INTRINSIC_SYSCALL5  1 offset end
 const INTRINSIC_SYSCALL6  1 offset end
 const COUNT_INTRINSICS       reset end
 
-const Op.type sizeof(u64) offset end
-const Op.operand sizeof(u64) offset end
-const sizeof(Op) reset end
-
-// TODO: implement reusable stack data structure
-
-memory sim-stack-count sizeof(u64) end
-memory sim-stack sizeof(u64) SIM_STACK_CAP * end
-const OPS_CAP 1024 end
-memory ops-count sizeof(u64) end
-memory ops sizeof(Op) OPS_CAP * end
-
 proc cmd-echoed ptr in
   memory wstatus sizeof(u64) end
   memory empty_envp sizeof(ptr) end
@@ -107,66 +140,20 @@ proc cmd-echoed ptr in
   drop
 end
 
-proc sim-stack-push int in
-  sim-stack-count @64 SIM_STACK_CAP >= if
-    here eputs ": ERROR: data stack overflow in simulation mode\n" eputs 1 exit
-  end
-  sim-stack sim-stack-count @64 8 * + !64
-  sim-stack-count inc64
-end
-
-proc sim-stack-pop -- int in
-  sim-stack-count @64 0 = if
-    here eputs ": ERROR: data stack underflow in simulation mode\n" eputs 1 exit
-  end
-  sim-stack-count dec64
-  sim-stack sim-stack-count @64 8 * + @64
-end
-
-proc push-op int int in
-  ops-count @64 OPS_CAP >= if
-    here eputs ": ERROR: ops overflow\n" eputs 1 exit
-  end
-
-  ops-count @64 sizeof(Op) * ops +
-  dup rot swap Op.operand + !64
-  Op.type + !64
-  ops-count inc64
-end
-
-proc print-op-type int in
-  assert "Exhaustive handling of Op types in print-op-type"
-    COUNT_OPS 5 =
-  end
-
-  dup OP_PUSH_INT = if
-    "OP_PUSH_INT" puts
-  else dup OP_INTRINSIC = if*
-    "OP_INTRINSIC" puts
-  else dup OP_IF = if*
-    "OP_IF" puts
-  else dup OP_ELSE = if*
-    "OP_ELSE" puts
-  else dup OP_END = if*
-    "OP_END" puts
-  else
-    here eputs ": Unknown op type\n" eputs 1 exit
-  end
-  drop
-end
-
 proc dump-ops in
   0 while dup ops-count @64 < do
     // ptr ptr
     dup sizeof(Op) * ops +
     "IP:      " puts over putu "\n" puts
-    "Type:    " puts dup Op.type + @64 print-op-type "\n" puts
-    "Operand: " puts Op.operand + @64 putu           "\n" puts
+    "Type:    " puts dup Op.type + @64 op-type-as-str puts "\n" puts
+    "Operand: " puts Op.operand + @64 putu                 "\n" puts
     "----------\n" puts
     1 +
   end
   drop
 end
+
+const MEM_CAPACITY 640000 end
 
 proc compile-ops in
   "[INFO] Generating output.asm\n" puts
@@ -563,6 +550,27 @@ proc compile-ops in
   "./output"c output-argv 0 8 * + !64
   NULL        output-argv 1 8 * + !64
   output-argv cmd-echoed
+end
+
+// TODO: implement reusable stack data structure
+const SIM_STACK_CAP 1024 end
+memory sim-stack-count sizeof(u64) end
+memory sim-stack sizeof(u64) SIM_STACK_CAP * end
+
+proc sim-stack-push int in
+  sim-stack-count @64 SIM_STACK_CAP >= if
+    here eputs ": ERROR: data stack overflow in simulation mode\n" eputs 1 exit
+  end
+  sim-stack sim-stack-count @64 8 * + !64
+  sim-stack-count inc64
+end
+
+proc sim-stack-pop -- int in
+  sim-stack-count @64 0 = if
+    here eputs ": ERROR: data stack underflow in simulation mode\n" eputs 1 exit
+  end
+  sim-stack-count dec64
+  sim-stack sim-stack-count @64 8 * + @64
 end
 
 proc simulate-ops in
