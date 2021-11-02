@@ -1026,6 +1026,70 @@ in
   end
 end
 
+const ConstFrame.type sizeof(u64) offset end
+const ConstFrame.value sizeof(u64) offset end
+const sizeof(ConstFrame) reset end
+
+const CONST_STACK_CAP 1024 end
+memory const-stack-count sizeof(u64) end
+memory const-stack sizeof(ConstFrame) CONST_STACK_CAP * end
+
+proc const-stack-clean in
+  0 const-stack-count !64
+end
+
+proc const-stack-push
+  int // type
+  int // value
+in
+  2drop
+  here eputs ": TODO: const-stack-push is not implemented yet\n" eputs
+  1 exit
+end
+
+const DATATYPE_INT  1 offset end
+const DATATYPE_PTR  1 offset end
+const DATATYPE_BOOL 1 offset end
+const COUNT_DATATYPES reset end
+
+const HUMAN_SINGULAR 1 offset end
+const HUMAN_PLURAL      reset end
+
+proc human-token-type
+  int // token type
+  int // plurality
+  --
+  int ptr // str
+in
+  2drop
+  here eputs ": TODO: human-token-type is not implemented\n" eputs
+  1 exit
+  "uwu"
+end
+
+proc eval-const-value
+  ptr // ptr to lexer
+  --
+  int // value
+  int // data type
+in
+  memory token sizeof(Token) end
+
+  while token over lexer-next-token do
+    token Token.type + @64 TOKEN_INT = if
+      DATATYPE_INT token Token.value + @64 const-stack-push
+    else
+      token Token.loc + eputloc
+      ": ERROR: " eputs
+      token Token.type + @64 HUMAN_PLURAL human-token-type eputs
+      "are not supported in compile time evaluation\n" eputs
+      1 exit
+    end
+  end drop
+
+  0 0
+end
+
 proc map-file
   ptr // file-path-cstr
   --
@@ -1340,6 +1404,21 @@ proc parse_file_path_cstr_into_ops ptr in
         // TODO: introduce include limit
         token Token.value + @Str str-to-cstr parse_file_path_cstr_into_ops
       else dup @Str "const" streq if*
+        token lexer lexer-next-token lnot if
+          token Token.loc + eputloc
+          ": expected constant name but found nothing\n" eputs
+          1 exit
+        end
+
+        token Token.type + @64 TOKEN_WORD != if
+          token Token.loc + eputloc
+          // TODO: report what was found instead of a word
+          ": expected constant name to be a word\n" eputs
+          1 exit
+        end
+
+        lexer eval-const-value 2drop
+
         here eputs ": TODO: const definition is not implemented\n" eputs
         token Token.loc + eputloc ": NOTE: located in here\n" eputs
         1 exit
