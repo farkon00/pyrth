@@ -102,6 +102,51 @@ const INTRINSIC_SYSCALL5  1 offset end
 const INTRINSIC_SYSCALL6  1 offset end
 const COUNT_INTRINSICS       reset end
 
+const Loc.file-path sizeof(Str) offset end
+const Loc.row sizeof(u64) offset end
+const Loc.col sizeof(u64) offset end
+const sizeof(Loc) reset end
+
+proc fputloc ptr int in
+  memory fd sizeof(u64) end
+  fd !64
+  dup Loc.file-path + @Str fd @64 fputs
+  ":"                      fd @64 fputs
+  dup Loc.row + @64        fd @64 fputu
+  ":"                      fd @64 fputs
+  dup Loc.col + @64        fd @64 fputu
+  drop
+end
+proc putloc ptr in stdout fputloc end
+proc eputloc ptr in stderr fputloc end
+
+const Const.name  sizeof(Str) offset end
+const Const.value sizeof(u64) offset end
+const Const.type  sizeof(u64) offset end
+const Const.loc   sizeof(Loc) offset end
+const sizeof(Const) reset end
+
+const CONST_CAP 1024 end
+memory consts sizeof(Const) CONST_CAP * end
+memory consts-count sizeof(u64) end
+
+proc const-lookup
+  int ptr // name
+  --
+  ptr     // ptr to const struct
+in
+  2drop
+  here eputs ": TODO: const-lookup is not implemented\n" eputs
+  NULL
+end
+
+proc const-push
+  ptr // ptr to const struct
+in
+  drop
+  here eputs ": TODO: const-push is not implemented\n" eputs
+end
+
 proc cmd-echoed ptr in
   memory wstatus sizeof(u64) end
   memory empty_envp sizeof(ptr) end
@@ -844,26 +889,6 @@ proc remove-comment ptr ptr in
   2drop
 end
 
-
-const Loc.file-path sizeof(Str) offset end
-const Loc.row sizeof(u64) offset end
-const Loc.col sizeof(u64) offset end
-const sizeof(Loc) reset end
-
-proc fputloc ptr int in
-  memory fd sizeof(u64) end
-  fd !64
-  dup Loc.file-path + @Str fd @64 fputs
-  ":"                      fd @64 fputs
-  dup Loc.row + @64        fd @64 fputu
-  ":"                      fd @64 fputs
-  dup Loc.col + @64        fd @64 fputu
-  drop
-end
-
-proc putloc ptr in stdout fputloc end
-proc eputloc ptr in stderr fputloc end
-
 const TOKEN_INT  1 offset end
 const TOKEN_WORD 1 offset end
 const TOKEN_STR  1 offset end
@@ -1314,6 +1339,10 @@ proc parse_file_path_cstr_into_ops ptr in
 
         // TODO: introduce include limit
         token Token.value + @Str str-to-cstr parse_file_path_cstr_into_ops
+      else dup @Str "const" streq if*
+        here eputs ": TODO: const definition is not implemented\n" eputs
+        token Token.loc + eputloc ": NOTE: located in here\n" eputs
+        1 exit
       else
         token Token.loc + eputloc
         ": TODO: unknown word `" puts dup @Str puts "`\n" puts
