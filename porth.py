@@ -1495,29 +1495,26 @@ class ParseContext:
     # TODO: consider getting rid of the ip variable in ParseContext
     ip: OpAddr = 0
 
-def check_word_redefinition(ctx: ParseContext, token: Token):
-    assert token.typ == TokenType.WORD
-    assert isinstance(token.value, str)
-    name: str = token.value
+def check_name_redefinition(ctx: ParseContext, name: str, loc: Loc):
     if ctx.current_proc is None:
         if name in ctx.memories:
-            compiler_error(token.loc, "redefinition of a memory region `%s`" % name)
+            compiler_error(loc, "redefinition of a memory region `%s`" % name)
             compiler_note(ctx.memories[name].loc, "the original definition is located here")
             exit(1)
     else:
         if name in ctx.current_proc.local_memories:
-            compiler_error(token.loc, "redefinition of a local memory region `%s`" % name)
+            compiler_error(loc, "redefinition of a local memory region `%s`" % name)
             compiler_note(ctx.current_proc.local_memories[name].loc, "the original definition is located here")
             exit(1)
     if name in INTRINSIC_BY_NAMES:
-        compiler_error(token.loc, "redefinition of an intrinsic word `%s`" % (name, ))
+        compiler_error(loc, "redefinition of an intrinsic word `%s`" % (name, ))
         exit(1)
     if name in ctx.procs:
-        compiler_error(token.loc, "redefinition of a proc `%s`" % (name, ))
+        compiler_error(loc, "redefinition of a proc `%s`" % (name, ))
         compiler_note(ctx.procs[name].loc, "the original definition is located here")
         exit(1)
     if name in ctx.consts:
-        compiler_error(token.loc, "redefinition of a constant `%s`" % (name, ))
+        compiler_error(loc, "redefinition of a constant `%s`" % (name, ))
         compiler_note(ctx.consts[name].loc, "the original definition is located here")
         exit(1)
 
@@ -1902,7 +1899,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 assert isinstance(token.value, str), "This is probably a bug in the lexer"
                 const_name = token.value
                 const_loc = token.loc
-                check_word_redefinition(ctx, token)
+                check_name_redefinition(ctx, token.value, token.loc)
                 const_value, const_typ = eval_const_value(ctx, rtokens)
                 ctx.consts[const_name] = Const(value=const_value, loc=const_loc, typ=const_typ)
             elif token.value == Keyword.MEMORY:
@@ -1921,7 +1918,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 if memory_size_type != DataType.INT:
                     compiler_error(token.loc, f"Memory size must be of type {DataType.INT} but it is of type {memory_size_type}")
                     exit(1)
-                check_word_redefinition(ctx, token)
+                check_name_redefinition(ctx, token.value, token.loc)
                 if ctx.current_proc is None:
                     ctx.memories[memory_name] = Memory(offset=ctx.memory_capacity, loc=memory_loc)
                     ctx.memory_capacity += memory_size
@@ -1952,7 +1949,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     assert isinstance(token.value, str), "This is probably a bug in the lexer"
                     proc_loc = token.loc
                     proc_name = token.value
-                    check_word_redefinition(ctx, token)
+                    check_name_redefinition(ctx, token.value, token.loc)
 
                     proc_contract = parse_proc_contract(rtokens)
 
