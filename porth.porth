@@ -102,6 +102,64 @@ const INTRINSIC_SYSCALL5  1 offset end
 const INTRINSIC_SYSCALL6  1 offset end
 const COUNT_INTRINSICS       reset end
 
+proc intrinsic-by-name
+  int ptr // name
+  --
+  int     // intrinsic
+  bool    // found
+in
+  memory name sizeof(Str) end
+  name !Str
+  true
+  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 42 = end
+       name @Str "+"          streq if  INTRINSIC_PLUS
+  else name @Str "-"          streq if* INTRINSIC_MINUS
+  else name @Str "*"          streq if* INTRINSIC_MUL
+  else name @Str "divmod"     streq if* INTRINSIC_DIVMOD
+  else name @Str "print"      streq if* INTRINSIC_PRINT
+  else name @Str "="          streq if* INTRINSIC_EQ
+  else name @Str ">"          streq if* INTRINSIC_GT
+  else name @Str "<"          streq if* INTRINSIC_LT
+  else name @Str ">="         streq if* INTRINSIC_GE
+  else name @Str "<="         streq if* INTRINSIC_LE
+  else name @Str "!="         streq if* INTRINSIC_NE
+  else name @Str "shr"        streq if* INTRINSIC_SHR
+  else name @Str "shl"        streq if* INTRINSIC_SHL
+  else name @Str "or"         streq if* INTRINSIC_OR
+  else name @Str "and"        streq if* INTRINSIC_AND
+  else name @Str "not"        streq if* INTRINSIC_NOT
+  else name @Str "dup"        streq if* INTRINSIC_DUP
+  else name @Str "swap"       streq if* INTRINSIC_SWAP
+  else name @Str "drop"       streq if* INTRINSIC_DROP
+  else name @Str "over"       streq if* INTRINSIC_OVER
+  else name @Str "rot"        streq if* INTRINSIC_ROT
+  else name @Str "!8"         streq if* INTRINSIC_STORE8
+  else name @Str "@8"         streq if* INTRINSIC_LOAD8
+  else name @Str "!16"        streq if* INTRINSIC_STORE16
+  else name @Str "@16"        streq if* INTRINSIC_LOAD16
+  else name @Str "!32"        streq if* INTRINSIC_STORE32
+  else name @Str "@32"        streq if* INTRINSIC_LOAD32
+  else name @Str "!64"        streq if* INTRINSIC_STORE64
+  else name @Str "@64"        streq if* INTRINSIC_LOAD64
+  else name @Str "cast(ptr)"  streq if* INTRINSIC_CAST_PTR
+  else name @Str "cast(int)"  streq if* INTRINSIC_CAST_INT
+  else name @Str "cast(bool)" streq if* INTRINSIC_CAST_BOOL
+  else name @Str "argc"       streq if* INTRINSIC_ARGC
+  else name @Str "argv"       streq if* INTRINSIC_ARGV
+  else name @Str "here"       streq if* INTRINSIC_HERE
+  else name @Str "syscall0"   streq if* INTRINSIC_SYSCALL0
+  else name @Str "syscall1"   streq if* INTRINSIC_SYSCALL1
+  else name @Str "syscall2"   streq if* INTRINSIC_SYSCALL2
+  else name @Str "syscall3"   streq if* INTRINSIC_SYSCALL3
+  else name @Str "syscall4"   streq if* INTRINSIC_SYSCALL4
+  else name @Str "syscall5"   streq if* INTRINSIC_SYSCALL5
+  else name @Str "syscall6"   streq if* INTRINSIC_SYSCALL6
+  else
+    drop false 0
+  end
+  swap
+end
+
 const Loc.file-path sizeof(Str) offset end
 const Loc.row sizeof(u64) offset end
 const Loc.col sizeof(u64) offset end
@@ -1140,9 +1198,16 @@ in
     token Token.type + @64 TOKEN_INT = if
       DATATYPE_INT token Token.value + @64 const-stack-push
     else token Token.type + @64 TOKEN_WORD = if*
-      here eputs ": TODO: support for words in compile time evaluation is not implemented yet\n" eputs
-      token Token.loc + eputloc ": NOTE: word encountered here\n" eputs
-      1 exit
+      token Token.value + @Str intrinsic-by-name if
+        here eputs ": TODO: support for intrinsics in compile time evaluation is not implemented yet\n" eputs
+        token Token.loc + eputloc ": NOTE: word encountered here\n" eputs
+        1 exit
+      else
+        token Token.loc + eputloc ": ERROR: only intrinsic words are allowed in compile time evaluation\n" eputs
+        token Token.loc + eputloc ": NOTE: intrinsic `" eputs token Token.value + @Str eputs "` does not exist\n" eputs
+        1 exit
+      end
+      drop // intrinsic
     else
       token Token.loc + eputloc
       ": ERROR: " eputs
@@ -1204,7 +1269,7 @@ in
   content @Str
 end
 
-proc lex-file ptr in 
+proc lex-file ptr in
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
 
@@ -1294,9 +1359,7 @@ proc parse_file_path_cstr_into_ops ptr in
   memory token sizeof(Token) end
 
   while token lexer lexer-next-token do
-    assert "Exhaustive handling of Token types"
-      COUNT_TOKENS 4 =
-    end
+    assert "Exhaustive handling of Token types" COUNT_TOKENS 4 = end
 
     token Token.type + @64 // token.type
 
@@ -1307,197 +1370,109 @@ proc parse_file_path_cstr_into_ops ptr in
     else dup TOKEN_WORD = if*
       token Token.value + // token.value
 
-      assert "Exhaustive handling of Op types in parse-file-path"
-        COUNT_OPS 5 =
-      end
+      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 5 = end
 
-      assert "Exhaustive handling of Intrinsics in parse-file-path"
-        COUNT_INTRINSICS 42 =
-      end
+      dup @Str intrinsic-by-name if
+        OP_INTRINSIC swap push-op
+      else
+        drop
+        dup @Str "if" streq if
+          ops-count @64 parse-block-stack-push
+          OP_IF 0 push-op
+        else dup @Str "else" streq if*
+          @parse-block-stack-count 0 <= if
+            token Token.loc + eputloc
+            ": ERROR: `else` can only come after `if`\n" eputs
+            1 exit
+          end
 
-      // Intrinsics
-      dup @Str "+" streq if
-        OP_INTRINSIC INTRINSIC_PLUS push-op
-      else dup @Str "-" streq if*
-        OP_INTRINSIC INTRINSIC_MINUS push-op
-      else dup @Str "*" streq if*
-        OP_INTRINSIC INTRINSIC_MUL push-op
-      else dup @Str "divmod" streq if*
-        OP_INTRINSIC INTRINSIC_DIVMOD push-op
-      else dup @Str "print" streq if*
-        OP_INTRINSIC INTRINSIC_PRINT push-op
-      else dup @Str "=" streq if*
-        OP_INTRINSIC INTRINSIC_EQ push-op
-      else dup @Str ">" streq if*
-        OP_INTRINSIC INTRINSIC_GT push-op
-      else dup @Str "<" streq if*
-        OP_INTRINSIC INTRINSIC_LT push-op
-      else dup @Str ">=" streq if*
-        OP_INTRINSIC INTRINSIC_GE push-op
-      else dup @Str "<=" streq if*
-        OP_INTRINSIC INTRINSIC_LE push-op
-      else dup @Str "!=" streq if*
-        OP_INTRINSIC INTRINSIC_NE push-op
-      else dup @Str "shr" streq if*
-        OP_INTRINSIC INTRINSIC_SHR push-op
-      else dup @Str "shl" streq if*
-        OP_INTRINSIC INTRINSIC_SHL push-op
-      else dup @Str "or" streq if*
-        OP_INTRINSIC INTRINSIC_OR push-op
-      else dup @Str "and" streq if*
-        OP_INTRINSIC INTRINSIC_AND push-op
-      else dup @Str "not" streq if*
-        OP_INTRINSIC INTRINSIC_NOT push-op
-      else dup @Str "dup" streq if*
-        OP_INTRINSIC INTRINSIC_DUP push-op
-      else dup @Str "swap" streq if*
-        OP_INTRINSIC INTRINSIC_SWAP push-op
-      else dup @Str "drop" streq if*
-        OP_INTRINSIC INTRINSIC_DROP push-op
-      else dup @Str "over" streq if*
-        OP_INTRINSIC INTRINSIC_OVER push-op
-      else dup @Str "rot" streq if*
-        OP_INTRINSIC INTRINSIC_ROT push-op
-      else dup @Str "!8" streq if*
-        OP_INTRINSIC INTRINSIC_STORE8 push-op
-      else dup @Str "@8" streq if*
-        OP_INTRINSIC INTRINSIC_LOAD8 push-op
-      else dup @Str "!16" streq if*
-        OP_INTRINSIC INTRINSIC_STORE16 push-op
-      else dup @Str "@16" streq if*
-        OP_INTRINSIC INTRINSIC_LOAD16 push-op
-      else dup @Str "!32" streq if*
-        OP_INTRINSIC INTRINSIC_STORE32 push-op
-      else dup @Str "@32" streq if*
-        OP_INTRINSIC INTRINSIC_LOAD32 push-op
-      else dup @Str "!64" streq if*
-        OP_INTRINSIC INTRINSIC_STORE64 push-op
-      else dup @Str "@64" streq if*
-        OP_INTRINSIC INTRINSIC_LOAD64 push-op
-      else dup @Str "cast(ptr)" streq if*
-        OP_INTRINSIC INTRINSIC_CAST_PTR push-op
-      else dup @Str "cast(int)" streq if*
-        OP_INTRINSIC INTRINSIC_CAST_INT push-op
-      else dup @Str "cast(bool)" streq if*
-        OP_INTRINSIC INTRINSIC_CAST_BOOL push-op
-      else dup @Str "argc" streq if*
-        OP_INTRINSIC INTRINSIC_ARGC push-op
-      else dup @Str "argv" streq if*
-        OP_INTRINSIC INTRINSIC_ARGV push-op
-      else dup @Str "here" streq if*
-        OP_INTRINSIC INTRINSIC_HERE push-op
-      else dup @Str "syscall0" streq if*
-        OP_INTRINSIC INTRINSIC_SYSCALL0 push-op
-      else dup @Str "syscall1" streq if*
-        OP_INTRINSIC INTRINSIC_SYSCALL1 push-op
-      else dup @Str "syscall2" streq if*
-        OP_INTRINSIC INTRINSIC_SYSCALL2 push-op
-      else dup @Str "syscall3" streq if*
-        OP_INTRINSIC INTRINSIC_SYSCALL3 push-op
-      else dup @Str "syscall4" streq if*
-        OP_INTRINSIC INTRINSIC_SYSCALL4 push-op
-      else dup @Str "syscall5" streq if*
-        OP_INTRINSIC INTRINSIC_SYSCALL5 push-op
-      else dup @Str "syscall6" streq if*
-        OP_INTRINSIC INTRINSIC_SYSCALL6 push-op
+          parse-block-stack-pop   // if_ip
+          dup sizeof(Op) * ops +  // if_op
 
-      // Keywords
-      else dup @Str "if" streq if*
-        ops-count @64 parse-block-stack-push
-        OP_IF 0 push-op
-      else dup @Str "else" streq if*
-        @parse-block-stack-count 0 <= if
-          token Token.loc + eputloc
-          ": ERROR: `else` can only come after `if`\n" eputs
+          dup Op.type + @64 OP_IF != if
+            token Token.loc + eputloc
+            ": ERROR: `else` can only come after `if`\n" eputs
+            1 exit
+          end
+
+          ops-count @64 1 + over Op.operand + !64
+
+          ops-count @64 parse-block-stack-push
+          OP_ELSE 0 push-op
+
+          drop // if_op
+          drop // if_ip
+        else dup @Str "end" streq if*
+          @parse-block-stack-count 0 <= if
+            token Token.loc + eputloc
+            ": ERROR: `end` can only close `if` and `else` for now\n" eputs
+            1 exit
+          end
+
+          parse-block-stack-pop // ip
+          ops over sizeof(Op) * + // op
+
+          dup Op.type + @64 OP_IF = if
+            dup ops-count @64 swap Op.operand + !64
+            OP_END ops-count @64 1 + push-op
+          else dup Op.type + @64 OP_ELSE = if*
+            dup ops-count @64 swap Op.operand + !64
+            OP_END ops-count @64 1 + push-op
+          else
+            token Token.loc + eputloc
+            ": ERROR: `end` can only close `if` for now\n" eputs
+            1 exit
+          end
+
+          drop // op
+          drop // ip
+        else dup @Str "include" streq if*
+          token lexer lexer-next-token lnot if
+            token Token.loc + eputloc
+            ": expected path to the include file but found nothing\n" eputs
+            1 exit
+          end
+
+          token Token.type + @64 TOKEN_STR != if
+            token Token.loc + eputloc
+            // TODO: report what was found instead of a string
+            ": expected path to the include file to be a string\n" eputs
+            1 exit
+          end
+
+          // TODO: introduce include limit
+          token Token.value + @Str str-to-cstr parse_file_path_cstr_into_ops
+        else dup @Str "const" streq if*
+          token lexer lexer-next-token lnot if
+            token Token.loc + eputloc
+            ": expected constant name but found nothing\n" eputs
+            1 exit
+          end
+
+          token Token.type + @64 TOKEN_WORD != if
+            token Token.loc + eputloc
+            // TODO: report what was found instead of a word
+            ": expected constant name to be a word\n" eputs
+            1 exit
+          end
+
+          lexer eval-const-value 2drop
+
+          here eputs ": TODO: const definition is not implemented\n" eputs
+          token Token.loc + eputloc ": NOTE: located in here\n" eputs
           1 exit
-        end
-
-        parse-block-stack-pop   // if_ip
-        dup sizeof(Op) * ops +  // if_op
-
-        dup Op.type + @64 OP_IF != if
-          token Token.loc + eputloc
-          ": ERROR: `else` can only come after `if`\n" eputs
-          1 exit
-        end
-
-        ops-count @64 1 + over Op.operand + !64
-
-        ops-count @64 parse-block-stack-push
-        OP_ELSE 0 push-op
-
-        drop // if_op
-        drop // if_ip
-      else dup @Str "end" streq if*
-        @parse-block-stack-count 0 <= if
-          token Token.loc + eputloc
-          ": ERROR: `end` can only close `if` and `else` for now\n" eputs
-          1 exit
-        end
-
-        parse-block-stack-pop // ip
-        ops over sizeof(Op) * + // op
-
-        dup Op.type + @64 OP_IF = if
-          dup ops-count @64 swap Op.operand + !64
-          OP_END ops-count @64 1 + push-op
-        else dup Op.type + @64 OP_ELSE = if*
-          dup ops-count @64 swap Op.operand + !64
-          OP_END ops-count @64 1 + push-op
         else
           token Token.loc + eputloc
-          ": ERROR: `end` can only close `if` for now\n" eputs
+          ": TODO: unknown word `" puts dup @Str puts "`\n" puts
           1 exit
         end
-
-        drop // op
-        drop // ip
-      else dup @Str "include" streq if*
-        token lexer lexer-next-token lnot if
-          token Token.loc + eputloc
-          ": expected path to the include file but found nothing\n" eputs
-          1 exit
-        end
-
-        token Token.type + @64 TOKEN_STR != if
-          token Token.loc + eputloc
-          // TODO: report what was found instead of a string
-          ": expected path to the include file to be a string\n" eputs
-          1 exit
-        end
-
-        // TODO: introduce include limit
-        token Token.value + @Str str-to-cstr parse_file_path_cstr_into_ops
-      else dup @Str "const" streq if*
-        token lexer lexer-next-token lnot if
-          token Token.loc + eputloc
-          ": expected constant name but found nothing\n" eputs
-          1 exit
-        end
-
-        token Token.type + @64 TOKEN_WORD != if
-          token Token.loc + eputloc
-          // TODO: report what was found instead of a word
-          ": expected constant name to be a word\n" eputs
-          1 exit
-        end
-
-        lexer eval-const-value 2drop
-
-        here eputs ": TODO: const definition is not implemented\n" eputs
-        token Token.loc + eputloc ": NOTE: located in here\n" eputs
-        1 exit
-      else
-        token Token.loc + eputloc
-        ": TODO: unknown word `" puts dup @Str puts "`\n" puts
-        1 exit
       end
 
       drop // token.value
     else dup TOKEN_STR = if*
-      here eputs ": TODO: not implemented\n" eputs
+      here eputs ": TODO: parsing string literals is not implemented\n" eputs
     else dup TOKEN_CHAR = if*
-      here eputs ": TODO: not implemented\n" eputs
+      here eputs ": TODO: parsing character literals is not implemented\n" eputs
     else
       here eputs ": Unreachable. Unknown token type.\n" eputs
       1 exit
@@ -1579,4 +1554,3 @@ proc main in
 end
 
 main
-
