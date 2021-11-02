@@ -408,6 +408,15 @@ proc dec64 ptr in dup @64 1 - swap !64 end
 proc inc32 ptr in dup @32 1 + swap !32 end
 proc dec32 ptr in dup @32 1 - swap !32 end
 
+proc swap64 ptr ptr in
+  memory a sizeof(u64) end
+  memory b sizeof(u64) end
+  dup  @64 b !64
+  over @64 a !64
+  a @64 swap !64
+  b @64 swap !64
+end
+
 proc cstrlen ptr -- int in
   dup
   while dup @8 0 != do 1 + end
