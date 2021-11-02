@@ -1042,9 +1042,23 @@ proc const-stack-push
   int // type
   int // value
 in
-  2drop
-  here eputs ": TODO: const-stack-push is not implemented yet\n" eputs
-  1 exit
+  memory frame sizeof(ConstFrame) end
+
+  frame ConstFrame.value + !64
+  frame ConstFrame.type + !64
+
+  const-stack-count @64 CONST_STACK_CAP >= if
+    here eputs ": TODO: const stack overflow\n" eputs
+    1 exit
+  end
+
+  const-stack-count inc64
+
+  sizeof(ConstFrame)
+  frame
+  const-stack-count @64 sizeof(ConstFrame) * const-stack +
+  memcpy
+  drop
 end
 
 const DATATYPE_INT  1 offset end
@@ -1053,7 +1067,9 @@ const DATATYPE_BOOL 1 offset end
 const COUNT_DATATYPES reset end
 
 const HUMAN_SINGULAR 1 offset end
-const HUMAN_PLURAL      reset end
+const HUMAN_PLURAL   1 offset end
+const COUNT_HUMAN       reset end
+
 
 proc human-token-type
   int // token type
@@ -1061,10 +1077,55 @@ proc human-token-type
   --
   int ptr // str
 in
-  2drop
-  here eputs ": TODO: human-token-type is not implemented\n" eputs
-  1 exit
-  "uwu"
+  assert "Exhaustive handling of noun categories" COUNT_HUMAN 2 = end
+
+  dup HUMAN_SINGULAR = if
+    drop
+    assert "Exhaustive handling of token types" COUNT_TOKENS 4 = end
+    dup TOKEN_INT = if
+      drop
+      "an integer"
+    else dup TOKEN_WORD = if*
+      drop
+      "a word"
+    else dup TOKEN_STR = if*
+      drop
+      "a string"
+    else dup TOKEN_CHAR = if*
+      drop
+      "a character"
+    else
+      drop
+      here eputs ": unreachable\n" eputs
+      0 NULL
+    end
+  else dup HUMAN_PLURAL = if*
+    drop
+    assert "Exhaustive handling of token types" COUNT_TOKENS 4 = end
+    dup TOKEN_INT = if
+      drop
+      "integers"
+    else dup TOKEN_WORD = if*
+      drop
+      "words"
+    else dup TOKEN_STR = if*
+      drop
+      "strings"
+    else dup TOKEN_CHAR = if*
+      drop
+      "characters"
+    else
+      drop
+      here eputs ": unreachable\n" eputs
+      69 exit
+      0 NULL
+    end
+  else
+    2drop
+    here eputs ": unreachable\n" eputs
+    69 exit
+    0 NULL
+  end
 end
 
 proc eval-const-value
@@ -1078,11 +1139,15 @@ in
   while token over lexer-next-token do
     token Token.type + @64 TOKEN_INT = if
       DATATYPE_INT token Token.value + @64 const-stack-push
+    else token Token.type + @64 TOKEN_WORD = if*
+      here eputs ": TODO: support for words in compile time evaluation is not implemented yet\n" eputs
+      token Token.loc + eputloc ": NOTE: word encountered here\n" eputs
+      1 exit
     else
       token Token.loc + eputloc
       ": ERROR: " eputs
       token Token.type + @64 HUMAN_PLURAL human-token-type eputs
-      "are not supported in compile time evaluation\n" eputs
+      " are not supported in compile time evaluation\n" eputs
       1 exit
     end
   end drop
