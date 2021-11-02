@@ -850,15 +850,19 @@ const Loc.row sizeof(u64) offset end
 const Loc.col sizeof(u64) offset end
 const sizeof(Loc) reset end
 
-// TODO: introduce eputloc and fputloc variants
-proc putloc ptr in
-  dup Loc.file-path + @Str puts
-  ":" puts
-  dup Loc.row + @64 putu
-  ":" puts
-  dup Loc.col + @64 putu
+proc fputloc ptr int in
+  memory fd sizeof(u64) end
+  fd !64
+  dup Loc.file-path + @Str fd @64 fputs
+  ":"                      fd @64 fputs
+  dup Loc.row + @64        fd @64 fputu
+  ":"                      fd @64 fputs
+  dup Loc.col + @64        fd @64 fputu
   drop
 end
+
+proc putloc ptr in stdout fputloc end
+proc eputloc ptr in stderr fputloc end
 
 const TOKEN_INT  1 offset end
 const TOKEN_WORD 1 offset end
@@ -1249,7 +1253,7 @@ proc parse_file_path_cstr_into_ops ptr in
         OP_IF 0 push-op
       else dup @Str "else" streq if*
         @parse-block-stack-count 0 <= if
-          token Token.loc + putloc
+          token Token.loc + eputloc
           ": ERROR: `else` can only come after `if`\n" eputs
           1 exit
         end
@@ -1258,7 +1262,7 @@ proc parse_file_path_cstr_into_ops ptr in
         dup sizeof(Op) * ops +  // if_op
 
         dup Op.type + @64 OP_IF != if
-          token Token.loc + putloc
+          token Token.loc + eputloc
           ": ERROR: `else` can only come after `if`\n" eputs
           1 exit
         end
@@ -1272,7 +1276,7 @@ proc parse_file_path_cstr_into_ops ptr in
         drop // if_ip
       else dup @Str "end" streq if*
         @parse-block-stack-count 0 <= if
-          token Token.loc + putloc
+          token Token.loc + eputloc
           ": ERROR: `end` can only close `if` and `else` for now\n" eputs
           1 exit
         end
@@ -1287,7 +1291,7 @@ proc parse_file_path_cstr_into_ops ptr in
           dup ops-count @64 swap Op.operand + !64
           OP_END ops-count @64 1 + push-op
         else
-          token Token.loc + putloc
+          token Token.loc + eputloc
           ": ERROR: `end` can only close `if` for now\n" eputs
           1 exit
         end
@@ -1296,13 +1300,13 @@ proc parse_file_path_cstr_into_ops ptr in
         drop // ip
       else dup @Str "include" streq if*
         token lexer lexer-next-token lnot if
-          token Token.loc + putloc
+          token Token.loc + eputloc
           ": expected path to the include file but found nothing\n" eputs
           1 exit
         end
 
         token Token.type + @64 TOKEN_STR != if
-          token Token.loc + putloc
+          token Token.loc + eputloc
           // TODO: report what was found instead of a string
           ": expected path to the include file to be a string\n" eputs
           1 exit
@@ -1311,7 +1315,7 @@ proc parse_file_path_cstr_into_ops ptr in
         // TODO: introduce include limit
         token Token.value + @Str str-to-cstr parse_file_path_cstr_into_ops
       else
-        token Token.loc + putloc
+        token Token.loc + eputloc
         ": TODO: unknown word `" puts dup @Str puts "`\n" puts
         1 exit
       end
