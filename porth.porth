@@ -367,25 +367,26 @@ proc compile-ops in
           COUNT_INTRINSICS 42 =
         end
 
-        dup Op.operand + @64 INTRINSIC_PLUS = if
+        dup Op.operand + @64
+        dup INTRINSIC_PLUS = if
             "    ;; -- plus --\n"       out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    add rax, rbx\n"        out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_MINUS = if*
+        else dup INTRINSIC_MINUS = if*
             "    ;; -- minus --\n"      out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    sub rbx, rax\n"        out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_MUL = if*
+        else dup INTRINSIC_MUL = if*
             "    ;; -- mul --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    mul rbx\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_DIVMOD = if*
+        else dup INTRINSIC_DIVMOD = if*
             "    ;; -- mod --\n"        out-fd @64 fputs
             "    xor rdx, rdx\n"        out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
@@ -393,40 +394,40 @@ proc compile-ops in
             "    div rbx\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
             "    push rdx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_SHR = if*
+        else dup INTRINSIC_SHR = if*
             "    ;; -- shr --\n"        out-fd @64 fputs
             "    pop rcx\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    shr rbx, cl\n"         out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_SHL = if*
+        else dup INTRINSIC_SHL = if*
             "    ;; -- shl --\n"        out-fd @64 fputs
             "    pop rcx\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    shl rbx, cl\n"         out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_OR = if*
+        else dup INTRINSIC_OR = if*
             "    ;; -- bor --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    or rbx, rax\n"         out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_AND = if*
+        else dup INTRINSIC_AND = if*
             "    ;; -- band --\n"       out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    and rbx, rax\n"        out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_NOT = if*
+        else dup INTRINSIC_NOT = if*
             "    ;; -- not --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    not rax\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_PRINT = if*
+        else dup INTRINSIC_PRINT = if*
             "    ;; -- print --\n"      out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
             "    call print\n"          out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_EQ = if*
+        else dup INTRINSIC_EQ = if*
             "    ;; -- equal --\n"      out-fd @64 fputs
             "    mov rcx, 0\n"          out-fd @64 fputs
             "    mov rdx, 1\n"          out-fd @64 fputs
@@ -435,7 +436,7 @@ proc compile-ops in
             "    cmp rax, rbx\n"        out-fd @64 fputs
             "    cmove rcx, rdx\n"      out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_GT = if*
+        else dup INTRINSIC_GT = if*
             "    ;; -- gt --\n"         out-fd @64 fputs
             "    mov rcx, 0\n"          out-fd @64 fputs
             "    mov rdx, 1\n"          out-fd @64 fputs
@@ -444,7 +445,7 @@ proc compile-ops in
             "    cmp rax, rbx\n"        out-fd @64 fputs
             "    cmovg rcx, rdx\n"      out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_LT = if*
+        else dup INTRINSIC_LT = if*
             "    ;; -- gt --\n"         out-fd @64 fputs
             "    mov rcx, 0\n"          out-fd @64 fputs
             "    mov rdx, 1\n"          out-fd @64 fputs
@@ -453,7 +454,7 @@ proc compile-ops in
             "    cmp rax, rbx\n"        out-fd @64 fputs
             "    cmovl rcx, rdx\n"      out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_GE = if*
+        else dup INTRINSIC_GE = if*
             "    ;; -- gt --\n"         out-fd @64 fputs
             "    mov rcx, 0\n"          out-fd @64 fputs
             "    mov rdx, 1\n"          out-fd @64 fputs
@@ -462,7 +463,7 @@ proc compile-ops in
             "    cmp rax, rbx\n"        out-fd @64 fputs
             "    cmovge rcx, rdx\n"     out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_LE = if*
+        else dup INTRINSIC_LE = if*
             "    ;; -- gt --\n"         out-fd @64 fputs
             "    mov rcx, 0\n"          out-fd @64 fputs
             "    mov rdx, 1\n"          out-fd @64 fputs
@@ -471,7 +472,7 @@ proc compile-ops in
             "    cmp rax, rbx\n"        out-fd @64 fputs
             "    cmovle rcx, rdx\n"     out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_NE = if*
+        else dup INTRINSIC_NE = if*
             "    ;; -- ne --\n"         out-fd @64 fputs
             "    mov rcx, 0\n"          out-fd @64 fputs
             "    mov rdx, 1\n"          out-fd @64 fputs
@@ -480,28 +481,28 @@ proc compile-ops in
             "    cmp rax, rbx\n"        out-fd @64 fputs
             "    cmovne rcx, rdx\n"     out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_DUP = if*
+        else dup INTRINSIC_DUP = if*
             "    ;; -- dup --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_SWAP = if*
+        else dup INTRINSIC_SWAP = if*
             "    ;; -- swap --\n"       out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_DROP = if*
+        else dup INTRINSIC_DROP = if*
             "    ;; -- drop --\n"       out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_OVER = if*
+        else dup INTRINSIC_OVER = if*
             "    ;; -- over --\n"       out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_ROT = if*
+        else dup INTRINSIC_ROT = if*
             "    ;; -- rot --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
@@ -509,87 +510,87 @@ proc compile-ops in
             "    push rbx\n"            out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_LOAD8 = if*
+        else dup INTRINSIC_LOAD8 = if*
             "    ;; -- @8 --\n"         out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    xor rbx, rbx\n"        out-fd @64 fputs
             "    mov bl, [rax]\n"       out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_STORE8 = if*
+        else dup INTRINSIC_STORE8 = if*
             "    ;; -- !8 --\n"         out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    mov [rax], bl\n"       out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_LOAD16 = if*
+        else dup INTRINSIC_LOAD16 = if*
             "    ;; -- @16 --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    xor rbx, rbx\n"        out-fd @64 fputs
             "    mov bx, [rax]\n"       out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_STORE16 = if*
+        else dup INTRINSIC_STORE16 = if*
             "    ;; -- !16 --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    mov [rax], bx\n"       out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_LOAD32 = if*
+        else dup INTRINSIC_LOAD32 = if*
             "    ;; -- @32 --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    xor rbx, rbx\n"        out-fd @64 fputs
             "    mov ebx, [rax]\n"      out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_STORE32 = if*
+        else dup INTRINSIC_STORE32 = if*
             "    ;; -- !32 --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    mov [rax], ebx\n"      out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_LOAD64 = if*
+        else dup INTRINSIC_LOAD64 = if*
             "    ;; -- @64 --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    xor rbx, rbx\n"        out-fd @64 fputs
             "    mov rbx, [rax]\n"      out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_STORE64 = if*
+        else dup INTRINSIC_STORE64 = if*
             "    ;; -- !64 --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    mov [rax], rbx\n"      out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_ARGC = if*
+        else dup INTRINSIC_ARGC = if*
             "    ;; -- argc --\n"       out-fd @64 fputs
             "    mov rax, [args_ptr]\n" out-fd @64 fputs
             "    mov rax, [rax]\n"      out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_ARGV = if*
+        else dup INTRINSIC_ARGV = if*
             "    ;; -- argv --\n"       out-fd @64 fputs
             "    mov rax, [args_ptr]\n" out-fd @64 fputs
             "    add rax, 8\n"          out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_HERE = if*
+        else dup INTRINSIC_HERE = if*
             here eputs ": TODO: intrinsic `here` is not implemented yet" eputs
-        else dup Op.operand + @64 INTRINSIC_CAST_PTR = if*
+        else dup INTRINSIC_CAST_PTR = if*
             "    ;; -- cast(ptr) --\n"  out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_CAST_INT = if*
+        else dup INTRINSIC_CAST_INT = if*
             "    ;; -- cast(int) --\n"  out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_CAST_BOOL = if*
+        else dup INTRINSIC_CAST_BOOL = if*
             "    ;; -- cast(bool) --\n" out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_SYSCALL0 = if*
+        else dup INTRINSIC_SYSCALL0 = if*
             "    ;; -- syscall0 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    syscall\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_SYSCALL1 = if*
+        else dup INTRINSIC_SYSCALL1 = if*
             "    ;; -- syscall1 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
             "    syscall\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_SYSCALL2 = if*
+        else dup INTRINSIC_SYSCALL2 = if*
             "    ;; -- syscall2 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
             "    pop rsi\n"             out-fd @64 fputs
             "    syscall\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_SYSCALL3 = if*
+        else dup INTRINSIC_SYSCALL3 = if*
             "    ;; -- syscall3 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
@@ -597,7 +598,7 @@ proc compile-ops in
             "    pop rdx\n"             out-fd @64 fputs
             "    syscall\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_SYSCALL4 = if*
+        else dup INTRINSIC_SYSCALL4 = if*
             "    ;; -- syscall4 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
@@ -606,7 +607,7 @@ proc compile-ops in
             "    pop r10\n"             out-fd @64 fputs
             "    syscall\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_SYSCALL5 = if*
+        else dup INTRINSIC_SYSCALL5 = if*
             "    ;; -- syscall5 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
@@ -616,7 +617,7 @@ proc compile-ops in
             "    pop r8\n"              out-fd @64 fputs
             "    syscall\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
-        else dup Op.operand + @64 INTRINSIC_SYSCALL6 = if*
+        else dup INTRINSIC_SYSCALL6 = if*
             "    ;; -- syscall6 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
@@ -631,6 +632,7 @@ proc compile-ops in
           here eputs ": unreachable.\n" eputs
           1 exit
         end
+        drop
     else
       here eputs ": unreachable.\n" eputs
       1 exit
