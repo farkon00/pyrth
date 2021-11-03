@@ -15,20 +15,12 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type"
-    COUNT_OPS 5 =
-  end
-
-  dup OP_PUSH_INT = if
-    "OP_PUSH_INT"
-  else dup OP_INTRINSIC = if*
-    "OP_INTRINSIC"
-  else dup OP_IF = if*
-    "OP_IF"
-  else dup OP_ELSE = if*
-    "OP_ELSE"
-  else dup OP_END = if*
-    "OP_END"
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 5 = end
+       dup OP_PUSH_INT  = if  "OP_PUSH_INT"
+  else dup OP_INTRINSIC = if* "OP_INTRINSIC"
+  else dup OP_IF        = if* "OP_IF"
+  else dup OP_ELSE      = if* "OP_ELSE"
+  else dup OP_END       = if* "OP_END"
   else
     here eputs ": Unknown op type\n" eputs 1 exit
     0 NULL
@@ -1119,6 +1111,26 @@ in
   drop
 end
 
+proc const-stack-pop
+  --
+  int // type
+  int // value
+in
+  const-stack-count @64 0 <= if
+    here eputs ": TODO: const stack underflow\n" eputs
+    1 exit
+  end
+
+  const-stack-count dec64
+
+  const-stack-count @64
+  sizeof(ConstFrame) *
+  const-stack +
+
+  dup ConstFrame.type + @64
+  swap ConstFrame.value + @64
+end
+
 const DATATYPE_INT  1 offset end
 const DATATYPE_PTR  1 offset end
 const DATATYPE_BOOL 1 offset end
@@ -1193,15 +1205,31 @@ proc eval-const-value
   int // data type
 in
   memory token sizeof(Token) end
+  memory done sizeof(bool) end
+  false done !64
 
-  while token over lexer-next-token do
+  const-stack-clean
+
+  while
+    done @bool lnot if
+      token over lexer-next-token
+    else false end
+  do
     token Token.type + @64 TOKEN_INT = if
       DATATYPE_INT token Token.value + @64 const-stack-push
     else token Token.type + @64 TOKEN_WORD = if*
       token Token.value + @Str intrinsic-by-name if
-        here eputs ": TODO: support for intrinsics in compile time evaluation is not implemented yet\n" eputs
-        token Token.loc + eputloc ": NOTE: word encountered here\n" eputs
-        1 exit
+        dup INTRINSIC_CAST_PTR = if
+          const-stack-pop
+          swap drop
+          DATATYPE_PTR swap
+          const-stack-push
+        else
+          token Token.loc + eputloc ": ERROR: intrinsic `" eputs token Token.value + @Str eputs "` is not supported in compile time evaluation\n" eputs
+          1 exit
+        end
+      else token Token.value + @Str "end" streq if*
+        true done !64
       else
         token Token.loc + eputloc ": ERROR: only intrinsic words are allowed in compile time evaluation\n" eputs
         token Token.loc + eputloc ": NOTE: intrinsic `" eputs token Token.value + @Str eputs "` does not exist\n" eputs
@@ -1217,7 +1245,20 @@ in
     end
   end drop
 
-  0 0
+  done @bool if
+    const-stack-count @64 1 != if
+      token Token.loc + eputloc
+      ": ERROR: The result of expression in compile time evaluation must be a single number\n" eputs
+      1 exit
+    end
+
+    const-stack ConstFrame.value + @64
+    const-stack ConstFrame.type  + @64
+  else
+    here eputs ": TODO: const expression was not closed properly\n" eputs
+    1 exit
+    0 0
+  end
 end
 
 proc map-file
@@ -1458,7 +1499,7 @@ proc parse_file_path_cstr_into_ops ptr in
 
           lexer eval-const-value 2drop
 
-          here eputs ": TODO: const definition is not implemented\n" eputs
+          here eputs ": TODO: const definition is not fully implemented\n" eputs
           token Token.loc + eputloc ": NOTE: located in here\n" eputs
           1 exit
         else

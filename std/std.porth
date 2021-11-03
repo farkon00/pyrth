@@ -6,6 +6,7 @@ const false 0 cast(bool) end
 const sizeof(u64) 8 end
 const sizeof(u32) 4 end
 const sizeof(ptr) sizeof(u64) end
+const sizeof(bool) sizeof(u64) end
 
 /// Standard streams
 const stdin  0 end
@@ -13,6 +14,7 @@ const stdout 1 end
 const stderr 2 end
 
 proc @ptr ptr -- ptr in @64 cast(ptr) end
+proc @bool ptr -- bool in @64 cast(bool) end
 
 /// Syscalls
 // Stolen from https://filippo.io/linux-syscall-table/
