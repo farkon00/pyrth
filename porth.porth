@@ -1255,7 +1255,12 @@ in
         end
       else token Token.value + @Str "end" streq if*
         true done !64
+      else token Token.value + @Str const-lookup dup NULL != if*
+        dup Const.type + @64
+        swap Const.value + @64
+        const-stack-push
       else
+        drop // const
         token Token.loc + eputloc ": ERROR: only intrinsic words are allowed in compile time evaluation\n" eputs
         token Token.loc + eputloc ": NOTE: intrinsic `" eputs token Token.value + @Str eputs "` does not exist\n" eputs
         1 exit
