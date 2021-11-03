@@ -171,9 +171,9 @@ proc putloc ptr in stdout fputloc end
 proc eputloc ptr in stderr fputloc end
 
 const Const.name  sizeof(Str) offset end
+const Const.loc   sizeof(Loc) offset end
 const Const.value sizeof(u64) offset end
 const Const.type  sizeof(u64) offset end
-const Const.loc   sizeof(Loc) offset end
 const sizeof(Const) reset end
 
 const CONST_CAP 1024 end
@@ -185,16 +185,40 @@ proc const-lookup
   --
   ptr     // ptr to const struct
 in
-  2drop
-  here eputs ": TODO: const-lookup is not implemented\n" eputs
-  NULL
+  memory name sizeof(Str) end
+  name !Str
+
+  0 while
+    dup consts-count @64 < if
+      dup sizeof(Const) * consts + Const.name + @Str
+      name @Str
+      streq
+      lnot
+    else false end
+  do 1 + end
+
+  dup consts-count @64 < if
+    sizeof(Const) * consts +
+  else
+    drop NULL
+  end
 end
 
-proc const-push
+proc const-define
   ptr // ptr to const struct
 in
+  consts-count @64 CONST_CAP >= if
+    here eputs ": ERROR: constants definitions capacity exceeded\n" eputs
+    1 exit
+  end
+
+  sizeof(Const)
+  swap
+  consts-count @64 sizeof(Const) * consts +
+  memcpy
   drop
-  here eputs ": TODO: const-push is not implemented\n" eputs
+
+  consts-count inc64
 end
 
 proc cmd-echoed ptr in
@@ -1102,13 +1126,13 @@ in
     1 exit
   end
 
-  const-stack-count inc64
-
   sizeof(ConstFrame)
   frame
   const-stack-count @64 sizeof(ConstFrame) * const-stack +
   memcpy
   drop
+
+  const-stack-count inc64
 end
 
 proc const-stack-pop
@@ -1122,11 +1146,7 @@ in
   end
 
   const-stack-count dec64
-
-  const-stack-count @64
-  sizeof(ConstFrame) *
-  const-stack +
-
+  const-stack-count @64 sizeof(ConstFrame) * const-stack +
   dup ConstFrame.type + @64
   swap ConstFrame.value + @64
 end
@@ -1134,7 +1154,7 @@ end
 const DATATYPE_INT  1 offset end
 const DATATYPE_PTR  1 offset end
 const DATATYPE_BOOL 1 offset end
-const COUNT_DATATYPES reset end
+const COUNT_DATATYPES  reset end
 
 const HUMAN_SINGULAR 1 offset end
 const HUMAN_PLURAL   1 offset end
@@ -1201,8 +1221,8 @@ end
 proc eval-const-value
   ptr // ptr to lexer
   --
+  int // type
   int // value
-  int // data type
 in
   memory token sizeof(Token) end
   memory done sizeof(bool) end
@@ -1252,8 +1272,7 @@ in
       1 exit
     end
 
-    const-stack ConstFrame.value + @64
-    const-stack ConstFrame.type  + @64
+    const-stack-pop
   else
     here eputs ": TODO: const expression was not closed properly\n" eputs
     1 exit
@@ -1388,6 +1407,23 @@ in
   over 1 + tmp-alloc memcpy
 end
 
+proc check-name-redefinition
+  int ptr // name
+  ptr     // loc
+in
+  memory loc sizeof(Loc) end
+  sizeof(Loc) swap loc memcpy drop
+  memory name sizeof(Str) end
+  name !Str
+
+  name @Str const-lookup dup NULL != if
+    loc eputloc ": ERROR: redefinition of a constant `" eputs name @Str eputs "`\n" eputs
+    dup Const.loc + eputloc ": NOTE: the original definition is located here\n" eputs
+    1 exit
+  end
+  drop
+end
+
 proc parse_file_path_cstr_into_ops ptr in
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
@@ -1398,6 +1434,7 @@ proc parse_file_path_cstr_into_ops ptr in
   file-path-cstr @ptr cstr-to-str lexer Lexer.file-path + !Str
 
   memory token sizeof(Token) end
+  memory konst sizeof(Const) end
 
   while token lexer lexer-next-token do
     assert "Exhaustive handling of Token types" COUNT_TOKENS 4 = end
@@ -1497,12 +1534,25 @@ proc parse_file_path_cstr_into_ops ptr in
             1 exit
           end
 
-          lexer eval-const-value 2drop
+          token Token.value + @Str
+          token Token.loc +
+          check-name-redefinition
 
-          here eputs ": TODO: const definition is not fully implemented\n" eputs
-          token Token.loc + eputloc ": NOTE: located in here\n" eputs
-          1 exit
+          token Token.value + @Str konst Const.name + !Str
+          sizeof(Loc) token Token.loc + konst Const.loc + memcpy drop
+
+          lexer eval-const-value
+
+          konst Const.value + !64
+          konst Const.type + !64
+
+          konst const-define
+        else dup @Str const-lookup dup NULL != if*
+          OP_PUSH_INT
+          swap Const.value + @64
+          push-op
         else
+          drop // const-lookup
           token Token.loc + eputloc
           ": TODO: unknown word `" puts dup @Str puts "`\n" puts
           1 exit
