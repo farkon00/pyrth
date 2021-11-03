@@ -228,8 +228,6 @@ const sizeof(Proc) reset end
 
 proc cmd-echoed ptr in
   memory wstatus sizeof(u64) end
-  memory empty_envp sizeof(ptr) end
-  0 empty_envp !64
 
   "[CMD]" puts
   dup while dup @64 0 != do
@@ -243,25 +241,20 @@ proc cmd-echoed ptr in
   fork
 
   dup 0 = if
+    // argv[0] argv 
     drop
-    dup @64 cast(ptr) empty_envp
-    rot rot
-    execve
-    dup 0 < if
-      "[ERROR] could not exec external program\n" eputs
-      1 exit
-    end
+    dup @ptr
+    swap
+    execvp
   else dup 0 > if*
-    drop
+    2drop
     // TODO: handle the result of wait4
     NULL 0 wstatus -1 wait4 drop
   else
-    drop
+    2drop
     "[ERROR] could not fork a child\n" eputs
     1 exit
   end
-
-  drop
 end
 
 proc dump-ops in
@@ -657,15 +650,14 @@ proc compile-ops in
   out-fd @64 close drop
 
   memory nasm-argv sizeof(ptr) 4 * end
-  // TODO: search for external utilities in $PATH
-  "/usr/bin/nasm"c nasm-argv 0 8 * + !64
+  "nasm"c nasm-argv 0 8 * + !64
   "-felf64"c       nasm-argv 1 8 * + !64
   "output.asm"c    nasm-argv 2 8 * + !64
   NULL             nasm-argv 3 8 * + !64
   nasm-argv cmd-echoed
 
   memory ld-argv sizeof(ptr) 5 * end
-  "/usr/bin/ld"c ld-argv 0 8 * + !64
+  "ld"c ld-argv 0 8 * + !64
   "-o"c          ld-argv 1 8 * + !64
   "output"c      ld-argv 2 8 * + !64
   "output.o"c    ld-argv 3 8 * + !64

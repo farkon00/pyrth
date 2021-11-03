@@ -384,6 +384,7 @@ proc write int ptr int -- int in SYS_write syscall3 end
 proc read int ptr int -- int in SYS_read syscall3 end
 proc openat int int ptr int -- int in SYS_openat syscall4 end
 proc fstat ptr int -- int in SYS_fstat syscall2 end
+proc stat ptr ptr -- int in SYS_stat syscall2 end
 proc close int -- int in SYS_close syscall1 end
 proc exit int in SYS_exit syscall1 drop end
 proc mmap int int int int int ptr -- int in SYS_mmap syscall6 end
@@ -475,7 +476,7 @@ proc str-chop-one-left ptr in
 end
 
 proc str-trim-left ptr in // input --
-  while 
+  while
     dup @Str.count 0 > if
       dup @Str.data @8 ' ' =
     else false end
@@ -485,7 +486,11 @@ proc str-trim-left ptr in // input --
   drop
 end
 
-proc str-chop-by-delim int ptr ptr in
+proc str-chop-by-delim
+  int // delim
+  ptr // dst
+  ptr // src
+in
   memory delim sizeof(u64) end
   rot delim !64
   2dup @Str.data swap !Str.data
@@ -532,7 +537,11 @@ proc isdigit int -- bool in
   and
 end
 
-proc try-parse-int int ptr -- int bool in
+proc try-parse-int
+  int ptr
+  --
+  int bool
+in
   memory input sizeof(Str) end
   input !Str
 
@@ -645,4 +654,108 @@ proc rand -- int in
   RAND_C +
   dup
   rand-state !64
+end
+
+proc getenv
+  int ptr // name as str
+  --
+  ptr     // value as cstr
+in
+  memory name sizeof(Str) end
+  name !Str
+
+  memory env-name sizeof(Str) end
+  memory env-value  sizeof(Str) end
+
+  envp
+  while
+    dup @ptr NULL != if
+      dup @ptr cstr-to-str env-value !Str
+      '=' env-name env-value str-chop-by-delim
+      env-name @Str name @Str streq lnot
+    else false end
+  do 8 + end
+
+  NULL != if
+    env-value @Str.data
+  else
+    NULL
+  end
+end
+
+const BUFFER_CAP 1024 end
+memory buffer BUFFER_CAP 1 + end
+memory buffer-size sizeof(u64) end
+
+proc buffer-clean in
+  BUFFER_CAP 0 buffer memset drop
+  0 buffer-size !64
+end
+
+proc buffer-str-append
+  int ptr
+in
+  memory str sizeof(Str) end
+  str !Str
+
+  buffer-size @64
+  str @Str.count
+  +
+  BUFFER_CAP > if
+    here eputs ": buffer capacity exceeded\n" eputs
+    1 exit
+  end
+
+  str @Str
+  buffer buffer-size @64 +
+  memcpy
+  drop
+
+  buffer-size @64 str @Str.count + buffer-size !64
+end
+
+proc execvp
+  ptr // argv
+  ptr // file
+in
+  memory empty_envp sizeof(ptr) end
+  0 empty_envp !64
+
+  memory argvp sizeof(ptr) end
+  argvp !64
+
+  memory file-path sizeof(ptr) end
+  file-path !64
+
+  empty_envp
+  argvp @ptr
+  file-path @ptr
+  execve drop
+
+  memory paths sizeof(Str) end
+  memory path sizeof(Str) end
+
+  "PATH" getenv
+
+  dup NULL = if
+    "Could not find $PATH\n" eputs
+    1 exit
+  else
+    dup cstr-to-str paths !Str
+    while paths @Str.count 0 > do
+
+      ':' path paths str-chop-by-delim
+
+      buffer-clean
+      path @Str buffer-str-append
+      "/" buffer-str-append
+      file-path @ptr cstr-to-str buffer-str-append
+
+      empty_envp argvp @ptr buffer execve drop
+    end
+  end
+  drop
+
+  here eputs ": ERROR: could not find executable `" eputs file-path @ptr cstr-to-str eputs "`\n" eputs
+  1 exit
 end
