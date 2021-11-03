@@ -1244,6 +1244,11 @@ in
           swap drop
           DATATYPE_PTR swap
           const-stack-push
+        else dup INTRINSIC_CAST_BOOL = if*
+          const-stack-pop
+          swap drop
+          DATATYPE_BOOL swap
+          const-stack-push
         else
           token Token.loc + eputloc ": ERROR: intrinsic `" eputs token Token.value + @Str eputs "` is not supported in compile time evaluation\n" eputs
           1 exit
@@ -1645,4 +1650,3 @@ proc main in
 end
 
 main
-// If you read this I VON ZULUL
