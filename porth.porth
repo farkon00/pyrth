@@ -221,6 +221,11 @@ in
   consts-count inc64
 end
 
+const Proc.name sizeof(Str) offset end
+const Proc.addr sizeof(u64) offset end
+const Proc.loc sizeof(Loc) offset end
+const sizeof(Proc) reset end
+
 proc cmd-echoed ptr in
   memory wstatus sizeof(u64) end
   memory empty_envp sizeof(ptr) end
@@ -1557,6 +1562,10 @@ proc parse_file_path_cstr_into_ops ptr in
           konst Const.type + !64
 
           konst const-define
+        else dup @Str "proc" streq if*
+          here eputs ": TODO: procs are not implemented yet\n" eputs
+          token Token.loc + eputloc ": NOTE: the procedure is located here \n" puts
+          1 exit
         else dup @Str const-lookup dup NULL != if*
           OP_PUSH_INT
           swap Const.value + @64
