@@ -26,3 +26,4 @@ str-chop-by-delim
 procs
 max
 memset
+envp

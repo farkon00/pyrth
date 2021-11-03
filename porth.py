@@ -94,6 +94,7 @@ class Intrinsic(Enum):
     CAST_BOOL=auto()
     ARGC=auto()
     ARGV=auto()
+    ENVP=auto()
     HERE=auto()
     SYSCALL0=auto()
     SYSCALL1=auto()
@@ -279,7 +280,7 @@ def simulate_little_endian_linux(program: Program, argv: List[str]):
                 ret_stack.append(ip + 1)
                 ip = op.operand
             elif op.typ == OpType.INTRINSIC:
-                assert len(Intrinsic) == 43, "Exhaustive handling of intrinsic in simulate_little_endian_linux()"
+                assert len(Intrinsic) == 44, "Exhaustive handling of intrinsic in simulate_little_endian_linux()"
                 if op.operand == Intrinsic.PLUS:
                     a = stack.pop()
                     b = stack.pop()
@@ -437,6 +438,8 @@ def simulate_little_endian_linux(program: Program, argv: List[str]):
                 elif op.operand == Intrinsic.ARGV:
                     stack.append(argv_buf_ptr)
                     ip += 1
+                elif op.operand == Intrinsic.ENVP:
+                    assert False, "TODO: `envp` intrinsic is not implemented for the simulation mode"
                 elif op.operand == Intrinsic.HERE:
                     value = ("%s:%d:%d" % op.token.loc).encode('utf-8')
                     n = len(value)
@@ -741,7 +744,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             type_check_context_outs(ctx)
             contexts.pop()
         elif op.typ == OpType.INTRINSIC:
-            assert len(Intrinsic) == 43, "Exhaustive intrinsic handling in type_check_program()"
+            assert len(Intrinsic) == 44, "Exhaustive intrinsic handling in type_check_program()"
             assert isinstance(op.operand, Intrinsic), "This could be a bug in compilation step"
             if op.operand == Intrinsic.PLUS:
                 type_check_contracts(op.token, ctx, [
@@ -894,6 +897,10 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                     Contract(ins=[], outs=[(DataType.INT, op.token.loc)])
                 ])
             elif op.operand == Intrinsic.ARGV:
+                type_check_contracts(op.token, ctx, [
+                    Contract(ins=[], outs=[(DataType.PTR, op.token.loc)])
+                ])
+            elif op.operand == Intrinsic.ENVP:
                 type_check_contracts(op.token, ctx, [
                     Contract(ins=[], outs=[(DataType.PTR, op.token.loc)])
                 ])
@@ -1104,7 +1111,7 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
                 out.write("    add rsp, %d\n" % op.operand)
                 out.write("    ret\n")
             elif op.typ == OpType.INTRINSIC:
-                assert len(Intrinsic) == 43, "Exhaustive intrinsic handling in generate_nasm_linux_x86_64()"
+                assert len(Intrinsic) == 44, "Exhaustive intrinsic handling in generate_nasm_linux_x86_64()"
                 if op.operand == Intrinsic.PLUS:
                     out.write("    pop rax\n")
                     out.write("    pop rbx\n")
@@ -1276,6 +1283,12 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
                     out.write("    mov rax, [args_ptr]\n")
                     out.write("    add rax, 8\n")
                     out.write("    push rax\n")
+                elif op.operand == Intrinsic.ENVP:
+                    out.write("    mov rax, [args_ptr]\n")
+                    # TODO: why do we have to skip a single word in here?
+                    # Reference: https://www.win.tue.nl/~aeb/linux/hh/stack-layout.html
+                    out.write("    add rax, 24\n")
+                    out.write("    push rax\n")
                 elif op.operand == Intrinsic.HERE:
                     value = ("%s:%d:%d" % op.token.loc).encode('utf-8')
                     n = len(value)
@@ -1373,7 +1386,7 @@ KEYWORD_BY_NAMES: Dict[str, Keyword] = {
 }
 KEYWORD_NAMES: Dict[Keyword, str] = {v: k for k, v in KEYWORD_BY_NAMES.items()}
 
-assert len(Intrinsic) == 43, "Exhaustive INTRINSIC_BY_NAMES definition"
+assert len(Intrinsic) == 44, "Exhaustive INTRINSIC_BY_NAMES definition"
 INTRINSIC_BY_NAMES: Dict[str, Intrinsic] = {
     '+': Intrinsic.PLUS,
     '-': Intrinsic.MINUS,
@@ -1410,6 +1423,7 @@ INTRINSIC_BY_NAMES: Dict[str, Intrinsic] = {
     'cast(bool)': Intrinsic.CAST_BOOL,
     'argc': Intrinsic.ARGC,
     'argv': Intrinsic.ARGV,
+    'envp': Intrinsic.ENVP,
     'here': Intrinsic.HERE,
     'syscall0': Intrinsic.SYSCALL0,
     'syscall1': Intrinsic.SYSCALL1,
