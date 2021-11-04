@@ -16,6 +16,9 @@ const stderr 2 end
 proc @ptr ptr -- ptr in @64 cast(ptr) end
 proc @bool ptr -- bool in @64 cast(bool) end
 
+proc !bool bool ptr in !64 end
+proc !ptr ptr ptr in !64 end
+
 /// Syscalls
 // Stolen from https://filippo.io/linux-syscall-table/
 // Not all of the syscalls here are useful/implemented. I literally just copy-pasted them.

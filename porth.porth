@@ -7,6 +7,8 @@ const OP_PUSH_INT  1 offset end
 const OP_IF        1 offset end
 const OP_ELSE      1 offset end
 const OP_END       1 offset end
+const OP_SKIP_PROC 1 offset end
+const OP_PREP_PROC 1 offset end
 const OP_INTRINSIC 1 offset end
 const COUNT_OPS       reset end
 
@@ -15,12 +17,14 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 5 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 7 = end
        dup OP_PUSH_INT  = if  "OP_PUSH_INT"
   else dup OP_INTRINSIC = if* "OP_INTRINSIC"
   else dup OP_IF        = if* "OP_IF"
   else dup OP_ELSE      = if* "OP_ELSE"
   else dup OP_END       = if* "OP_END"
+  else dup OP_SKIP_PROC = if* "OP_SKIP_PROC"
+  else dup OP_PREP_PROC = if* "OP_PREP_PROC"
   else
     here eputs ": Unknown op type\n" eputs 1 exit
     0 NULL
@@ -28,8 +32,43 @@ in
   rot drop
 end
 
+const Loc.file-path sizeof(Str) offset end
+const Loc.row sizeof(u64) offset end
+const Loc.col sizeof(u64) offset end
+const sizeof(Loc) reset end
+
+proc fputloc ptr int in
+  memory fd sizeof(u64) end
+  fd !64
+  dup Loc.file-path + @Str fd @64 fputs
+  ":"                      fd @64 fputs
+  dup Loc.row + @64        fd @64 fputu
+  ":"                      fd @64 fputs
+  dup Loc.col + @64        fd @64 fputu
+  drop
+end
+proc putloc ptr in stdout fputloc end
+proc eputloc ptr in stderr fputloc end
+
+const TOKEN_INT  1 offset end
+const TOKEN_WORD 1 offset end
+const TOKEN_STR  1 offset end
+const TOKEN_CHAR 1 offset end
+const COUNT_TOKENS reset end
+
+const Token.type sizeof(u64) offset end
+const Token.loc  sizeof(Loc) offset end
+const Token.text sizeof(Str) offset end
+const Token.value
+   sizeof(u64)
+   sizeof(Str) max
+   offset
+end
+const sizeof(Token) reset end
+
 const Op.type sizeof(u64) offset end
 const Op.operand sizeof(u64) offset end
+const Op.token sizeof(Token) offset end
 const sizeof(Op) reset end
 
 const OPS_CAP 1024 end
@@ -39,14 +78,18 @@ memory ops sizeof(Op) OPS_CAP * end
 proc push-op
   int // type
   int // operand
+  ptr // token
 in
   ops-count @64 OPS_CAP >= if
     here eputs ": ERROR: ops overflow\n" eputs 1 exit
   end
 
-  ops-count @64 sizeof(Op) * ops +
-  dup rot swap Op.operand + !64
-  Op.type + !64
+  memory top sizeof(ptr) end
+  ops-count @64 sizeof(Op) * ops + top !ptr
+
+  sizeof(Token) swap top @ptr Op.token + memcpy drop
+  top @ptr Op.operand + !64
+  top @ptr Op.type + !64
   ops-count inc64
 end
 
@@ -151,24 +194,6 @@ in
   end
   swap
 end
-
-const Loc.file-path sizeof(Str) offset end
-const Loc.row sizeof(u64) offset end
-const Loc.col sizeof(u64) offset end
-const sizeof(Loc) reset end
-
-proc fputloc ptr int in
-  memory fd sizeof(u64) end
-  fd !64
-  dup Loc.file-path + @Str fd @64 fputs
-  ":"                      fd @64 fputs
-  dup Loc.row + @64        fd @64 fputu
-  ":"                      fd @64 fputs
-  dup Loc.col + @64        fd @64 fputu
-  drop
-end
-proc putloc ptr in stdout fputloc end
-proc eputloc ptr in stderr fputloc end
 
 const Const.name  sizeof(Str) offset end
 const Const.loc   sizeof(Loc) offset end
@@ -332,9 +357,7 @@ proc compile-ops in
   0 while dup ops-count @64 < do
     dup sizeof(Op) * ops +
 
-    assert "Exhaustive handling of Op types in compile-ops"
-      COUNT_OPS 5 =
-    end
+    assert "Exhaustive handling of Op types in compile-ops" COUNT_OPS 7 = end
 
     "addr_" out-fd @64 fputs
     over    out-fd @64 fputu
@@ -355,6 +378,12 @@ proc compile-ops in
     else dup Op.type + @64 OP_END = if*
        "    ;; -- end --\n"  out-fd @64 fputs
        "    jmp addr_"       out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup Op.type + @64 OP_SKIP_PROC = if*
+       here eputs ": TODO: OP_SKIP_PROC is not implemented yet\n" eputs
+       1 exit
+    else dup Op.type + @64 OP_PREP_PROC = if*
+       here eputs ": TODO: OP_PREP_PROC is not implemented yet\n" eputs
+       1 exit
     else dup Op.type + @64 OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in compile-ops"
           COUNT_INTRINSICS 42 =
@@ -650,14 +679,14 @@ proc compile-ops in
   out-fd @64 close drop
 
   memory nasm-argv sizeof(ptr) 4 * end
-  "nasm"c nasm-argv 0 8 * + !64
+  "nasm"c          nasm-argv 0 8 * + !64
   "-felf64"c       nasm-argv 1 8 * + !64
   "output.asm"c    nasm-argv 2 8 * + !64
   NULL             nasm-argv 3 8 * + !64
   nasm-argv cmd-echoed
 
   memory ld-argv sizeof(ptr) 5 * end
-  "ld"c ld-argv 0 8 * + !64
+  "ld"c          ld-argv 0 8 * + !64
   "-o"c          ld-argv 1 8 * + !64
   "output"c      ld-argv 2 8 * + !64
   "output.o"c    ld-argv 3 8 * + !64
@@ -703,9 +732,7 @@ proc simulate-ops in
     memcpy
     drop
 
-    assert "Exhaustive handling of Op types in simulate-ops"
-      COUNT_OPS 5 =
-    end
+    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 7 = end
 
     sim-op Op.type + @64 OP_PUSH_INT = if
        sim-op Op.operand + @64 sim-stack-push
@@ -720,6 +747,12 @@ proc simulate-ops in
       sim-op Op.operand + @64 sim-ip !64
     else sim-op Op.type + @64 OP_END = if*
       sim-op Op.operand + @64 sim-ip !64
+    else sim-op Op.type + @64 OP_SKIP_PROC = if*
+      here eputs ": TODO: OP_SKIP_PROC is not implemented yet in simulation mode\n" eputs
+      1 exit
+    else sim-op Op.type + @64 OP_PREP_PROC = if*
+      here eputs ": TODO: OP_PREP_PROC is not implemented yet in simulation mode\n" eputs
+      1 exit
     else sim-op Op.type + @64 OP_INTRINSIC = if*
       assert "Exhaustive handling of Intrinsics in compile-ops"
         COUNT_INTRINSICS 42 =
@@ -902,23 +935,22 @@ end
 
 const PARSE_BLOCK_STACK_CAP 1024 end
 memory parse-block-stack-count sizeof(u64) end
-proc @parse-block-stack-count -- int in  parse-block-stack-count @64 end
 memory parse-block-stack sizeof(u64) PARSE_BLOCK_STACK_CAP * end
 
 proc parse-block-stack-push int in
-  @parse-block-stack-count PARSE_BLOCK_STACK_CAP >= if
+  parse-block-stack-count @64 PARSE_BLOCK_STACK_CAP >= if
     here eputs ": ERROR: parse block stack overflow\n" eputs 1 exit
   end
-  parse-block-stack @parse-block-stack-count sizeof(u64) * + !64
+  parse-block-stack parse-block-stack-count @64 sizeof(u64) * + !64
   parse-block-stack-count inc64
 end
 
 proc parse-block-stack-pop -- int in
-  @parse-block-stack-count 0 = if
+  parse-block-stack-count @64 0 = if
     here eputs ": ERROR: parse block stack underflow\n" eputs 1 exit
   end
   parse-block-stack-count dec64
-  parse-block-stack @parse-block-stack-count sizeof(u64) * + @64
+  parse-block-stack parse-block-stack-count @64 sizeof(u64) * + @64
 end
 
 proc str-starts-with
@@ -961,22 +993,6 @@ proc remove-comment ptr ptr in
   end
   2drop
 end
-
-const TOKEN_INT  1 offset end
-const TOKEN_WORD 1 offset end
-const TOKEN_STR  1 offset end
-const TOKEN_CHAR 1 offset end
-const COUNT_TOKENS reset end
-
-const Token.type sizeof(u64) offset end
-const Token.loc  sizeof(Loc) offset end
-const Token.text sizeof(Str) offset end
-const Token.value
-   sizeof(u64)
-   sizeof(Str) max
-   offset
-end
-const sizeof(Token) reset end
 
 const Lexer.content    sizeof(Str) offset end
 const Lexer.line       sizeof(Str) offset end
@@ -1396,6 +1412,50 @@ in
   drop
 end
 
+proc datatype-by-name
+  int ptr // data type name
+  --
+  int // data type
+  bool // found
+in
+  memory name sizeof(Str) end
+  name !Str
+  assert "Exhaustive handling of data types in datatype-by-name" COUNT_DATATYPES 3 = end
+       name @Str "ptr"  streq if  DATATYPE_PTR  true
+  else name @Str "bool" streq if* DATATYPE_BOOL true
+  else name @Str "int"  streq if* DATATYPE_INT  true
+  else 0 false end
+end
+
+proc skip-proc-contract
+  ptr // lexer
+in
+  memory token sizeof(Token) end
+  memory ended-with-in sizeof(bool) end
+
+  false ended-with-in !bool
+
+  while
+    token over lexer-next-token if
+      token Token.type + @64 TOKEN_WORD = if
+        token Token.value + @Str "in" streq
+        ended-with-in !bool
+        ended-with-in @bool lnot
+      else
+        here eputs ": TODO: report unsupported token type in proc definition \n" eputs
+        1 exit
+        false
+      end
+    else false end
+  do end
+  drop
+
+  ended-with-in @bool lnot if
+    here eputs ": TODO: report tokens ended before `in` \n" eputs
+    1 exit
+  end
+end
+
 proc parse_file_path_cstr_into_ops ptr in
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
@@ -1407,6 +1467,9 @@ proc parse_file_path_cstr_into_ops ptr in
 
   memory token sizeof(Token) end
   memory konst sizeof(Const) end
+  memory prok sizeof(Proc) end
+  memory inside-proc sizeof(bool) end
+  false inside-proc !64
 
   while token lexer lexer-next-token do
     assert "Exhaustive handling of Token types" COUNT_TOKENS 4 = end
@@ -1416,21 +1479,22 @@ proc parse_file_path_cstr_into_ops ptr in
     dup TOKEN_INT = if
       OP_PUSH_INT
       token Token.value + @64
+      token
       push-op
     else dup TOKEN_WORD = if*
       token Token.value + // token.value
 
-      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 5 = end
+      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 7 = end
 
       dup @Str intrinsic-by-name if
-        OP_INTRINSIC swap push-op
+        OP_INTRINSIC swap token push-op
       else
         drop
         dup @Str "if" streq if
           ops-count @64 parse-block-stack-push
-          OP_IF 0 push-op
+          OP_IF 0 token push-op
         else dup @Str "else" streq if*
-          @parse-block-stack-count 0 <= if
+          parse-block-stack-count @64 0 <= if
             token Token.loc + eputloc
             ": ERROR: `else` can only come after `if`\n" eputs
             1 exit
@@ -1448,12 +1512,12 @@ proc parse_file_path_cstr_into_ops ptr in
           ops-count @64 1 + over Op.operand + !64
 
           ops-count @64 parse-block-stack-push
-          OP_ELSE 0 push-op
+          OP_ELSE 0 token push-op
 
           drop // if_op
           drop // if_ip
         else dup @Str "end" streq if*
-          @parse-block-stack-count 0 <= if
+          parse-block-stack-count @64 0 <= if
             token Token.loc + eputloc
             ": ERROR: `end` can only close `if` and `else` for now\n" eputs
             1 exit
@@ -1464,13 +1528,20 @@ proc parse_file_path_cstr_into_ops ptr in
 
           dup Op.type + @64 OP_IF = if
             dup ops-count @64 swap Op.operand + !64
-            OP_END ops-count @64 1 + push-op
+            OP_END ops-count @64 1 + token push-op
           else dup Op.type + @64 OP_ELSE = if*
             dup ops-count @64 swap Op.operand + !64
-            OP_END ops-count @64 1 + push-op
+            OP_END ops-count @64 1 + token push-op
+          else dup Op.type + @64 OP_SKIP_PROC = if*
+            here eputs ": TODO: this should probably be unreachable\n" eputs
+            1 exit
+          else dup Op.type + @64 OP_PREP_PROC = if*
+            here eputs ": TODO: closing block of OP_PREP_PROC is not implemented yet\n" eputs
+            dup Op.token + Token.loc + eputloc ": NOTE: procedure is located here\n" eputs
+            1 exit
           else
             token Token.loc + eputloc
-            ": ERROR: `end` can only close `if` for now\n" eputs
+            ": ERROR: `end` can only close `if` or `else` for now\n" eputs
             1 exit
           end
 
@@ -1520,12 +1591,46 @@ proc parse_file_path_cstr_into_ops ptr in
 
           konst const-define
         else dup @Str "proc" streq if*
-          here eputs ": TODO: procs are not implemented yet\n" eputs
-          token Token.loc + eputloc ": NOTE: the procedure is located here \n" puts
-          1 exit
+          inside-proc @bool if
+            here eputs ": TODO: reporting proc inside proc error is not implemented yet\n" eputs
+            1 exit
+          end
+
+          sizeof(Proc) 0 prok memset drop
+
+          sizeof(Loc) token Token.loc + prok Proc.loc + memcpy drop
+
+          token lexer lexer-next-token lnot if
+            token Token.loc + eputloc
+            ": expected procedure name but found nothing\n" eputs
+            1 exit
+          end
+
+          token Token.type + @64 TOKEN_WORD != if
+            token Token.loc + eputloc
+            ": expected procedure name to be a word but found " eputs
+            token Token.type + @64 HUMAN_SINGULAR human-token-type eputs
+            " instead\n" eputs
+            1 exit
+          end
+
+          sizeof(Str) token Token.value + prok Proc.name + memcpy drop
+
+          ops-count @64 parse-block-stack-push
+          OP_SKIP_PROC 0 token push-op
+
+          ops-count @64
+          dup prok Proc.addr + !64
+              parse-block-stack-push
+          OP_PREP_PROC 0 token push-op
+
+          lexer skip-proc-contract
+
+          true inside-proc !bool
         else dup @Str const-lookup dup NULL != if*
           OP_PUSH_INT
           swap Const.value + @64
+          token
           push-op
         else
           drop // const-lookup
@@ -1546,7 +1651,20 @@ proc parse_file_path_cstr_into_ops ptr in
     end
 
     drop // token.type
+
   end
+
+  parse-block-stack-count @64 0 > if
+    parse-block-stack-pop
+    sizeof(Op) *
+    ops +
+
+    dup Op.token + Token.loc + eputloc ": unclosed block\n" eputs
+
+    1 exit
+    drop
+  end
+
   // TODO: parse_file_path does not clean up resources after itself
 end
 
