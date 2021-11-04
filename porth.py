@@ -103,6 +103,7 @@ class Intrinsic(Enum):
     SYSCALL4=auto()
     SYSCALL5=auto()
     SYSCALL6=auto()
+    STACK=auto()
 
 class OpType(Enum):
     PUSH_INT=auto()
@@ -280,7 +281,7 @@ def simulate_little_endian_linux(program: Program, argv: List[str]):
                 ret_stack.append(ip + 1)
                 ip = op.operand
             elif op.typ == OpType.INTRINSIC:
-                assert len(Intrinsic) == 44, "Exhaustive handling of intrinsic in simulate_little_endian_linux()"
+                assert len(Intrinsic) == 45, "Exhaustive handling of intrinsic in simulate_little_endian_linux()"
                 if op.operand == Intrinsic.PLUS:
                     a = stack.pop()
                     b = stack.pop()
@@ -551,6 +552,8 @@ def simulate_little_endian_linux(program: Program, argv: List[str]):
                     assert False, "not implemented"
                 elif op.operand == Intrinsic.SYSCALL6:
                     assert False, "not implemented"
+                elif op.operand == Intrinsic.STACK:
+                    pass
                 else:
                     assert False, "unreachable"
             else:
@@ -744,7 +747,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             type_check_context_outs(ctx)
             contexts.pop()
         elif op.typ == OpType.INTRINSIC:
-            assert len(Intrinsic) == 44, "Exhaustive intrinsic handling in type_check_program()"
+            assert len(Intrinsic) == 45, "Exhaustive intrinsic handling in type_check_program()"
             assert isinstance(op.operand, Intrinsic), "This could be a bug in compilation step"
             if op.operand == Intrinsic.PLUS:
                 type_check_contracts(op.token, ctx, [
@@ -936,6 +939,12 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 type_check_contracts(op.token, ctx, [
                     Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), ("d", op.token.loc), ("e", op.token.loc), ("f", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
                 ])
+            elif op.operand == Intrinsic.STACK:
+                # TODO: we need some sort of a flag that would allow us to ignore all the stack requests
+                compiler_diagnostic(op.token.loc, "DEBUG", "Requested stack content. Stopping the compilation.")
+                for typ, loc in reversed(ctx.stack):
+                    compiler_diagnostic(loc, "ITEM", human_type_name(typ))
+                exit(1)
             else:
                 assert False, "unreachable"
             ctx.ip += 1
@@ -1111,7 +1120,7 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
                 out.write("    add rsp, %d\n" % op.operand)
                 out.write("    ret\n")
             elif op.typ == OpType.INTRINSIC:
-                assert len(Intrinsic) == 44, "Exhaustive intrinsic handling in generate_nasm_linux_x86_64()"
+                assert len(Intrinsic) == 45, "Exhaustive intrinsic handling in generate_nasm_linux_x86_64()"
                 if op.operand == Intrinsic.PLUS:
                     out.write("    pop rax\n")
                     out.write("    pop rbx\n")
@@ -1349,6 +1358,8 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
                     out.write("    pop r9\n")
                     out.write("    syscall\n")
                     out.write("    push rax\n")
+                elif op.operand == Intrinsic.STACK:
+                    pass
                 else:
                     assert False, "unreachable"
             else:
@@ -1388,7 +1399,7 @@ KEYWORD_BY_NAMES: Dict[str, Keyword] = {
 }
 KEYWORD_NAMES: Dict[Keyword, str] = {v: k for k, v in KEYWORD_BY_NAMES.items()}
 
-assert len(Intrinsic) == 44, "Exhaustive INTRINSIC_BY_NAMES definition"
+assert len(Intrinsic) == 45, "Exhaustive INTRINSIC_BY_NAMES definition"
 INTRINSIC_BY_NAMES: Dict[str, Intrinsic] = {
     '+': Intrinsic.PLUS,
     '-': Intrinsic.MINUS,
@@ -1434,6 +1445,7 @@ INTRINSIC_BY_NAMES: Dict[str, Intrinsic] = {
     'syscall4': Intrinsic.SYSCALL4,
     'syscall5': Intrinsic.SYSCALL5,
     'syscall6': Intrinsic.SYSCALL6,
+    'stack': Intrinsic.STACK,
 }
 INTRINSIC_NAMES: Dict[Intrinsic, str] = {v: k for k, v in INTRINSIC_BY_NAMES.items()}
 
