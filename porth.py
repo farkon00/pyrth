@@ -552,7 +552,7 @@ def simulate_little_endian_linux(program: Program, argv: List[str]):
                     assert False, "not implemented"
                 elif op.operand == Intrinsic.SYSCALL6:
                     assert False, "not implemented"
-                elif op.operand == Intrinsic.STACK:
+                elif op.operand == Intrinsic.STOP:
                     pass
                 else:
                     assert False, "unreachable"
@@ -1361,7 +1361,7 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
                     out.write("    pop r9\n")
                     out.write("    syscall\n")
                     out.write("    push rax\n")
-                elif op.operand == Intrinsic.STACK:
+                elif op.operand == Intrinsic.STOP:
                     pass
                 else:
                     assert False, "unreachable"
