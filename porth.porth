@@ -241,7 +241,7 @@ proc cmd-echoed ptr in
   fork
 
   dup 0 = if
-    // argv[0] argv 
+    // argv[0] argv
     drop
     dup @ptr
     swap
@@ -1379,43 +1379,6 @@ proc lex-file ptr in
   end
 end
 
-const TMP_CAP 1024 4 * end
-memory tmp-data TMP_CAP end
-memory tmp-size sizeof(u64) end
-
-proc tmp-clean in 0 tmp-size !64 end
-
-proc tmp-alloc
-  int
-  --
-  ptr // result
-in
-  dup tmp-size @64 + TMP_CAP > if
-    here eputs ": Temporary memory buffer exceed. Need to call tmp-clean more often\n" eputs
-    1 exit
-  end
-
-  // size size 0 ptr
-
-  dup
-  0
-  tmp-data tmp-size @64 +
-  memset
-
-  tmp-size @64
-  rot
-  +
-  tmp-size !64
-end
-
-proc str-to-cstr
-  int ptr
-  --
-  ptr
-in
-  over 1 + tmp-alloc memcpy
-end
-
 proc check-name-redefinition
   int ptr // name
   ptr     // loc
@@ -1528,7 +1491,7 @@ proc parse_file_path_cstr_into_ops ptr in
           end
 
           // TODO: introduce include limit
-          token Token.value + @Str str-to-cstr parse_file_path_cstr_into_ops
+          token Token.value + @Str tmp-str-to-cstr parse_file_path_cstr_into_ops
         else dup @Str "const" streq if*
           token lexer lexer-next-token lnot if
             token Token.loc + eputloc
