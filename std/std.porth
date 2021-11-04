@@ -683,35 +683,36 @@ in
   end
 end
 
-const BUFFER_CAP 1024 end
-memory buffer BUFFER_CAP 1 + end
-memory buffer-size sizeof(u64) end
+// TODO: do something better than this
+const PATH_BUFFER_CAP 1024 end
+memory path-buffer PATH_BUFFER_CAP 1 + end
+memory path-buffer-size sizeof(u64) end
 
-proc buffer-clean in
-  BUFFER_CAP 0 buffer memset drop
-  0 buffer-size !64
+proc path-buffer-clean in
+  PATH_BUFFER_CAP 0 path-buffer memset drop
+  0 path-buffer-size !64
 end
 
-proc buffer-str-append
+proc path-buffer-str-append
   int ptr
 in
   memory str sizeof(Str) end
   str !Str
 
-  buffer-size @64
+  path-buffer-size @64
   str @Str.count
   +
-  BUFFER_CAP > if
+  PATH_BUFFER_CAP > if
     here eputs ": buffer capacity exceeded\n" eputs
     1 exit
   end
 
   str @Str
-  buffer buffer-size @64 +
+  path-buffer path-buffer-size @64 +
   memcpy
   drop
 
-  buffer-size @64 str @Str.count + buffer-size !64
+  path-buffer-size @64 str @Str.count + path-buffer-size !64
 end
 
 proc execvp
@@ -746,12 +747,12 @@ in
 
       ':' path paths str-chop-by-delim
 
-      buffer-clean
-      path @Str buffer-str-append
-      "/" buffer-str-append
-      file-path @ptr cstr-to-str buffer-str-append
+      path-buffer-clean
+      path @Str path-buffer-str-append
+      "/" path-buffer-str-append
+      file-path @ptr cstr-to-str path-buffer-str-append
 
-      empty_envp argvp @ptr buffer execve drop
+      empty_envp argvp @ptr path-buffer execve drop
     end
   end
   drop
