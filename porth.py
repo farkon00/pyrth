@@ -103,7 +103,7 @@ class Intrinsic(Enum):
     SYSCALL4=auto()
     SYSCALL5=auto()
     SYSCALL6=auto()
-    STACK=auto()
+    STOP=auto()
 
 class OpType(Enum):
     PUSH_INT=auto()
@@ -939,11 +939,14 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 type_check_contracts(op.token, ctx, [
                     Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), ("d", op.token.loc), ("e", op.token.loc), ("f", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
                 ])
-            elif op.operand == Intrinsic.STACK:
-                # TODO: we need some sort of a flag that would allow us to ignore all the stack requests
-                compiler_diagnostic(op.token.loc, "DEBUG", "Requested stack content. Stopping the compilation.")
-                for typ, loc in reversed(ctx.stack):
-                    compiler_diagnostic(loc, "ITEM", human_type_name(typ))
+            elif op.operand == Intrinsic.STOP:
+                # TODO: we need some sort of a flag that would allow us to ignore all the stop requests
+                compiler_diagnostic(op.token.loc, "DEBUG", "Stopping the compilation. Current stack state:")
+                if len(ctx.stack) > 0:
+                    for typ, loc in reversed(ctx.stack):
+                        compiler_diagnostic(loc, "ITEM", human_type_name(typ))
+                else:
+                    compiler_diagnostic(op.token.loc, "DEBUG", "<EMPTY>")
                 exit(1)
             else:
                 assert False, "unreachable"
@@ -1445,7 +1448,7 @@ INTRINSIC_BY_NAMES: Dict[str, Intrinsic] = {
     'syscall4': Intrinsic.SYSCALL4,
     'syscall5': Intrinsic.SYSCALL5,
     'syscall6': Intrinsic.SYSCALL6,
-    'stack': Intrinsic.STACK,
+    '???': Intrinsic.STOP,
 }
 INTRINSIC_NAMES: Dict[Intrinsic, str] = {v: k for k, v in INTRINSIC_BY_NAMES.items()}
 
