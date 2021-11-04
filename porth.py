@@ -1962,11 +1962,10 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
             elif token.value == Keyword.PROC:
                 if ctx.current_proc is None:
                     ctx.ops.append(Op(typ=OpType.SKIP_PROC, token=token))
-                    proc_addr = ctx.ip
-
                     ctx.stack.append(ctx.ip)
                     ctx.ip += 1
 
+                    proc_addr = ctx.ip
                     ctx.ops.append(Op(typ=OpType.PREP_PROC, token=token))
                     ctx.stack.append(ctx.ip)
                     ctx.ip += 1
@@ -1985,7 +1984,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
 
                     proc_contract = parse_proc_contract(rtokens)
 
-                    ctx.procs[proc_name] = Proc(addr=proc_addr + 1, loc=token.loc, local_memories={}, local_memory_capacity=0, contract=proc_contract)
+                    ctx.procs[proc_name] = Proc(addr=proc_addr, loc=token.loc, local_memories={}, local_memory_capacity=0, contract=proc_contract)
                     ctx.current_proc = ctx.procs[proc_name]
                 else:
                     # TODO: forbid constant definition inside of proc
