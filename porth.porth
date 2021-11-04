@@ -9,6 +9,7 @@ const OP_ELSE      1 offset end
 const OP_END       1 offset end
 const OP_SKIP_PROC 1 offset end
 const OP_PREP_PROC 1 offset end
+const OP_RET       1 offset end
 const OP_INTRINSIC 1 offset end
 const COUNT_OPS       reset end
 
@@ -17,7 +18,7 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 7 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 8 = end
        dup OP_PUSH_INT  = if  "OP_PUSH_INT"
   else dup OP_INTRINSIC = if* "OP_INTRINSIC"
   else dup OP_IF        = if* "OP_IF"
@@ -25,6 +26,7 @@ in
   else dup OP_END       = if* "OP_END"
   else dup OP_SKIP_PROC = if* "OP_SKIP_PROC"
   else dup OP_PREP_PROC = if* "OP_PREP_PROC"
+  else dup OP_RET       = if* "OP_RET"
   else
     here eputs ": Unknown op type\n" eputs 1 exit
     0 NULL
@@ -357,7 +359,7 @@ proc compile-ops in
   0 while dup ops-count @64 < do
     dup sizeof(Op) * ops +
 
-    assert "Exhaustive handling of Op types in compile-ops" COUNT_OPS 7 = end
+    assert "Exhaustive handling of Op types in compile-ops" COUNT_OPS 8 = end
 
     "addr_" out-fd @64 fputs
     over    out-fd @64 fputu
@@ -383,6 +385,9 @@ proc compile-ops in
        1 exit
     else dup Op.type + @64 OP_PREP_PROC = if*
        here eputs ": TODO: OP_PREP_PROC is not implemented yet\n" eputs
+       1 exit
+    else dup Op.type + @64 OP_RET = if*
+       here eputs ": TODO: OP_RET is not implemented yet\n" eputs
        1 exit
     else dup Op.type + @64 OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in compile-ops"
@@ -732,7 +737,7 @@ proc simulate-ops in
     memcpy
     drop
 
-    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 7 = end
+    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 8 = end
 
     sim-op Op.type + @64 OP_PUSH_INT = if
        sim-op Op.operand + @64 sim-stack-push
@@ -752,6 +757,9 @@ proc simulate-ops in
       1 exit
     else sim-op Op.type + @64 OP_PREP_PROC = if*
       here eputs ": TODO: OP_PREP_PROC is not implemented yet in simulation mode\n" eputs
+      1 exit
+    else sim-op Op.type + @64 OP_RET = if*
+      here eputs ": TODO: OP_RET is not implemented yet in simulation mode\n" eputs
       1 exit
     else sim-op Op.type + @64 OP_INTRINSIC = if*
       assert "Exhaustive handling of Intrinsics in compile-ops"
@@ -1484,7 +1492,7 @@ proc parse_file_path_cstr_into_ops ptr in
     else dup TOKEN_WORD = if*
       token Token.value + // token.value
 
-      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 7 = end
+      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 8 = end
 
       dup @Str intrinsic-by-name if
         OP_INTRINSIC swap token push-op
@@ -1532,12 +1540,28 @@ proc parse_file_path_cstr_into_ops ptr in
           else dup Op.type + @64 OP_ELSE = if*
             dup ops-count @64 swap Op.operand + !64
             OP_END ops-count @64 1 + token push-op
-          else dup Op.type + @64 OP_SKIP_PROC = if*
-            here eputs ": TODO: this should probably be unreachable\n" eputs
-            1 exit
           else dup Op.type + @64 OP_PREP_PROC = if*
-            here eputs ": TODO: closing block of OP_PREP_PROC is not implemented yet\n" eputs
-            dup Op.token + Token.loc + eputloc ": NOTE: procedure is located here\n" eputs
+            inside-proc @bool lnot if
+              here eputs ": Assertion failed: OP_PREP_PROC outside of actual proc\n" eputs
+              1 exit
+            end
+
+            parse-block-stack-pop
+            sizeof(Op) *
+            ops +
+
+            dup Op.type + @64 OP_SKIP_PROC != if
+              here eputs ": Assertion failed: Expected OP_SKIP_PROC before OP_PREP_PROC\n" eputs
+              1 exit
+            end
+
+            OP_RET 0 token push-op
+
+            Op.operand + ops-count @64 swap !64
+
+            false inside-proc !bool
+          else dup Op.type + @64 OP_SKIP_PROC = if*
+            here eputs ": unreachable\n" eputs
             1 exit
           else
             token Token.loc + eputloc
