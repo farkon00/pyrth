@@ -75,7 +75,7 @@ const Op.operand sizeof(u64) offset end
 const Op.token sizeof(Token) offset end
 const sizeof(Op) reset end
 
-const OPS_CAP 1024 end
+const OPS_CAP 4 1024 * end
 memory ops-count sizeof(u64) end
 memory ops sizeof(Op) OPS_CAP * end
 
@@ -307,10 +307,12 @@ const sizeof(Memory) reset end
 const GLOBAL_MEMORIES_CAP 1024 end
 memory global-memories-count sizeof(u64) end
 memory global-memories sizeof(Memory) GLOBAL_MEMORIES_CAP * end
+memory global-memory-capacity sizeof(u64) end
 
 const LOCAL_MEMORIES_CAP 1024 end
 memory local-memories-count sizeof(u64) end
 memory local-memories sizeof(Memory) LOCAL_MEMORIES_CAP * end
+memory local-memory-capacity sizeof(u64) end
 
 proc cmd-echoed ptr in
   memory wstatus sizeof(u64) end
@@ -1479,6 +1481,79 @@ proc lex-file ptr in
   end
 end
 
+proc local-memories-lookup
+  int ptr // name
+  --
+  ptr     // Memory
+in
+  memory name sizeof(Str) end
+  name !Str
+
+  0 while
+    dup local-memories-count @64 < if
+      dup sizeof(Memory) * local-memories + Memory.name + @Str
+      name @Str
+      streq
+      lnot
+    else false end
+  do 1 + end
+
+  dup local-memories-count @64 < if
+    sizeof(Memory) * local-memories +
+  else
+    drop NULL
+  end
+end
+
+proc global-memories-lookup
+  int ptr // name
+  --
+  ptr     // Memory
+in
+  memory name sizeof(Str) end
+  name !Str
+
+  0 while
+    dup global-memories-count @64 < if
+      dup sizeof(Memory) * global-memories + Memory.name + @Str
+      name @Str
+      streq
+      lnot
+    else false end
+  do 1 + end
+
+  dup global-memories-count @64 < if
+    sizeof(Memory) * global-memories +
+  else
+    drop NULL
+  end
+end
+
+proc local-memory-define
+  ptr
+in
+  local-memories-count @64 CONST_CAP >= if
+    here eputs ": ERROR: local memory definitions capacity exceeded\n" eputs
+    1 exit
+  end
+
+  sizeof(Const)
+  swap
+  local-memories-count @64 sizeof(Const) * local-memories +
+  memcpy
+  drop
+
+  local-memories-count inc64
+end
+
+proc global-memory-define
+  ptr
+in
+  drop
+  here eputs ": TODO: global-memory-define is not implemented\n" eputs
+  1 exit
+end
+
 proc check-name-redefinition
   int ptr // name
   ptr     // loc
@@ -1497,6 +1572,18 @@ in
   name @Str proc-lookup dup NULL != if
     loc eputloc ": ERROR: redefinition of a procedure `" eputs name @Str eputs "`\n" eputs
     dup Proc.loc + eputloc ": NOTE: the original definition is located here\n" eputs
+    1 exit
+  end drop
+
+  name @Str local-memories-lookup dup NULL != if
+    loc eputloc ": ERROR: redefinition of local memory `" eputs name @Str eputs "`\n" eputs
+    dup Memory.loc + eputloc ": NOTE: the original definition is located here\n" eputs
+    1 exit
+  end drop
+
+  name @Str global-memories-lookup dup NULL != if
+    loc eputloc ": ERROR: redefinition of global memory `" eputs name @Str eputs "`\n" eputs
+    dup Memory.loc + eputloc ": NOTE: the original definition is located here\n" eputs
     1 exit
   end drop
 end
@@ -1560,6 +1647,8 @@ proc parse_file_path_cstr_into_ops ptr in
   memory token sizeof(Token) end
   memory konst sizeof(Const) end
   memory prok sizeof(Proc) end
+  memory memori sizeof(Memory) end
+
   memory inside-proc sizeof(bool) end
   false inside-proc !64
 
@@ -1742,14 +1831,41 @@ proc parse_file_path_cstr_into_ops ptr in
 
           prok proc-define
         else dup @Str "memory" streq if*
+          token lexer lexer-next-token lnot if
+            token Token.loc + eputloc
+            ": expected memory name but found nothing\n" eputs
+            1 exit
+          end
+
+          token Token.type + @64 TOKEN_WORD != if
+            token Token.loc + eputloc
+            ": expected memory name to be a word but found " eputs
+            token Token.type + @64 HUMAN_SINGULAR human-token-type eputs
+            " instead\n" eputs
+            1 exit
+          end
+
+          token Token.value + @Str
+          token Token.loc +
+          check-name-redefinition
+
+          sizeof(Str) token Token.value + memori Memory.name + memcpy drop
+          sizeof(Loc) token Token.loc   + memori Memory.loc  + memcpy drop
+
+          lexer eval-const-value
+
+          swap DATATYPE_INT != if
+            here eputs ": TODO: memory size must be `int` error\n" eputs 1 exit
+          end
+
           inside-proc @bool if
-            here eputs ": TODO: defining local memories is not implemented yet\n" eputs
-            token Token.loc + eputloc ": NOTE: located here\n" eputs
-            1 exit
+            local-memory-capacity @64 memori Memory.offset + !64
+            local-memory-capacity @64 + local-memory-capacity !64
+            memori local-memory-define
           else
-            here eputs ": TODO: defining global memories is not implemented yet\n" eputs
-            token Token.loc + eputloc ": NOTE: located here\n" eputs
-            1 exit
+            global-memory-capacity @64 memori Memory.offset + !64
+            global-memory-capacity @64 + global-memory-capacity !64
+            memori global-memory-define
           end
         else dup @Str const-lookup dup NULL != if*
           OP_PUSH_INT
