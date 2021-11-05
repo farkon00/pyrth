@@ -252,6 +252,50 @@ const Proc.name sizeof(Str) offset end
 const Proc.addr sizeof(u64) offset end
 const Proc.loc sizeof(Loc) offset end
 const sizeof(Proc) reset end
+const PROCS_CAP 1024 end
+memory procs-count sizeof(u64) end
+memory procs sizeof(Proc) PROCS_CAP * end
+
+proc proc-lookup
+  int ptr // proc name
+  --
+  ptr     // proc
+in
+  memory name sizeof(Str) end
+  name !Str
+
+  0 while
+    dup procs-count @64 < if
+      dup sizeof(Proc) * procs + Proc.name + @Str
+      name @Str
+      streq
+      lnot
+    else false end
+  do 1 + end
+
+  dup procs-count @64 < if
+    sizeof(Proc) * procs +
+  else
+    drop NULL
+  end
+end
+
+proc proc-define
+  ptr // proc
+in
+  procs-count @64 PROCS_CAP >= if
+    here eputs ": ERROR: procedure definitions capacity exceeded\n" eputs
+    1 exit
+  end
+
+  sizeof(Proc)
+  swap
+  procs-count @64 sizeof(Proc) * procs +
+  memcpy
+  drop
+
+  procs-count inc64
+end
 
 proc cmd-echoed ptr in
   memory wstatus sizeof(u64) end
@@ -381,13 +425,13 @@ proc compile-ops in
        "    ;; -- end --\n"  out-fd @64 fputs
        "    jmp addr_"       out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
     else dup Op.type + @64 OP_SKIP_PROC = if*
-       here eputs ": TODO: OP_SKIP_PROC is not implemented yet\n" eputs
+       here eputs ": TODO: OP_SKIP_PROC is not implemented yet in compilation mode\n" eputs
        1 exit
     else dup Op.type + @64 OP_PREP_PROC = if*
-       here eputs ": TODO: OP_PREP_PROC is not implemented yet\n" eputs
+       here eputs ": TODO: OP_PREP_PROC is not implemented yet in compilation mode\n" eputs
        1 exit
     else dup Op.type + @64 OP_RET = if*
-       here eputs ": TODO: OP_RET is not implemented yet\n" eputs
+       here eputs ": TODO: OP_RET is not implemented yet in compilation mode\n" eputs
        1 exit
     else dup Op.type + @64 OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in compile-ops"
@@ -1427,8 +1471,13 @@ in
     loc eputloc ": ERROR: redefinition of a constant `" eputs name @Str eputs "`\n" eputs
     dup Const.loc + eputloc ": NOTE: the original definition is located here\n" eputs
     1 exit
-  end
-  drop
+  end drop
+
+  name @Str proc-lookup dup NULL != if
+    loc eputloc ": ERROR: redefinition of a procedure `" eputs name @Str eputs "`\n" eputs
+    dup Proc.loc + eputloc ": NOTE: the original definition is located here\n" eputs
+    1 exit
+  end drop
 end
 
 proc datatype-by-name
@@ -1649,6 +1698,10 @@ proc parse_file_path_cstr_into_ops ptr in
             1 exit
           end
 
+          token Token.value + @Str
+          token Token.loc +
+          check-name-redefinition
+
           sizeof(Str) token Token.value + prok Proc.name + memcpy drop
 
           ops-count @64 parse-block-stack-push
@@ -1662,19 +1715,24 @@ proc parse_file_path_cstr_into_ops ptr in
           lexer skip-proc-contract
 
           true inside-proc !bool
+
+          prok proc-define
         else dup @Str const-lookup dup NULL != if*
           OP_PUSH_INT
           swap Const.value + @64
           token
           push-op
-        else
-          drop // const-lookup
+        else drop dup @Str proc-lookup dup NULL != if*
+          drop
+          here eputs ": TODO: parsing proc calls is not implemented yet\n" eputs
+          token Token.loc + eputloc ": NOTE: the call was initiated here\n" eputs
+          1 exit
+        else drop
           token Token.loc + eputloc
-          ": TODO: unknown word `" puts dup @Str puts "`\n" puts
+          ": ERROR: unknown word `" puts dup @Str puts "`\n" puts
           1 exit
         end
       end
-
       drop // token.value
     else dup TOKEN_STR = if*
       here eputs ": TODO: parsing string literals is not implemented\n" eputs
