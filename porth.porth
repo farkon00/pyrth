@@ -12,6 +12,7 @@ const OP_PREP_PROC      1 offset end
 const OP_RET            1 offset end
 const OP_CALL           1 offset end
 const OP_PUSH_LOCAL_MEM 1 offset end
+const OP_WHILE          1 offset end
 const OP_INTRINSIC      1 offset end
 const COUNT_OPS            reset end
 
@@ -20,7 +21,7 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 10 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 11 = end
        dup OP_PUSH_INT       = if  "OP_PUSH_INT"
   else dup OP_INTRINSIC      = if* "OP_INTRINSIC"
   else dup OP_IF             = if* "OP_IF"
@@ -31,6 +32,7 @@ in
   else dup OP_RET            = if* "OP_RET"
   else dup OP_CALL           = if* "OP_CALL"
   else dup OP_PUSH_LOCAL_MEM = if* "OP_PUSH_LOCAL_MEM"
+  else dup OP_WHILE          = if* "OP_WHILE"
   else
     here eputs ": Unknown op type\n" eputs 1 exit
     0 NULL
@@ -422,7 +424,7 @@ proc compile-ops in
   0 while dup ops-count @64 < do
     dup sizeof(Op) * ops +
 
-    assert "Exhaustive handling of Op types in compile-ops" COUNT_OPS 10 = end
+    assert "Exhaustive handling of Op types in compile-ops" COUNT_OPS 11 = end
 
     "addr_" out-fd @64 fputs
     over    out-fd @64 fputu
@@ -443,6 +445,9 @@ proc compile-ops in
     else dup Op.type + @64 OP_END = if*
        "    ;; -- end --\n"  out-fd @64 fputs
        "    jmp addr_"       out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup Op.type + @64 OP_WHILE = if*
+       here eputs ": TODO: OP_WHILE is not implemented yet in compilation mode\n" eputs
+       1 exit
     else dup Op.type + @64 OP_SKIP_PROC = if*
        here eputs ": TODO: OP_SKIP_PROC is not implemented yet in compilation mode\n" eputs
        1 exit
@@ -806,7 +811,7 @@ proc simulate-ops in
     memcpy
     drop
 
-    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 10 = end
+    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 11 = end
 
     sim-op Op.type + @64 OP_PUSH_INT = if
        sim-op Op.operand + @64 sim-stack-push
@@ -821,6 +826,9 @@ proc simulate-ops in
       sim-op Op.operand + @64 sim-ip !64
     else sim-op Op.type + @64 OP_END = if*
       sim-op Op.operand + @64 sim-ip !64
+    else sim-op Op.type + @64 OP_WHILE = if*
+      here eputs ": TODO: OP_WHILE is not implemented yet in simulation mode\n" eputs
+      1 exit
     else sim-op Op.type + @64 OP_SKIP_PROC = if*
       here eputs ": TODO: OP_SKIP_PROC is not implemented yet in simulation mode\n" eputs
       1 exit
@@ -1675,7 +1683,7 @@ proc parse_file_path_cstr_into_ops ptr in
     else dup TOKEN_WORD = if*
       token Token.value + // token.value
 
-      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 10 = end
+      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 11 = end
 
       dup @Str intrinsic-by-name if
         OP_INTRINSIC swap token push-op
@@ -1707,6 +1715,9 @@ proc parse_file_path_cstr_into_ops ptr in
 
           drop // if_op
           drop // if_ip
+        else dup @Str "while" streq if*
+          ops-count @64 parse-block-stack-push
+          OP_WHILE 0 token push-op
         else dup @Str "end" streq if*
           parse-block-stack-count @64 0 <= if
             token Token.loc + eputloc
