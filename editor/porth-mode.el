@@ -32,6 +32,7 @@
 ;; TODO: jump to the opposite side of the blocks with C-M-f and C-M-b
 ;; I think tuareg-mode can do that with similar end-like block, we try
 ;; to steal their approach
+;; TODO: color the names of definitions in const, memory, proc, etc differently
 
 (defconst porth-mode-syntax-table
   (with-syntax-table (copy-syntax-table)

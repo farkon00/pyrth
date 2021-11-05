@@ -299,6 +299,19 @@ in
   procs-count inc64
 end
 
+const Memory.name sizeof(Str) offset end
+const Memory.offset sizeof(u64) offset end
+const Memory.loc sizeof(Loc) offset end
+const sizeof(Memory) reset end
+
+const GLOBAL_MEMORIES_CAP 1024 end
+memory global-memories-count sizeof(u64) end
+memory global-memories sizeof(Memory) GLOBAL_MEMORIES_CAP * end
+
+const LOCAL_MEMORIES_CAP 1024 end
+memory local-memories-count sizeof(u64) end
+memory local-memories sizeof(Memory) LOCAL_MEMORIES_CAP * end
+
 proc cmd-echoed ptr in
   memory wstatus sizeof(u64) end
 
@@ -1728,6 +1741,16 @@ proc parse_file_path_cstr_into_ops ptr in
           true inside-proc !bool
 
           prok proc-define
+        else dup @Str "memory" streq if*
+          inside-proc @bool if
+            here eputs ": TODO: defining local memories is not implemented yet\n" eputs
+            token Token.loc + eputloc ": NOTE: located here\n" eputs
+            1 exit
+          else
+            here eputs ": TODO: defining global memories is not implemented yet\n" eputs
+            token Token.loc + eputloc ": NOTE: located here\n" eputs
+            1 exit
+          end
         else dup @Str const-lookup dup NULL != if*
           OP_PUSH_INT
           swap Const.value + @64
