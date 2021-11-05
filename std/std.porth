@@ -338,7 +338,7 @@ const SYS_process_vm_writev 311 end
 const SYS_kcmp 312 end
 const SYS_finit_module 313 end
 
-const AT_FDCWD -100 end
+const AT_FDCWD 0 100 - end
 
 const O_RDONLY 0 end
 const O_WRONLY 1 end

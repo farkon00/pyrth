@@ -1272,6 +1272,13 @@ in
           swap drop
           DATATYPE_BOOL swap
           const-stack-push
+        else dup INTRINSIC_MINUS = if*
+          // TODO: `-` intrinsic ignores the types in compile time evaluation
+          const-stack-pop swap drop
+          const-stack-pop swap drop
+          swap
+          -
+          DATATYPE_INT swap const-stack-push
         else
           token Token.loc + eputloc ": ERROR: intrinsic `" eputs token Token.value + @Str eputs "` is not supported in compile time evaluation\n" eputs
           1 exit
@@ -1282,7 +1289,11 @@ in
         dup Const.type + @64
         swap Const.value + @64
         const-stack-push
+      else token Token.value + @Str try-parse-int if*
+        DATATYPE_PTR swap const-stack-push
+        drop // const
       else
+        drop // try-parse-int
         drop // const
         token Token.loc + eputloc ": ERROR: only intrinsic words are allowed in compile time evaluation\n" eputs
         token Token.loc + eputloc ": NOTE: intrinsic `" eputs token Token.value + @Str eputs "` does not exist\n" eputs
