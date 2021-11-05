@@ -10,6 +10,7 @@ const OP_END       1 offset end
 const OP_SKIP_PROC 1 offset end
 const OP_PREP_PROC 1 offset end
 const OP_RET       1 offset end
+const OP_CALL      1 offset end
 const OP_INTRINSIC 1 offset end
 const COUNT_OPS       reset end
 
@@ -18,7 +19,7 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 8 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 9 = end
        dup OP_PUSH_INT  = if  "OP_PUSH_INT"
   else dup OP_INTRINSIC = if* "OP_INTRINSIC"
   else dup OP_IF        = if* "OP_IF"
@@ -27,6 +28,7 @@ in
   else dup OP_SKIP_PROC = if* "OP_SKIP_PROC"
   else dup OP_PREP_PROC = if* "OP_PREP_PROC"
   else dup OP_RET       = if* "OP_RET"
+  else dup OP_CALL      = if* "OP_CALL"
   else
     here eputs ": Unknown op type\n" eputs 1 exit
     0 NULL
@@ -403,7 +405,7 @@ proc compile-ops in
   0 while dup ops-count @64 < do
     dup sizeof(Op) * ops +
 
-    assert "Exhaustive handling of Op types in compile-ops" COUNT_OPS 8 = end
+    assert "Exhaustive handling of Op types in compile-ops" COUNT_OPS 9 = end
 
     "addr_" out-fd @64 fputs
     over    out-fd @64 fputu
@@ -432,6 +434,9 @@ proc compile-ops in
        1 exit
     else dup Op.type + @64 OP_RET = if*
        here eputs ": TODO: OP_RET is not implemented yet in compilation mode\n" eputs
+       1 exit
+    else dup Op.type + @64 OP_CALL = if*
+       here eputs ": TODO: OP_CALL is not implemented yet in compilation mode\n" eputs
        1 exit
     else dup Op.type + @64 OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in compile-ops"
@@ -781,7 +786,7 @@ proc simulate-ops in
     memcpy
     drop
 
-    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 8 = end
+    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 9 = end
 
     sim-op Op.type + @64 OP_PUSH_INT = if
        sim-op Op.operand + @64 sim-stack-push
@@ -804,6 +809,9 @@ proc simulate-ops in
       1 exit
     else sim-op Op.type + @64 OP_RET = if*
       here eputs ": TODO: OP_RET is not implemented yet in simulation mode\n" eputs
+      1 exit
+    else sim-op Op.type + @64 OP_CALL = if*
+      here eputs ": TODO: OP_CALL is not implemented yet in simulation mode\n" eputs
       1 exit
     else sim-op Op.type + @64 OP_INTRINSIC = if*
       assert "Exhaustive handling of Intrinsics in compile-ops"
@@ -1509,8 +1517,11 @@ in
         token Token.value + @Str "in" streq
         ended-with-in !bool
         ended-with-in @bool lnot
+      else token Token.type + @64 TOKEN_STR = if*
+        true
       else
         here eputs ": TODO: report unsupported token type in proc definition \n" eputs
+        token Token.loc + eputloc ": located in here\n" eputs
         1 exit
         false
       end
@@ -1552,7 +1563,7 @@ proc parse_file_path_cstr_into_ops ptr in
     else dup TOKEN_WORD = if*
       token Token.value + // token.value
 
-      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 8 = end
+      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 9 = end
 
       dup @Str intrinsic-by-name if
         OP_INTRINSIC swap token push-op
@@ -1723,10 +1734,10 @@ proc parse_file_path_cstr_into_ops ptr in
           token
           push-op
         else drop dup @Str proc-lookup dup NULL != if*
-          drop
-          here eputs ": TODO: parsing proc calls is not implemented yet\n" eputs
-          token Token.loc + eputloc ": NOTE: the call was initiated here\n" eputs
-          1 exit
+          OP_CALL
+          swap Proc.addr + @64
+          token
+          push-op
         else drop
           token Token.loc + eputloc
           ": ERROR: unknown word `" puts dup @Str puts "`\n" puts
