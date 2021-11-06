@@ -4,6 +4,9 @@
 include "./std/std.porth"
 
 const OP_PUSH_INT        1 offset end
+const OP_PUSH_LOCAL_MEM  1 offset end
+const OP_PUSH_GLOBAL_MEM 1 offset end
+const OP_PUSH_STR        1 offset end
 const OP_IF              1 offset end
 const OP_ELSE            1 offset end
 const OP_END             1 offset end
@@ -11,8 +14,6 @@ const OP_SKIP_PROC       1 offset end
 const OP_PREP_PROC       1 offset end
 const OP_RET             1 offset end
 const OP_CALL            1 offset end
-const OP_PUSH_LOCAL_MEM  1 offset end
-const OP_PUSH_GLOBAL_MEM 1 offset end
 const OP_WHILE           1 offset end
 const OP_DO              1 offset end
 const OP_INTRINSIC       1 offset end
@@ -23,8 +24,11 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 13 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 14 = end
        dup OP_PUSH_INT        =  if  "OP_PUSH_INT"
+  else dup OP_PUSH_LOCAL_MEM  =  if* "OP_PUSH_LOCAL_MEM"
+  else dup OP_PUSH_GLOBAL_MEM =  if* "OP_PUSH_GLOBAL_MEM"
+  else dup OP_PUSH_STR        =  if* "OP_PUSH_STR"
   else dup OP_INTRINSIC       =  if* "OP_INTRINSIC"
   else dup OP_IF              =  if* "OP_IF"
   else dup OP_ELSE            =  if* "OP_ELSE"
@@ -33,8 +37,6 @@ in
   else dup OP_PREP_PROC       =  if* "OP_PREP_PROC"
   else dup OP_RET             =  if* "OP_RET"
   else dup OP_CALL            =  if* "OP_CALL"
-  else dup OP_PUSH_LOCAL_MEM  =  if* "OP_PUSH_LOCAL_MEM"
-  else dup OP_PUSH_GLOBAL_MEM =  if* "OP_PUSH_GLOBAL_MEM"
   else dup OP_WHILE           =  if* "OP_WHILE"
   else dup OP_DO              =  if* "OP_DO"
   else
@@ -79,7 +81,11 @@ end
 const sizeof(Token) reset end
 
 const Op.type sizeof(u64) offset end
-const Op.operand sizeof(u64) offset end
+const Op.operand
+  sizeof(u64)
+  sizeof(Str) max
+  offset
+end
 const Op.token sizeof(Token) offset end
 const sizeof(Op) reset end
 
@@ -87,7 +93,7 @@ const OPS_CAP 4 1024 * end
 memory ops-count sizeof(u64) end
 memory ops sizeof(Op) OPS_CAP * end
 
-proc push-op
+proc push-op-int-operand
   int // type
   int // operand
   ptr // token
@@ -102,6 +108,25 @@ in
   sizeof(Token) swap top @ptr Op.token + memcpy drop
   top @ptr Op.operand + !64
   top @ptr Op.type + !64
+  ops-count inc64
+end
+
+proc push-op-str-operand
+  int     // type
+  int ptr // operand
+  ptr     // token
+in
+  ops-count @64 OPS_CAP >= if
+    here eputs ": ERROR: ops overflow\n" eputs 1 exit
+  end
+
+  memory top sizeof(ptr) end
+  ops-count @64 sizeof(Op) * ops + top !ptr
+
+  sizeof(Token) swap top @ptr Op.token + memcpy drop
+  top @ptr Op.operand + !Str
+  top @ptr Op.type + !64
+
   ops-count inc64
 end
 
@@ -489,7 +514,7 @@ proc compile-ops in
   0 while dup ops-count @64 < do
     dup sizeof(Op) * ops +
 
-    assert "Exhaustive handling of Op types in compile-ops" COUNT_OPS 13 = end
+    assert "Exhaustive handling of Op types in compile-ops" COUNT_OPS 14 = end
 
     "addr_" out-fd @64 fputs
     over    out-fd @64 fputu
@@ -499,6 +524,16 @@ proc compile-ops in
        "    ;; -- push int "  out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu " --\n" out-fd @64 fputs
        "    mov rax, "        out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n"    out-fd @64 fputs
        "    push rax\n"       out-fd @64 fputs
+    else dup Op.type + @64 OP_PUSH_LOCAL_MEM = if*
+       here eputs ": TODO: OP_PUSH_LOCAL_MEM is not implemented yet in compilation mode\n" eputs
+       1 exit
+    else dup Op.type + @64 OP_PUSH_GLOBAL_MEM = if*
+       "    mov rax, mem\n" out-fd @64 fputs
+       "    add rax, "      out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n"    out-fd @64 fputs
+       "    push rax\n"     out-fd @64 fputs
+    else dup Op.type + @64 OP_PUSH_STR = if*
+       here eputs ": TODO: OP_PUSH_STR is not implemented yet in compilation mode\n" eputs
+       1 exit
     else dup Op.type + @64 OP_IF = if*
        "    ;; -- if --\n"   out-fd @64 fputs
        "    pop rax\n"       out-fd @64 fputs
@@ -528,13 +563,6 @@ proc compile-ops in
     else dup Op.type + @64 OP_CALL = if*
        here eputs ": TODO: OP_CALL is not implemented yet in compilation mode\n" eputs
        1 exit
-    else dup Op.type + @64 OP_PUSH_LOCAL_MEM = if*
-       here eputs ": TODO: OP_PUSH_LOCAL_MEM is not implemented yet in compilation mode\n" eputs
-       1 exit
-    else dup Op.type + @64 OP_PUSH_GLOBAL_MEM = if*
-       "    mov rax, mem\n" out-fd @64 fputs
-       "    add rax, "      out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n"    out-fd @64 fputs
-       "    push rax\n"     out-fd @64 fputs
     else dup Op.type + @64 OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in compile-ops"
           COUNT_INTRINSICS 42 =
@@ -883,11 +911,20 @@ proc simulate-ops in
     memcpy
     drop
 
-    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 13 = end
+    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 14 = end
 
     sim-op Op.type + @64 OP_PUSH_INT = if
        sim-op Op.operand + @64 sim-stack-push
        sim-ip inc64
+    else sim-op Op.type + @64 OP_PUSH_LOCAL_MEM = if*
+      here eputs ": TODO: OP_PUSH_LOCAL_MEM is not implemented yet in simulation mode\n" eputs
+      1 exit
+    else sim-op Op.type + @64 OP_PUSH_GLOBAL_MEM = if*
+      here eputs ": TODO: OP_PUSH_GLOBAL_MEM is not implemented yet in simulation mode\n" eputs
+      1 exit
+    else sim-op Op.type + @64 OP_PUSH_STR = if*
+      here eputs ": TODO: OP_PUSH_STR is not implemented yet in simulation mode\n" eputs
+      1 exit
     else sim-op Op.type + @64 OP_IF = if*
        sim-stack-pop cast(bool) if
          sim-ip inc64
@@ -918,12 +955,6 @@ proc simulate-ops in
       1 exit
     else sim-op Op.type + @64 OP_CALL = if*
       here eputs ": TODO: OP_CALL is not implemented yet in simulation mode\n" eputs
-      1 exit
-    else sim-op Op.type + @64 OP_PUSH_LOCAL_MEM = if*
-      here eputs ": TODO: OP_PUSH_LOCAL_MEM is not implemented yet in simulation mode\n" eputs
-      1 exit
-    else sim-op Op.type + @64 OP_PUSH_GLOBAL_MEM = if*
-      here eputs ": TODO: OP_PUSH_GLOBAL_MEM is not implemented yet in simulation mode\n" eputs
       1 exit
     else sim-op Op.type + @64 OP_INTRINSIC = if*
       assert "Exhaustive handling of Intrinsics in compile-ops"
@@ -1789,7 +1820,7 @@ in
     1 exit
   end
 
-  OP_END while-ip @int token push-op
+  OP_END while-ip @int token push-op-int-operand
   ops-count @int do-op @ptr Op.operand + !int
 end
 
@@ -1818,19 +1849,19 @@ proc parse_file_path_cstr_into_ops ptr in
       OP_PUSH_INT
       token Token.value + @64
       token
-      push-op
+      push-op-int-operand
     else dup TOKEN_WORD = if*
       token Token.value + // token.value
 
-      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 13 = end
+      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 14 = end
 
       dup @Str intrinsic-by-name if
-        OP_INTRINSIC swap token push-op
+        OP_INTRINSIC swap token push-op-int-operand
       else
         drop
         dup @Str "if" streq if
           ops-count @64 parse-block-stack-push
-          OP_IF 0 token push-op
+          OP_IF 0 token push-op-int-operand
         else dup @Str "else" streq if*
           parse-block-stack-count @64 0 <= if
             token Token.loc + eputloc
@@ -1850,13 +1881,13 @@ proc parse_file_path_cstr_into_ops ptr in
           ops-count @64 1 + over Op.operand + !64
 
           ops-count @64 parse-block-stack-push
-          OP_ELSE 0 token push-op
+          OP_ELSE 0 token push-op-int-operand
 
           drop // if_op
           drop // if_ip
         else dup @Str "while" streq if*
           ops-count @64 parse-block-stack-push
-          OP_WHILE 0 token push-op
+          OP_WHILE 0 token push-op-int-operand
         else dup @Str "do" streq if*
           parse-block-stack-count @64 0 <= if
             token Token.loc + eputloc ": ERROR: `do` is not preceded by `while`\n" eputs
@@ -1876,7 +1907,7 @@ proc parse_file_path_cstr_into_ops ptr in
 
           ops-count @64 parse-block-stack-push
 
-          OP_DO swap token push-op
+          OP_DO swap token push-op-int-operand
           drop // op
         else dup @Str "end" streq if*
           parse-block-stack-count @64 0 <= if
@@ -1890,10 +1921,10 @@ proc parse_file_path_cstr_into_ops ptr in
 
           dup Op.type + @64 OP_IF = if
             dup ops-count @64 swap Op.operand + !64
-            OP_END ops-count @64 1 + token push-op
+            OP_END ops-count @64 1 + token push-op-int-operand
           else dup Op.type + @64 OP_ELSE = if*
             dup ops-count @64 swap Op.operand + !64
-            OP_END ops-count @64 1 + token push-op
+            OP_END ops-count @64 1 + token push-op-int-operand
           else dup Op.type + @64 OP_DO = if*
             over token enclose-while-do
           else dup Op.type + @64 OP_PREP_PROC = if*
@@ -1911,7 +1942,7 @@ proc parse_file_path_cstr_into_ops ptr in
               1 exit
             end
 
-            OP_RET 0 token push-op
+            OP_RET 0 token push-op-int-operand
 
             Op.operand + ops-count @64 swap !64
 
@@ -2002,12 +2033,12 @@ proc parse_file_path_cstr_into_ops ptr in
           sizeof(Str) token Token.value + prok Proc.name + memcpy drop
 
           ops-count @64 parse-block-stack-push
-          OP_SKIP_PROC 0 token push-op
+          OP_SKIP_PROC 0 token push-op-int-operand
 
           ops-count @64
           dup prok Proc.addr + !64
               parse-block-stack-push
-          OP_PREP_PROC 0 token push-op
+          OP_PREP_PROC 0 token push-op-int-operand
 
           lexer skip-proc-contract
 
@@ -2055,22 +2086,22 @@ proc parse_file_path_cstr_into_ops ptr in
           OP_PUSH_INT
           swap Const.value + @64
           token
-          push-op
+          push-op-int-operand
         else drop dup @Str proc-lookup dup NULL != if*
           OP_CALL
           swap Proc.addr + @64
           token
-          push-op
+          push-op-int-operand
         else drop dup @Str local-memories-lookup dup NULL != if*
           OP_PUSH_LOCAL_MEM
           swap Memory.offset + @64
           token
-          push-op
+          push-op-int-operand
         else drop dup @Str global-memories-lookup dup NULL != if*
           OP_PUSH_GLOBAL_MEM
           swap Memory.offset + @64
           token
-          push-op
+          push-op-int-operand
         else drop
           token Token.loc + eputloc
           ": ERROR: unknown word `" puts dup @Str puts "`\n" puts
@@ -2079,14 +2110,15 @@ proc parse_file_path_cstr_into_ops ptr in
       end
       drop // token.value
     else dup TOKEN_STR = if*
-      here eputs ": TODO: parsing string literals is not implemented\n" eputs
-      token Token.loc + eputloc ": NOTE: located here\n" eputs
-      1 exit
+      OP_PUSH_STR
+      token Token.value + @Str
+      token
+      push-op-str-operand
     else dup TOKEN_CHAR = if*
       OP_PUSH_INT
       token Token.value + @int
       token
-      push-op
+      push-op-int-operand
     else
       here eputs ": Unreachable. Unknown token type.\n" eputs
       1 exit
