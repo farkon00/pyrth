@@ -164,6 +164,7 @@ const INTRINSIC_CAST_INT  1 offset end
 const INTRINSIC_CAST_BOOL 1 offset end
 const INTRINSIC_ARGC      1 offset end
 const INTRINSIC_ARGV      1 offset end
+const INTRINSIC_ENVP      1 offset end
 const INTRINSIC_HERE      1 offset end
 const INTRINSIC_SYSCALL0  1 offset end
 const INTRINSIC_SYSCALL1  1 offset end
@@ -237,7 +238,7 @@ in
   memory name sizeof(Str) end
   name !Str
   true
-  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 42 = end
+  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 43 = end
        name @Str "+"          streq if  INTRINSIC_PLUS
   else name @Str "-"          streq if* INTRINSIC_MINUS
   else name @Str "*"          streq if* INTRINSIC_MUL
@@ -272,6 +273,7 @@ in
   else name @Str "cast(bool)" streq if* INTRINSIC_CAST_BOOL
   else name @Str "argc"       streq if* INTRINSIC_ARGC
   else name @Str "argv"       streq if* INTRINSIC_ARGV
+  else name @Str "envp"       streq if* INTRINSIC_ENVP
   else name @Str "here"       streq if* INTRINSIC_HERE
   else name @Str "syscall0"   streq if* INTRINSIC_SYSCALL0
   else name @Str "syscall1"   streq if* INTRINSIC_SYSCALL1
@@ -565,7 +567,7 @@ proc compile-ops in
        1 exit
     else dup Op.type + @64 OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in compile-ops"
-          COUNT_INTRINSICS 42 =
+          COUNT_INTRINSICS 43 =
         end
 
         dup Op.operand + @64
@@ -765,8 +767,12 @@ proc compile-ops in
             "    mov rax, [args_ptr]\n" out-fd @64 fputs
             "    add rax, 8\n"          out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_ENVP = if*
+            here eputs ": TODO: intrinsic `envp` is not implemented yet\n" eputs
+            1 exit
         else dup INTRINSIC_HERE = if*
-            here eputs ": TODO: intrinsic `here` is not implemented yet" eputs
+            here eputs ": TODO: intrinsic `here` is not implemented yet\n" eputs
+            1 exit
         else dup INTRINSIC_CAST_PTR = if*
             "    ;; -- cast(ptr) --\n"  out-fd @64 fputs
         else dup INTRINSIC_CAST_INT = if*
@@ -958,7 +964,7 @@ proc simulate-ops in
       1 exit
     else sim-op Op.type + @64 OP_INTRINSIC = if*
       assert "Exhaustive handling of Intrinsics in compile-ops"
-        COUNT_INTRINSICS 42 =
+        COUNT_INTRINSICS 43 =
       end
 
       sim-op Op.operand + @64 INTRINSIC_PLUS = if
@@ -1105,6 +1111,8 @@ proc simulate-ops in
         here eputs ": TODO: `argc` is not implemented yet" eputs 1 exit
       else sim-op Op.operand + @64 INTRINSIC_ARGV = if*
         here eputs ": TODO: `argv` is not implemented yet" eputs 1 exit
+      else sim-op Op.operand + @64 INTRINSIC_ENVP = if*
+        here eputs ": TODO: `envp` is not implemented yet" eputs 1 exit
       else sim-op Op.operand + @64 INTRINSIC_HERE = if*
         here eputs ": TODO: `here` is not implemented yet" eputs
       else sim-op Op.operand + @64 INTRINSIC_CAST_PTR = if*
