@@ -1899,12 +1899,10 @@ proc parse_file_path_cstr_into_ops ptr in
           token
           push-op
         else drop dup @Str local-memories-lookup dup NULL != if*
-          drop
-        //  69 exit
-          // OP_PUSH_LOCAL_MEM
-          // swap Memory.offset + @64
-          // token
-          // push-op
+          OP_PUSH_LOCAL_MEM
+          swap Memory.offset + @64
+          token
+          push-op
         else drop
           token Token.loc + eputloc
           ": ERROR: unknown word `" puts dup @Str puts "`\n" puts
