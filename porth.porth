@@ -149,6 +149,60 @@ const INTRINSIC_SYSCALL5  1 offset end
 const INTRINSIC_SYSCALL6  1 offset end
 const COUNT_INTRINSICS       reset end
 
+proc intrinsic-name
+  int // intrinsic
+  --
+  int ptr // name
+in
+       dup INTRINSIC_PLUS      = if  drop "+"
+  else dup INTRINSIC_MINUS     = if* drop "-"
+  else dup INTRINSIC_MUL       = if* drop "*"
+  else dup INTRINSIC_DIVMOD    = if* drop "divmod"
+  else dup INTRINSIC_PRINT     = if* drop "print"
+  else dup INTRINSIC_EQ        = if* drop "="
+  else dup INTRINSIC_GT        = if* drop ">"
+  else dup INTRINSIC_LT        = if* drop "<"
+  else dup INTRINSIC_GE        = if* drop ">="
+  else dup INTRINSIC_LE        = if* drop "<="
+  else dup INTRINSIC_NE        = if* drop "!="
+  else dup INTRINSIC_SHR       = if* drop "shr"
+  else dup INTRINSIC_SHL       = if* drop "shl"
+  else dup INTRINSIC_OR        = if* drop "or"
+  else dup INTRINSIC_AND       = if* drop "and"
+  else dup INTRINSIC_NOT       = if* drop "not"
+  else dup INTRINSIC_DUP       = if* drop "dup"
+  else dup INTRINSIC_SWAP      = if* drop "swap"
+  else dup INTRINSIC_DROP      = if* drop "drop"
+  else dup INTRINSIC_OVER      = if* drop "over"
+  else dup INTRINSIC_ROT       = if* drop "rot"
+  else dup INTRINSIC_STORE8    = if* drop "!8"
+  else dup INTRINSIC_LOAD8     = if* drop "@8"
+  else dup INTRINSIC_STORE16   = if* drop "!16"
+  else dup INTRINSIC_LOAD16    = if* drop "@16"
+  else dup INTRINSIC_STORE32   = if* drop "!32"
+  else dup INTRINSIC_LOAD32    = if* drop "@32"
+  else dup INTRINSIC_STORE64   = if* drop "!64"
+  else dup INTRINSIC_LOAD64    = if* drop "@64"
+  else dup INTRINSIC_CAST_PTR  = if* drop "cast(ptr)"
+  else dup INTRINSIC_CAST_INT  = if* drop "cast(int)"
+  else dup INTRINSIC_CAST_BOOL = if* drop "cast(bool)"
+  else dup INTRINSIC_ARGC      = if* drop "argc"
+  else dup INTRINSIC_ARGV      = if* drop "argv"
+  else dup INTRINSIC_HERE      = if* drop "here"
+  else dup INTRINSIC_SYSCALL0  = if* drop "syscall0"
+  else dup INTRINSIC_SYSCALL1  = if* drop "syscall1"
+  else dup INTRINSIC_SYSCALL2  = if* drop "syscall2"
+  else dup INTRINSIC_SYSCALL3  = if* drop "syscall3"
+  else dup INTRINSIC_SYSCALL4  = if* drop "syscall4"
+  else dup INTRINSIC_SYSCALL5  = if* drop "syscall5"
+  else dup INTRINSIC_SYSCALL6  = if* drop "syscall6"
+  else
+    drop 0 NULL
+    here eputs ": unreachable\n" eputs
+    1 exit
+  end
+end
+
 proc intrinsic-by-name
   int ptr // name
   --
@@ -360,7 +414,13 @@ proc dump-ops in
     dup sizeof(Op) * ops +
     "IP:      " puts over putu "\n" puts
     "Type:    " puts dup Op.type + @64 op-type-as-str puts "\n" puts
-    "Operand: " puts Op.operand + @64 putu                 "\n" puts
+    "Operand: " puts
+    dup Op.type + @64 OP_INTRINSIC = if
+      Op.operand + @64 intrinsic-name puts
+    else
+      Op.operand + @64 putu
+    end
+    "\n" puts
     "----------\n" puts
     1 +
   end
@@ -451,11 +511,11 @@ proc compile-ops in
        "    ;; -- end --\n"  out-fd @64 fputs
        "    jmp addr_"       out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
     else dup Op.type + @64 OP_WHILE = if*
-       here eputs ": TODO: OP_WHILE is not implemented yet in compilation mode\n" eputs
-       1 exit
+       // NOTE: nothing to generate. `while` is basically a label
     else dup Op.type + @64 OP_DO = if*
-       here eputs ": TODO: OP_DO is not implemented yet in compilation mode\n" eputs
-       1 exit
+       "    pop rax\n"       out-fd @64 fputs
+       "    test rax, rax\n" out-fd @64 fputs
+       "    jz addr_" out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
     else dup Op.type + @64 OP_SKIP_PROC = if*
        here eputs ": TODO: OP_SKIP_PROC is not implemented yet in compilation mode\n" eputs
        1 exit
@@ -839,11 +899,14 @@ proc simulate-ops in
     else sim-op Op.type + @64 OP_END = if*
       sim-op Op.operand + @64 sim-ip !64
     else sim-op Op.type + @64 OP_WHILE = if*
-      here eputs ": TODO: OP_WHILE is not implemented yet in simulation mode\n" eputs
-      1 exit
+      sim-ip inc64
+      // NOTE: nothing to simulate. `while` is basically a label
     else sim-op Op.type + @64 OP_DO = if*
-      here eputs ": TODO: OP_DO is not implemented yet in simulation mode\n" eputs
-      1 exit
+      sim-stack-pop cast(bool) if
+        sim-ip inc64
+      else
+        sim-op Op.operand + @64 sim-ip !64
+      end
     else sim-op Op.type + @64 OP_SKIP_PROC = if*
       here eputs ": TODO: OP_SKIP_PROC is not implemented yet in simulation mode\n" eputs
       1 exit
@@ -1684,6 +1747,39 @@ in
   end
 end
 
+proc enclose-while-do
+  int // do-ip
+  ptr // token
+in
+  memory token sizeof(Token) end
+  sizeof(Token) swap token memcpy drop
+
+  memory do-ip sizeof(int) end
+  do-ip !int
+
+  memory do-op sizeof(ptr) end
+  do-ip @int sizeof(Op) * ops + do-op !ptr
+
+  memory while-ip sizeof(int) end
+  do-op @ptr Op.operand + @int while-ip !int
+
+  while-ip @int ops-count @int >= if
+    here eputs ": Assertion Failed: out of range\n" eputs
+    1 exit
+  end
+
+  memory while-op sizeof(ptr) end
+  while-ip @int sizeof(Op) * ops + while-op !ptr
+
+  while-op @ptr Op.type + @int OP_WHILE != if
+    here eputs ": Assertion Failed: `do` does not precede `while`\n" eputs
+    1 exit
+  end
+
+  OP_END while-ip @int token push-op
+  ops-count @int do-op @ptr Op.operand + !int
+end
+
 proc parse_file_path_cstr_into_ops ptr in
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
@@ -1776,7 +1872,7 @@ proc parse_file_path_cstr_into_ops ptr in
             1 exit
           end
 
-          parse-block-stack-pop // ip
+          parse-block-stack-pop   // ip
           ops over sizeof(Op) * + // op
 
           dup Op.type + @64 OP_IF = if
@@ -1786,9 +1882,7 @@ proc parse_file_path_cstr_into_ops ptr in
             dup ops-count @64 swap Op.operand + !64
             OP_END ops-count @64 1 + token push-op
           else dup Op.type + @64 OP_DO = if*
-            here eputs ": TODO: closing `do` block is not implemented yet\n" eputs
-            dup Op.token + Token.loc + eputloc ": NOTE: located here\n" eputs
-            1 exit
+            over token enclose-while-do
           else dup Op.type + @64 OP_PREP_PROC = if*
             inside-proc @bool lnot if
               here eputs ": Assertion failed: OP_PREP_PROC outside of actual proc\n" eputs
