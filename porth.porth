@@ -1296,6 +1296,7 @@ const sizeof(ConstFrame) reset end
 const CONST_STACK_CAP 1024 end
 memory const-stack-count sizeof(u64) end
 memory const-stack sizeof(ConstFrame) CONST_STACK_CAP * end
+memory iota sizeof(int) end
 
 proc const-stack-clean in
   0 const-stack-count !64
@@ -1451,6 +1452,13 @@ in
         end
       else token Token.value + @Str "end" streq if*
         true done !64
+      else token Token.value + @Str "offset" streq if*
+        const-stack-pop swap drop // TODO: offset ignores the type
+        DATATYPE_INT iota @int const-stack-push
+        iota @int + iota !int
+      else token Token.value + @Str "reset" streq if*
+        DATATYPE_INT iota @int const-stack-push
+        0 iota !int
       else token Token.value + @Str const-lookup dup NULL != if*
         dup Const.type + @64
         swap Const.value + @64
@@ -2067,8 +2075,12 @@ proc parse_file_path_cstr_into_ops ptr in
       drop // token.value
     else dup TOKEN_STR = if*
       here eputs ": TODO: parsing string literals is not implemented\n" eputs
+      token Token.loc + eputloc ": NOTE: located here" eputs
+      1 exit
     else dup TOKEN_CHAR = if*
       here eputs ": TODO: parsing character literals is not implemented\n" eputs
+      token Token.loc + eputloc ": NOTE: located here" eputs
+      1 exit
     else
       here eputs ": Unreachable. Unknown token type.\n" eputs
       1 exit
