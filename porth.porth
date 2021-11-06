@@ -2097,6 +2097,35 @@ proc parse_file_path_cstr_into_ops ptr in
             global-memory-capacity @64 + global-memory-capacity !64
             memori global-memory-define
           end
+        else dup @Str "assert" streq if*
+          token lexer lexer-next-token lnot if
+            token Token.loc + eputloc
+            ": expected assert message but found nothing\n" eputs
+            1 exit
+          end
+
+          token Token.type + @64 TOKEN_STR != if
+            token Token.loc + eputloc
+            // TODO: report what was found instead of a string
+            ": expected assert message to be a string\n" eputs
+            1 exit
+          end
+
+          lexer eval-const-value
+
+          swap DATATYPE_BOOL != if
+            token Token.loc + eputloc ": ERROR: assertion expects the expression to be of type `bool`\n" eputs
+            1 exit
+          end
+
+          cast(bool) lnot if
+            token Token.loc + eputloc ": ERROR: Static Assertion Failed: " eputs token Token.value + @Str eputs "\n" eputs
+            1 exit
+          end
+
+          here eputs ": TODO: asserts are not implemented yet\n" eputs
+          token Token.loc + eputloc ": NOTE: located here\n" eputs
+          1 exit
         else dup @Str const-lookup dup NULL != if*
           OP_PUSH_INT
           swap Const.value + @64

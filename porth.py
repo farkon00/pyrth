@@ -1935,7 +1935,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 assert_message = token.value
                 assert_value, assert_typ = eval_const_value(ctx, rtokens)
                 if assert_typ != DataType.BOOL:
-                    compiler_error(token.loc, "assertion expects the expresion to be of type `bool`")
+                    compiler_error(token.loc, "assertion expects the expression to be of type `bool`")
                     exit(1)
                 if assert_value == 0:
                     compiler_error(token.loc, f"Static Assertion Failed: {assert_message}");
