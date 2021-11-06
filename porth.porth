@@ -1749,13 +1749,30 @@ proc parse_file_path_cstr_into_ops ptr in
           ops-count @64 parse-block-stack-push
           OP_WHILE 0 token push-op
         else dup @Str "do" streq if*
-          here eputs ": TODO: parsing `do` is not implemented yet\n" eputs
-          token Token.loc + eputloc ": NOTE: located here\n" eputs
-          1 exit
+          parse-block-stack-count @64 0 <= if
+            token Token.loc + eputloc ": ERROR: `do` is not preceded by `while`\n" eputs
+            1 exit
+          end
+
+          parse-block-stack-pop  // ip
+          dup sizeof(Op) * ops + // op
+
+          dup Op.type + @64 OP_WHILE != if
+            token Token.loc + eputloc ": ERROR: `do` is not preceded by `while`\n" eputs
+            dup Op.token + Token.loc + eputloc ": NOTE: preceded by `" eputs dup Op.token + Token.text + @Str eputs "` instead\n" eputs
+            1 exit
+          end
+
+          swap
+
+          ops-count @64 parse-block-stack-push
+
+          OP_DO swap token push-op
+          drop // op
         else dup @Str "end" streq if*
           parse-block-stack-count @64 0 <= if
             token Token.loc + eputloc
-            ": ERROR: `end` can only close `if` and `else` for now\n" eputs
+            ": ERROR: `end` has nothing to close\n" eputs
             1 exit
           end
 
@@ -1768,6 +1785,10 @@ proc parse_file_path_cstr_into_ops ptr in
           else dup Op.type + @64 OP_ELSE = if*
             dup ops-count @64 swap Op.operand + !64
             OP_END ops-count @64 1 + token push-op
+          else dup Op.type + @64 OP_DO = if*
+            here eputs ": TODO: closing `do` block is not implemented yet\n" eputs
+            dup Op.token + Token.loc + eputloc ": NOTE: located here\n" eputs
+            1 exit
           else dup Op.type + @64 OP_PREP_PROC = if*
             inside-proc @bool lnot if
               here eputs ": Assertion failed: OP_PREP_PROC outside of actual proc\n" eputs
@@ -1793,8 +1814,8 @@ proc parse_file_path_cstr_into_ops ptr in
             here eputs ": unreachable\n" eputs
             1 exit
           else
-            token Token.loc + eputloc
-            ": ERROR: `end` can only close `if` or `else` for now\n" eputs
+            token Token.loc + eputloc ": ERROR: `end` can only close `if` or `else` for now\n" eputs
+            dup Op.token + Token.loc + eputloc ": NOTE: found `" eputs dup Op.token + Token.text + @Str eputs "` instead\n" eputs
             1 exit
           end
 
@@ -2034,7 +2055,7 @@ proc main in
   else dup "lex"c cstreq if*
     argc 3 < if
       stderr usage
-      "ERROR: no input file is provided for the `dump` subcommand\n" eputs
+      "ERROR: no input file is provided for the `lex` subcommand\n" eputs
       1 exit
     end
 
