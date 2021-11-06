@@ -27,3 +27,4 @@ procs
 max
 memset
 envp
+local-memory-overshadowing
