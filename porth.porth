@@ -201,10 +201,12 @@ proc intrinsic-name
   --
   int ptr // name
 in
+  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 44 = end
        dup INTRINSIC_PLUS      = if  drop "+"
   else dup INTRINSIC_MINUS     = if* drop "-"
   else dup INTRINSIC_MUL       = if* drop "*"
   else dup INTRINSIC_DIVMOD    = if* drop "divmod"
+  else dup INTRINSIC_MAX       = if* drop "max"
   else dup INTRINSIC_PRINT     = if* drop "print"
   else dup INTRINSIC_EQ        = if* drop "="
   else dup INTRINSIC_GT        = if* drop ">"
@@ -235,6 +237,7 @@ in
   else dup INTRINSIC_CAST_BOOL = if* drop "cast(bool)"
   else dup INTRINSIC_ARGC      = if* drop "argc"
   else dup INTRINSIC_ARGV      = if* drop "argv"
+  else dup INTRINSIC_ENVP      = if* drop "envp"
   else dup INTRINSIC_HERE      = if* drop "here"
   else dup INTRINSIC_SYSCALL0  = if* drop "syscall0"
   else dup INTRINSIC_SYSCALL1  = if* drop "syscall1"
@@ -464,18 +467,14 @@ end
 
 proc dump-ops in
   0 while dup ops-count @64 < do
-    // ptr ptr
     dup sizeof(Op) * ops +
-    "IP:      " puts over putu "\n" puts
-    "Type:    " puts dup Op.type + @64 op-type-as-str puts "\n" puts
-    "Operand: " puts
+    over putu ": " puts dup Op.type + @64 op-type-as-str puts " " puts
     dup Op.type + @64 OP_INTRINSIC = if
       Op.operand + @64 intrinsic-name puts
     else
       Op.operand + @64 putu
     end
     "\n" puts
-    "----------\n" puts
     1 +
   end
   drop
@@ -1294,6 +1293,100 @@ proc lexer-next-line ptr in
   lexer @ptr Lexer.row + inc64
 end
 
+proc lexer-loc
+  ptr // loc
+  ptr // lexer
+in
+  memory lexer sizeof(ptr) end
+  lexer !ptr
+  memory loc sizeof(ptr) end
+  loc !ptr
+
+  // File Path
+  sizeof(Str)
+  lexer @ptr Lexer.file-path +
+  loc   @ptr Loc.file-path   +
+  memcpy
+  drop
+
+  // Row
+  lexer @ptr Lexer.row + @int
+  loc   @ptr Loc.row   + !int
+
+  // Column
+  lexer @ptr Lexer.line + offsetof(Str.data) + @ptr
+  lexer @ptr Lexer.line-start + @ptr
+  -
+  loc @ptr Loc.col +
+  !int
+end
+
+proc lexer-consume-strlit
+  ptr // lexer
+  --
+  int ptr // string literal
+in
+  memory lexer sizeof(ptr) end
+  lexer !ptr
+
+  memory start sizeof(ptr) end
+  strlit-end start !ptr
+
+  memory count sizeof(int) end
+  0 count !int
+
+  memory loc sizeof(Loc) end
+
+  lexer @ptr Lexer.line +
+    while
+      dup ?str-empty lnot if
+        dup @Str.data @8 '"' = if
+          dup str-chop-one-left
+          false
+        else dup @Str.data @8 '\\' = if*
+          dup str-chop-one-left
+
+          dup ?str-empty if
+            loc lexer @ptr lexer-loc
+            loc eputloc ": ERROR: unfinished escape sequence\n" eputs
+            1 exit
+          end
+
+          dup @Str.data @8 'n' = if
+            10 strlit-append-char
+            dup str-chop-one-left
+            count inc64
+            true
+          else dup @Str.data @8 '\\' = if*
+            92 strlit-append-char
+            dup str-chop-one-left
+            count inc64
+            true
+          else dup @Str.data @8 '\"' = if*
+            34 strlit-append-char
+            dup str-chop-one-left
+            count inc64
+            true
+          else
+            loc lexer @ptr lexer-loc
+            loc eputloc ": ERROR: unknown escape character `" eputs 1 over @Str.data eputs "`\n" eputs
+            1 exit
+            false
+          end
+        else
+          dup @Str.data @8 strlit-append-char
+          dup str-chop-one-left
+          count inc64
+          true
+        end
+      else false end
+    do end
+  drop
+
+  count @int start @ptr
+  // TODO: check if the string literal was actually closed at the end
+end
+
 proc lexer-next-token
   ptr // token
   ptr // lexer
@@ -1317,29 +1410,15 @@ in
   do dup lexer-next-line end
 
   dup Lexer.line + ?str-empty lnot if
-    sizeof(Str)
-    lexer @ptr Lexer.file-path +
-    token @ptr Token.loc + Loc.file-path +
-    memcpy
-    drop
-
-    lexer @ptr Lexer.row + @64
-    token @ptr Token.loc + Loc.row +
-    !64
-
-    lexer @ptr Lexer.line + offsetof(Str.data) + @ptr
-    lexer @ptr Lexer.line-start + @ptr
-    -
-    token @ptr Token.loc + Loc.col +
-    !64
+    token @ptr Token.loc +
+    lexer @ptr
+    lexer-loc
 
     dup Lexer.line + @Str.data @8 '"' = if
        // String literal
-
        dup Lexer.line + str-chop-one-left
-       '"' word rot Lexer.line + str-chop-by-delim
-
-       word @Str  token @ptr Token.value + !Str
+       lexer-consume-strlit word !Str
+       word @Str token @ptr Token.value + !Str
 
        lexer @ptr Lexer.line + ?str-empty lnot if
          lexer @ptr Lexer.line + @Str.data @8 'c' = if
@@ -1351,10 +1430,6 @@ in
        else
          TOKEN_STR token @ptr Token.type + !64
        end
-
-
-       // TODO: check if the string literal was actually closed at the end
-       // TODO: string literals don't support escaping
     else dup Lexer.line + @Str.data @8 39 = if* // TODO: can't use ' directly for some reason
        // Character literal
        dup Lexer.line + str-chop-one-left
@@ -1362,6 +1437,10 @@ in
 
        word @Str "\\n" streq if
          10 token @ptr Token.value + !int
+       else word @Str "\\\\" streq if*
+         92 token @ptr Token.value + !int
+       else word @Str "\\\"" streq if*
+         34 token @ptr Token.value + !int
        else word @Str.count 1 = if*
          word @Str.data @8 token @ptr Token.value + !int
        else
