@@ -28,3 +28,4 @@ max
 memset
 envp
 local-memory-overshadowing
+backslash-in-strlit

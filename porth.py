@@ -2037,13 +2037,13 @@ def unescape_string(s: str) -> str:
     return s.encode('utf-8').decode('unicode_escape').encode('latin-1').decode('utf-8')
 
 def find_string_literal_end(line: str, start: int) -> int:
-    prev = line[start]
     while start < len(line):
-        curr = line[start]
-        if curr == '"' and prev != '\\':
+        if line[start] == '\\':
+            start += 2
+        elif line[start] == '"':
             break
-        prev = curr
-        start += 1
+        else:
+            start += 1
     return start
 
 def lex_lines(file_path: str, lines: List[str]) -> Generator[Token, None, None]:
