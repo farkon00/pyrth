@@ -136,6 +136,7 @@ const INTRINSIC_PLUS      1 offset end
 const INTRINSIC_MINUS     1 offset end
 const INTRINSIC_MUL       1 offset end
 const INTRINSIC_DIVMOD    1 offset end
+const INTRINSIC_MAX       1 offset end
 const INTRINSIC_EQ        1 offset end
 const INTRINSIC_GT        1 offset end
 const INTRINSIC_LT        1 offset end
@@ -240,11 +241,12 @@ in
   memory name sizeof(Str) end
   name !Str
   true
-  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 43 = end
+  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 44 = end
        name @Str "+"          streq if  INTRINSIC_PLUS
   else name @Str "-"          streq if* INTRINSIC_MINUS
   else name @Str "*"          streq if* INTRINSIC_MUL
   else name @Str "divmod"     streq if* INTRINSIC_DIVMOD
+  else name @Str "max"        streq if* INTRINSIC_MAX
   else name @Str "print"      streq if* INTRINSIC_PRINT
   else name @Str "="          streq if* INTRINSIC_EQ
   else name @Str ">"          streq if* INTRINSIC_GT
@@ -429,7 +431,12 @@ proc cmd-echoed ptr in
   else dup 0 > if*
     2drop
     // TODO: handle the result of wait4
-    NULL 0 wstatus -1 wait4 drop
+    NULL
+    0
+    wstatus
+    0 1 - //-1
+    wait4
+    drop
   else
     2drop
     "[ERROR] could not fork a child\n" eputs
@@ -572,7 +579,7 @@ proc compile-ops in
        1 exit
     else dup Op.type + @64 OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in compile-ops"
-          COUNT_INTRINSICS 43 =
+          COUNT_INTRINSICS 44 =
         end
 
         dup Op.operand + @64
@@ -602,6 +609,9 @@ proc compile-ops in
             "    div rbx\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
             "    push rdx\n"            out-fd @64 fputs
+        else dup INTRINSIC_MAX = if*
+            here eputs "TODO: intrinsic `max` is not implemented in compilation mode\n" eputs
+            1 exit
         else dup INTRINSIC_SHR = if*
             "    ;; -- shr --\n"        out-fd @64 fputs
             "    pop rcx\n"             out-fd @64 fputs
@@ -972,7 +982,7 @@ proc simulate-ops in
       1 exit
     else sim-op Op.type + @64 OP_INTRINSIC = if*
       assert "Exhaustive handling of Intrinsics in compile-ops"
-        COUNT_INTRINSICS 43 =
+        COUNT_INTRINSICS 44 =
       end
 
       sim-op Op.operand + @64 INTRINSIC_PLUS = if
@@ -999,6 +1009,9 @@ proc simulate-ops in
         swap
         sim-stack-push
         sim-stack-push
+      else sim-op Op.operand + @64 INTRINSIC_MAX = if*
+        here eputs ": TODO: intrinsic `max` is not implemented in simulation mode\n" eputs
+        1 exit
       else sim-op Op.operand + @64 INTRINSIC_SHR = if*
         sim-stack-pop
         sim-stack-pop
@@ -1521,6 +1534,13 @@ in
           swap
           = cast(int)
           DATATYPE_BOOL swap const-stack-push
+        else dup INTRINSIC_MAX = if*
+          // TODO: `max` intrinsic ignores the types in compile time evaluation
+          const-stack-pop swap drop
+          const-stack-pop swap drop
+          swap
+          max
+          DATATYPE_INT swap const-stack-push
         else
           token Token.loc + eputloc ": ERROR: intrinsic `" eputs token Token.value + @Str eputs "` is not supported in compile time evaluation\n" eputs
           1 exit
