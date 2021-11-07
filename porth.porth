@@ -7,6 +7,7 @@ const OP_PUSH_INT        1 offset end
 const OP_PUSH_LOCAL_MEM  1 offset end
 const OP_PUSH_GLOBAL_MEM 1 offset end
 const OP_PUSH_STR        1 offset end
+const OP_PUSH_CSTR       1 offset end
 const OP_IF              1 offset end
 const OP_IFSTAR          1 offset end
 const OP_ELSE            1 offset end
@@ -25,11 +26,12 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 15 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 16 = end
        dup OP_PUSH_INT        =  if  "OP_PUSH_INT"
   else dup OP_PUSH_LOCAL_MEM  =  if* "OP_PUSH_LOCAL_MEM"
   else dup OP_PUSH_GLOBAL_MEM =  if* "OP_PUSH_GLOBAL_MEM"
   else dup OP_PUSH_STR        =  if* "OP_PUSH_STR"
+  else dup OP_PUSH_CSTR       =  if* "OP_PUSH_CSTR"
   else dup OP_INTRINSIC       =  if* "OP_INTRINSIC"
   else dup OP_IF              =  if* "OP_IF"
   else dup OP_IFSTAR          =  if* "OP_IFSTAR"
@@ -69,6 +71,7 @@ proc eputloc ptr in stderr fputloc end
 const TOKEN_INT  1 offset end
 const TOKEN_WORD 1 offset end
 const TOKEN_STR  1 offset end
+const TOKEN_CSTR 1 offset end
 const TOKEN_CHAR 1 offset end
 const COUNT_TOKENS reset end
 
@@ -91,7 +94,7 @@ end
 const Op.token sizeof(Token) offset end
 const sizeof(Op) reset end
 
-const OPS_CAP 4 1024 * end
+const OPS_CAP 8 1024 * end
 memory ops-count sizeof(u64) end
 memory ops sizeof(Op) OPS_CAP * end
 
@@ -525,7 +528,7 @@ proc compile-ops in
   0 while dup ops-count @64 < do
     dup sizeof(Op) * ops +
 
-    assert "Exhaustive handling of Op types in compile-ops" COUNT_OPS 15 = end
+    assert "Exhaustive handling of Op types in compile-ops" COUNT_OPS 16 = end
 
     "addr_" out-fd @64 fputs
     over    out-fd @64 fputu
@@ -544,6 +547,9 @@ proc compile-ops in
        "    push rax\n"     out-fd @64 fputs
     else dup Op.type + @64 OP_PUSH_STR = if*
        here eputs ": TODO: OP_PUSH_STR is not implemented yet in compilation mode\n" eputs
+       1 exit
+    else dup Op.type + @64 OP_PUSH_CSTR = if*
+       here eputs ": TODO: OP_PUSH_CSTR is not implemented yet in compilation mode\n" eputs
        1 exit
     else dup Op.type + @64 OP_IF = if*
        "    ;; -- if --\n"   out-fd @64 fputs
@@ -932,7 +938,7 @@ proc simulate-ops in
     memcpy
     drop
 
-    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 15 = end
+    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 16 = end
 
     sim-op Op.type + @64 OP_PUSH_INT = if
        sim-op Op.operand + @64 sim-stack-push
@@ -945,6 +951,9 @@ proc simulate-ops in
       1 exit
     else sim-op Op.type + @64 OP_PUSH_STR = if*
       here eputs ": TODO: OP_PUSH_STR is not implemented yet in simulation mode\n" eputs
+      1 exit
+    else sim-op Op.type + @64 OP_PUSH_CSTR = if*
+      here eputs ": TODO: OP_PUSH_CSTR is not implemented yet in simulation mode\n" eputs
       1 exit
     else sim-op Op.type + @64 OP_IF = if*
        sim-stack-pop cast(bool) if
@@ -1316,7 +1325,18 @@ in
        '"' word rot Lexer.line + str-chop-by-delim
 
        word @Str  token @ptr Token.value + !Str
-       TOKEN_STR  token @ptr Token.type + !64
+
+       lexer @ptr Lexer.line + ?str-empty lnot if
+         lexer @ptr Lexer.line + @Str.data @8 'c' = if
+           lexer @ptr Lexer.line + str-chop-one-left
+           TOKEN_CSTR token @ptr Token.type + !64
+         else
+           TOKEN_STR token @ptr Token.type + !64
+         end
+       else
+         TOKEN_STR token @ptr Token.type + !64
+       end
+
 
        // TODO: check if the string literal was actually closed at the end
        // TODO: string literals don't support escaping
@@ -1325,13 +1345,15 @@ in
        dup Lexer.line + str-chop-one-left
        39 word rot Lexer.line + str-chop-by-delim
 
-
-       word @Str.count 1 != if
+       word @Str "\\n" streq if
+         10 token @ptr Token.value + !int
+       else word @Str.count 1 = if*
+         word @Str.data @8 token @ptr Token.value + !int
+       else
          token @ptr Token.loc + eputloc ": only a single byte is allowed inside of a character literal\n" eputs
          1 exit
        end
 
-       word @Str.data @8 token @ptr Token.value + !int
        TOKEN_CHAR token @ptr Token.type + !64
 
        // TODO: check if the character literal was actually closed at the end
@@ -1435,7 +1457,7 @@ in
 
   dup HUMAN_SINGULAR = if
     drop
-    assert "Exhaustive handling of token types" COUNT_TOKENS 4 = end
+    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
     dup TOKEN_INT = if
       drop
       "an integer"
@@ -1445,6 +1467,9 @@ in
     else dup TOKEN_STR = if*
       drop
       "a string"
+    else dup TOKEN_CSTR = if*
+      drop
+      "a C-style string"
     else dup TOKEN_CHAR = if*
       drop
       "a character"
@@ -1455,7 +1480,7 @@ in
     end
   else dup HUMAN_PLURAL = if*
     drop
-    assert "Exhaustive handling of token types" COUNT_TOKENS 4 = end
+    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
     dup TOKEN_INT = if
       drop
       "integers"
@@ -1465,6 +1490,9 @@ in
     else dup TOKEN_STR = if*
       drop
       "strings"
+    else dup TOKEN_CSTR = if*
+      drop
+      "C-style strings"
     else dup TOKEN_CHAR = if*
       drop
       "characters"
@@ -1655,9 +1683,7 @@ proc lex-file ptr in
 
   while token lexer lexer-next-token do
 
-    assert "Exhaustive handling of token types in lex-file"
-      COUNT_TOKENS 4 =
-    end
+    assert "Exhaustive handling of token types in lex-file" COUNT_TOKENS 5 = end
 
     token Token.loc + // loc
     dup Loc.file-path + @Str puts ":" puts
@@ -1672,6 +1698,8 @@ proc lex-file ptr in
       "[WORD] " puts token Token.value + @Str puts "\n" puts
     else dup TOKEN_STR = if*
       "[STR] \"" puts token Token.value + @Str puts "\"\n" puts
+    else dup TOKEN_CSTR = if*
+      "[CSTR] \"" puts token Token.value + @Str puts "\"\n" puts
     else dup TOKEN_CHAR = if*
       "[CHAR] " puts token Token.value + @int putu "\n" puts
     else
@@ -1941,7 +1969,7 @@ proc parse_file_path_cstr_into_ops ptr in
   false inside-proc !64
 
   while token lexer lexer-next-token do
-    assert "Exhaustive handling of Token types" COUNT_TOKENS 4 = end
+    assert "Exhaustive handling of Token types" COUNT_TOKENS 5 = end
 
     token Token.type + @64 // token.type
 
@@ -1953,7 +1981,7 @@ proc parse_file_path_cstr_into_ops ptr in
     else dup TOKEN_WORD = if*
       token Token.value + // token.value
 
-      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 15 = end
+      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 16 = end
 
       dup @Str intrinsic-by-name if
         OP_INTRINSIC swap token push-op-int-operand
@@ -2255,6 +2283,11 @@ proc parse_file_path_cstr_into_ops ptr in
       drop // token.value
     else dup TOKEN_STR = if*
       OP_PUSH_STR
+      token Token.value + @Str
+      token
+      push-op-str-operand
+    else dup TOKEN_CSTR = if*
+      OP_PUSH_CSTR
       token Token.value + @Str
       token
       push-op-str-operand
