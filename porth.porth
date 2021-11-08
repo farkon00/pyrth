@@ -2483,6 +2483,7 @@ proc usage int in
   // TODO: -r flag for com subcommand
   "    com <file>       Compile the program\n"                            fd @64 fputs
   "    dump <file>      Dump the ops of the program\n"                    fd @64 fputs
+  "    lex <file>       Produce lexical analysis of the file\n"           fd @64 fputs
   "    help             Print this help to stdout and exit with 0 code\n" fd @64 fputs
 end
 
