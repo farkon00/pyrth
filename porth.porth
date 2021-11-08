@@ -117,12 +117,17 @@ memory strlits-count sizeof(int) end
 memory strlits sizeof(Str) STRLITS_CAP * end
 
 proc strlit-define
+  ptr
   int ptr
   --
   int
 in
   memory strlit sizeof(Str) end
   strlit !Str
+
+  memory loc sizeof(ptr) end
+  loc !ptr
+
 
   strlits-count @64 STRLITS_CAP >= if
     here eputs ": ERROR: string literals capacity exceeded\n" eputs
@@ -136,6 +141,7 @@ in
   drop
 
   strlits-count @64
+
   strlits-count inc64
 end
 
@@ -541,6 +547,61 @@ const MEM_CAPACITY 640000 end
 
 proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
 
+const X86_64_RET_STACK_CAP 8192 end
+
+proc fputhexstr
+  int ptr
+  int
+in
+  memory fd sizeof(u64) end
+  fd !64
+  
+  memory str sizeof(Str) end
+  str !Str
+
+  memory byte 2 end
+
+  memory first sizeof(bool) end
+  true first !bool
+
+  while str @Str.count 0 > do
+    str @Str.data @8
+      dup 15 and
+        dup 0 >= over 9 <= and if
+          dup '0' +      byte 1 + !8
+        else dup 10 >= over 15 <= and if*
+          dup 10 - 'a' + byte 1 + !8
+        else
+          here eputs ": unreachable\n" eputs
+          1 exit
+        end
+      drop
+
+      dup 4 shr 15 and
+        dup 0 >= over 9 <= and if
+          dup '0' + byte !8
+        else dup 10 >= over 15 <= and if*
+          dup 10 - 'a' + byte !8
+        else
+          here eputs ": unreachable\n" eputs
+          1 exit
+        end
+      drop
+    drop
+
+    first @bool if
+      false first !bool
+    else
+      ","    fd @64 fputs
+    end
+
+    "0x"   fd @64 fputs
+    2 byte fd @64 fputs
+
+    str str-chop-one-left
+  end
+end
+
 proc generate-nasm-linux-x86_64 in
   "[INFO] Generating output.asm\n" puts
 
@@ -550,7 +611,8 @@ proc generate-nasm-linux-x86_64 in
   O_CREAT O_WRONLY or  // flags
   // TODO: the output file path should be based on the input file path
   "output.asm"c        // pathname
-  AT_FDCWD
+  // TODO: this is lame, let's just support negative numbers properly
+  0 100 - //AT_FDCWD
   openat
   out-fd !64
 
@@ -640,17 +702,17 @@ proc generate-nasm-linux-x86_64 in
        dup Op.operand + @64 out-fd @64 fputu
        "\n"                 out-fd @64 fputs
     else dup Op.type + @64 OP_PUSH_CSTR = if*
-       here eputs ": TODO: OP_PUSH_CSTR is not implemented yet in compilation mode\n" eputs
-       dup Op.token + Token.loc + located-here
-       1 exit
+       "    push str_"      out-fd @64 fputs
+       dup Op.operand + @64 out-fd @64 fputu
+       "\n"                 out-fd @64 fputs
     else dup Op.type + @64 OP_IF = if*
        "    pop rax\n"       out-fd @64 fputs
        "    test rax, rax\n" out-fd @64 fputs
        "    jz addr_"        out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
     else dup Op.type + @64 OP_IFSTAR = if*
-       here eputs ": TODO: OP_IFSTAR is not implemented yet in compilation mode\n" eputs
-       dup Op.token + Token.loc + located-here
-       1 exit
+       "    pop rax\n"       out-fd @64 fputs
+       "    test rax, rax\n" out-fd @64 fputs
+       "    jz addr_"        out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
     else dup Op.type + @64 OP_ELSE = if*
        "    jmp addr_"       out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
     else dup Op.type + @64 OP_END = if*
@@ -716,9 +778,11 @@ proc generate-nasm-linux-x86_64 in
             "    push rax\n"            out-fd @64 fputs
             "    push rdx\n"            out-fd @64 fputs
         else dup INTRINSIC_MAX = if*
-            here eputs "TODO: intrinsic `max` is not implemented in compilation mode\n" eputs
-            over Op.token + Token.loc + located-here
-            1 exit
+            "    pop rax\n"         out-fd @64 fputs
+            "    pop rbx\n"         out-fd @64 fputs
+            "    cmp rbx, rax\n"    out-fd @64 fputs
+            "    cmovge rax, rbx\n" out-fd @64 fputs
+            "    push rax\n"        out-fd @64 fputs
         else dup INTRINSIC_SHR = if*
             "    pop rcx\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
@@ -941,12 +1005,26 @@ proc generate-nasm-linux-x86_64 in
   ops-count @64 out-fd @64 fputu
   ":\n"      out-fd @64 fputs
 
-  "    mov rax, 60\n"  out-fd @64 fputs
-  "    mov rdi, 0\n"   out-fd @64 fputs
-  "    syscall\n"      out-fd @64 fputs
-  "segment .bss\n"     out-fd @64 fputs
-  "args_ptr: resq 1\n" out-fd @64 fputs
-  "mem: resb "         out-fd @64 fputs MEM_CAPACITY out-fd @64 fputu "\n" out-fd @64 fputs
+  "    mov rax, 60\n"        out-fd @64 fputs
+  "    mov rdi, 0\n"         out-fd @64 fputs
+  "    syscall\n"            out-fd @64 fputs
+  "segment .data\n"          out-fd @64 fputs
+  0 while dup strlits-count @64 < do
+    "str_"                           out-fd @64 fputs
+    dup                              out-fd @64 fputu
+    ": db "                          out-fd @64 fputs
+    dup sizeof(Str) * strlits + @Str out-fd @64 fputhexstr
+    "\n"                             out-fd @64 fputs
+    1 +
+  end drop
+  "segment .bss\n"           out-fd @64 fputs
+  "args_ptr: resq 1\n"       out-fd @64 fputs
+  "ret_stack_rsp: resq 1\n"  out-fd @64 fputs
+  "ret_stack: resb "         out-fd @64 fputs X86_64_RET_STACK_CAP out-fd @64 fputu "\n" out-fd @64 fputs
+  "ret_stack_end:\n"         out-fd @64 fputs
+  "mem: resb "               out-fd @64 fputs
+  global-memory-capacity @64 out-fd @64 fputu
+  "\n"                       out-fd @64 fputs
 
   out-fd @64 close drop
 
@@ -1336,9 +1414,13 @@ in
   else false end
 end
 
-proc remove-comment ptr ptr in
-  memory comment sizeof(Str) end "//" comment !Str
+memory comment sizeof(Str) end
+".." comment !Str
 
+comment @Str.data     inc8
+comment @Str.data 1 + inc8
+
+proc remove-comment ptr ptr in
   over 0 swap !Str.count
   2dup @Str.data swap !Str.data
   while
@@ -1518,6 +1600,8 @@ in
        lexer @ptr Lexer.line + ?str-empty lnot if
          lexer @ptr Lexer.line + @Str.data @8 'c' = if
            lexer @ptr Lexer.line + str-chop-one-left
+           0 strbuf-append-char
+           token @ptr Token.value + offsetof(Str.count) + inc64
            TOKEN_CSTR token @ptr Token.type + !64
          else
            TOKEN_STR token @ptr Token.type + !64
@@ -1821,7 +1905,8 @@ in
   0                   // mode
   O_RDONLY            // flags
   file-path-cstr @ptr // pathname
-  AT_FDCWD            // dirfd
+  // TODO: this is lame, let's just support negative numbers properly
+  0 100 - // AT_FDCWD            // dirfd
   openat
 
   dup 0 < if
@@ -2452,7 +2537,7 @@ proc compile-file-into-ops ptr in
           end
         else dup @Str "here" streq if*
           OP_PUSH_STR
-          token Token.loc + strbuf-loc strlit-define
+          token Token.loc + token Token.loc + strbuf-loc strlit-define
           token
           push-op
         else dup @Str const-lookup dup NULL != if*
@@ -2484,12 +2569,12 @@ proc compile-file-into-ops ptr in
       drop // token.value
     else dup TOKEN_STR = if*
       OP_PUSH_STR
-      token Token.value + @Str strlit-define
+      token Token.loc + token Token.value + @Str strlit-define
       token
       push-op
     else dup TOKEN_CSTR = if*
       OP_PUSH_CSTR
-      token Token.value + @Str strlit-define
+      token Token.loc + token Token.value + @Str strlit-define
       token
       push-op
     else dup TOKEN_CHAR = if*
@@ -2611,5 +2696,7 @@ proc main in
   end
   drop
 end
+
+"hello, world\n" puts
 
 main

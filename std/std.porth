@@ -416,6 +416,8 @@ proc inc64 ptr in dup @64 1 + swap !64 end
 proc dec64 ptr in dup @64 1 - swap !64 end
 proc inc32 ptr in dup @32 1 + swap !32 end
 proc dec32 ptr in dup @32 1 - swap !32 end
+proc inc8 ptr in dup @8 1 + swap !8 end
+proc dec8 ptr in dup @8 1 - swap !8 end
 
 proc swap64 ptr ptr in
   memory a sizeof(u64) end
