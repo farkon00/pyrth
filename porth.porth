@@ -484,7 +484,7 @@ const MEM_CAPACITY 640000 end
 
 proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
 
-proc compile-ops in
+proc generate-nasm-linux-x86_64 in
   "[INFO] Generating output.asm\n" puts
 
   memory out-fd sizeof(u64) end
@@ -544,7 +544,7 @@ proc compile-ops in
   0 while dup ops-count @64 < do
     dup sizeof(Op) * ops +
 
-    assert "Exhaustive handling of Op types in compile-ops" COUNT_OPS 16 = end
+    assert "Exhaustive handling of Op types in generate-nasm-linux-x86_64" COUNT_OPS 16 = end
 
     "addr_" out-fd @64 fputs
     over    out-fd @64 fputu
@@ -608,7 +608,7 @@ proc compile-ops in
        dup Op.token + Token.loc + located-here
        1 exit
     else dup Op.type + @64 OP_INTRINSIC = if*
-        assert "Exhaustive handling of Intrinsics in compile-ops"
+        assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
           COUNT_INTRINSICS 44 =
         end
 
@@ -1024,7 +1024,7 @@ proc simulate-ops in
       sim-op Op.token + Token.loc + located-here
       1 exit
     else sim-op Op.type + @64 OP_INTRINSIC = if*
-      assert "Exhaustive handling of Intrinsics in compile-ops"
+      assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
         COUNT_INTRINSICS 44 =
       end
 
@@ -2513,7 +2513,7 @@ proc main in
 
     2 nth_argv compile-file-into-ops
 
-    compile-ops
+    generate-nasm-linux-x86_64
   else dup "help"c cstreq if*
     stdout usage
     0 exit
