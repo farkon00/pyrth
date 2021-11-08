@@ -561,9 +561,11 @@ proc generate-nasm-linux-x86_64 in
        "    mov rax, "        out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n"    out-fd @64 fputs
        "    push rax\n"       out-fd @64 fputs
     else dup Op.type + @64 OP_PUSH_LOCAL_MEM = if*
-       here eputs ": TODO: OP_PUSH_LOCAL_MEM is not implemented yet in compilation mode\n" eputs
-       dup Op.token + Token.loc + located-here
-       1 exit
+       "    mov rax, [ret_stack_rsp]\n" out-fd @64 fputs
+       "    add rax, "                  out-fd @64 fputs
+       dup Op.operand + @64             out-fd @64 fputu
+       "\n"                             out-fd @64 fputs
+       "    push rax\n"                 out-fd @64 fputs
     else dup Op.type + @64 OP_PUSH_GLOBAL_MEM = if*
        "    mov rax, mem\n" out-fd @64 fputs
        "    add rax, "      out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n"    out-fd @64 fputs
