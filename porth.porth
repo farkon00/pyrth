@@ -468,6 +468,7 @@ end
 proc dump-ops in
   0 while dup ops-count @64 < do
     dup sizeof(Op) * ops +
+    dup Op.token + Token.loc + putloc ": " puts
     over putu ": " puts dup Op.type + @64 op-type-as-str puts " " puts
     dup Op.type + @64 OP_INTRINSIC = if
       Op.operand + @64 intrinsic-name puts
@@ -550,8 +551,13 @@ proc generate-nasm-linux-x86_64 in
     over    out-fd @64 fputu
     ":\n"   out-fd @64 fputs
 
+    "    ;; -- "                     out-fd @64 fputs
+    dup Op.token + Token.loc +       out-fd @64 fputloc
+    ": "                             out-fd @64 fputs
+    dup Op.type + @64 op-type-as-str out-fd @64 fputs
+    " --\n"                          out-fd @64 fputs
+
     dup Op.type + @64 OP_PUSH_INT = if
-       "    ;; -- push int "  out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu " --\n" out-fd @64 fputs
        "    mov rax, "        out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n"    out-fd @64 fputs
        "    push rax\n"       out-fd @64 fputs
     else dup Op.type + @64 OP_PUSH_LOCAL_MEM = if*
@@ -571,7 +577,6 @@ proc generate-nasm-linux-x86_64 in
        dup Op.token + Token.loc + located-here
        1 exit
     else dup Op.type + @64 OP_IF = if*
-       "    ;; -- if --\n"   out-fd @64 fputs
        "    pop rax\n"       out-fd @64 fputs
        "    test rax, rax\n" out-fd @64 fputs
        "    jz addr_"        out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
@@ -580,10 +585,8 @@ proc generate-nasm-linux-x86_64 in
        dup Op.token + Token.loc + located-here
        1 exit
     else dup Op.type + @64 OP_ELSE = if*
-       "    ;; -- else --\n"  out-fd @64 fputs
        "    jmp addr_"       out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
     else dup Op.type + @64 OP_END = if*
-       "    ;; -- end --\n"  out-fd @64 fputs
        "    jmp addr_"       out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
     else dup Op.type + @64 OP_WHILE = if*
        // NOTE: nothing to generate. `while` is basically a label
@@ -592,21 +595,31 @@ proc generate-nasm-linux-x86_64 in
        "    test rax, rax\n" out-fd @64 fputs
        "    jz addr_" out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
     else dup Op.type + @64 OP_SKIP_PROC = if*
-       here eputs ": TODO: OP_SKIP_PROC is not implemented yet in compilation mode\n" eputs
-       dup Op.token + Token.loc + located-here
-       1 exit
+       "    jmp addr_"      out-fd @64 fputs
+       dup Op.operand + @64 out-fd @64 fputu
+       "\n"                 out-fd @64 fputs
     else dup Op.type + @64 OP_PREP_PROC = if*
-       here eputs ": TODO: OP_PREP_PROC is not implemented yet in compilation mode\n" eputs
-       dup Op.token + Token.loc + located-here
-       1 exit
+       "    sub rsp, "      out-fd @64 fputs
+       dup Op.operand + @64 out-fd @64 fputu
+       "\n"                 out-fd @64 fputs
+
+       "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
+       "    mov rsp, rax\n"             out-fd @64 fputs
     else dup Op.type + @64 OP_RET = if*
-       here eputs ": TODO: OP_RET is not implemented yet in compilation mode\n" eputs
-       dup Op.token + Token.loc + located-here
-       1 exit
+       "    mov rax, rsp\n"             out-fd @64 fputs
+       "    mov rsp, [ret_stack_rsp]\n" out-fd @64 fputs
+       "    add rsp, "                  out-fd @64 fputs
+       dup Op.operand + @64             out-fd @64 fputu
+       "\n"                             out-fd @64 fputs
+       "    ret\n"                      out-fd @64 fputs
     else dup Op.type + @64 OP_CALL = if*
-       here eputs ": TODO: OP_CALL is not implemented yet in compilation mode\n" eputs
-       dup Op.token + Token.loc + located-here
-       1 exit
+       "    mov rax, rsp\n"             out-fd @64 fputs
+       "    mov rsp, [ret_stack_rsp]\n" out-fd @64 fputs
+       "    call addr_"                 out-fd @64 fputs
+       dup Op.operand + @64             out-fd @64 fputu
+       "\n"                             out-fd @64 fputs
+       "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
+       "    mov rsp, rax\n"             out-fd @64 fputs
     else dup Op.type + @64 OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
           COUNT_INTRINSICS 44 =
@@ -614,25 +627,21 @@ proc generate-nasm-linux-x86_64 in
 
         dup Op.operand + @64
         dup INTRINSIC_PLUS = if
-            "    ;; -- plus --\n"       out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    add rax, rbx\n"        out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
         else dup INTRINSIC_MINUS = if*
-            "    ;; -- minus --\n"      out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    sub rbx, rax\n"        out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
         else dup INTRINSIC_MUL = if*
-            "    ;; -- mul --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    mul rbx\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
         else dup INTRINSIC_DIVMOD = if*
-            "    ;; -- mod --\n"        out-fd @64 fputs
             "    xor rdx, rdx\n"        out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
@@ -644,40 +653,33 @@ proc generate-nasm-linux-x86_64 in
             over Op.token + Token.loc + located-here
             1 exit
         else dup INTRINSIC_SHR = if*
-            "    ;; -- shr --\n"        out-fd @64 fputs
             "    pop rcx\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    shr rbx, cl\n"         out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
         else dup INTRINSIC_SHL = if*
-            "    ;; -- shl --\n"        out-fd @64 fputs
             "    pop rcx\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    shl rbx, cl\n"         out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
         else dup INTRINSIC_OR = if*
-            "    ;; -- bor --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    or rbx, rax\n"         out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
         else dup INTRINSIC_AND = if*
-            "    ;; -- band --\n"       out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    and rbx, rax\n"        out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
         else dup INTRINSIC_NOT = if*
-            "    ;; -- not --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    not rax\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
         else dup INTRINSIC_PRINT = if*
-            "    ;; -- print --\n"      out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
             "    call print\n"          out-fd @64 fputs
         else dup INTRINSIC_EQ = if*
-            "    ;; -- equal --\n"      out-fd @64 fputs
             "    mov rcx, 0\n"          out-fd @64 fputs
             "    mov rdx, 1\n"          out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
@@ -686,7 +688,6 @@ proc generate-nasm-linux-x86_64 in
             "    cmove rcx, rdx\n"      out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
         else dup INTRINSIC_GT = if*
-            "    ;; -- gt --\n"         out-fd @64 fputs
             "    mov rcx, 0\n"          out-fd @64 fputs
             "    mov rdx, 1\n"          out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
@@ -695,7 +696,6 @@ proc generate-nasm-linux-x86_64 in
             "    cmovg rcx, rdx\n"      out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
         else dup INTRINSIC_LT = if*
-            "    ;; -- gt --\n"         out-fd @64 fputs
             "    mov rcx, 0\n"          out-fd @64 fputs
             "    mov rdx, 1\n"          out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
@@ -704,7 +704,6 @@ proc generate-nasm-linux-x86_64 in
             "    cmovl rcx, rdx\n"      out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
         else dup INTRINSIC_GE = if*
-            "    ;; -- gt --\n"         out-fd @64 fputs
             "    mov rcx, 0\n"          out-fd @64 fputs
             "    mov rdx, 1\n"          out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
@@ -713,7 +712,6 @@ proc generate-nasm-linux-x86_64 in
             "    cmovge rcx, rdx\n"     out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
         else dup INTRINSIC_LE = if*
-            "    ;; -- gt --\n"         out-fd @64 fputs
             "    mov rcx, 0\n"          out-fd @64 fputs
             "    mov rdx, 1\n"          out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
@@ -722,7 +720,6 @@ proc generate-nasm-linux-x86_64 in
             "    cmovle rcx, rdx\n"     out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
         else dup INTRINSIC_NE = if*
-            "    ;; -- ne --\n"         out-fd @64 fputs
             "    mov rcx, 0\n"          out-fd @64 fputs
             "    mov rdx, 1\n"          out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
@@ -731,28 +728,23 @@ proc generate-nasm-linux-x86_64 in
             "    cmovne rcx, rdx\n"     out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
         else dup INTRINSIC_DUP = if*
-            "    ;; -- dup --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
         else dup INTRINSIC_SWAP = if*
-            "    ;; -- swap --\n"       out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
         else dup INTRINSIC_DROP = if*
-            "    ;; -- drop --\n"       out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
         else dup INTRINSIC_OVER = if*
-            "    ;; -- over --\n"       out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
         else dup INTRINSIC_ROT = if*
-            "    ;; -- rot --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    pop rcx\n"             out-fd @64 fputs
@@ -760,56 +752,46 @@ proc generate-nasm-linux-x86_64 in
             "    push rax\n"            out-fd @64 fputs
             "    push rcx\n"            out-fd @64 fputs
         else dup INTRINSIC_LOAD8 = if*
-            "    ;; -- @8 --\n"         out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    xor rbx, rbx\n"        out-fd @64 fputs
             "    mov bl, [rax]\n"       out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
         else dup INTRINSIC_STORE8 = if*
-            "    ;; -- !8 --\n"         out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    mov [rax], bl\n"       out-fd @64 fputs
         else dup INTRINSIC_LOAD16 = if*
-            "    ;; -- @16 --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    xor rbx, rbx\n"        out-fd @64 fputs
             "    mov bx, [rax]\n"       out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
         else dup INTRINSIC_STORE16 = if*
-            "    ;; -- !16 --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    mov [rax], bx\n"       out-fd @64 fputs
         else dup INTRINSIC_LOAD32 = if*
-            "    ;; -- @32 --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    xor rbx, rbx\n"        out-fd @64 fputs
             "    mov ebx, [rax]\n"      out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
         else dup INTRINSIC_STORE32 = if*
-            "    ;; -- !32 --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    mov [rax], ebx\n"      out-fd @64 fputs
         else dup INTRINSIC_LOAD64 = if*
-            "    ;; -- @64 --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    xor rbx, rbx\n"        out-fd @64 fputs
             "    mov rbx, [rax]\n"      out-fd @64 fputs
             "    push rbx\n"            out-fd @64 fputs
         else dup INTRINSIC_STORE64 = if*
-            "    ;; -- !64 --\n"        out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
             "    mov [rax], rbx\n"      out-fd @64 fputs
         else dup INTRINSIC_ARGC = if*
-            "    ;; -- argc --\n"       out-fd @64 fputs
             "    mov rax, [args_ptr]\n" out-fd @64 fputs
             "    mov rax, [rax]\n"      out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
         else dup INTRINSIC_ARGV = if*
-            "    ;; -- argv --\n"       out-fd @64 fputs
             "    mov rax, [args_ptr]\n" out-fd @64 fputs
             "    add rax, 8\n"          out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
@@ -822,31 +804,24 @@ proc generate-nasm-linux-x86_64 in
             over Op.token + Token.loc + located-here
             1 exit
         else dup INTRINSIC_CAST_PTR = if*
-            "    ;; -- cast(ptr) --\n"  out-fd @64 fputs
         else dup INTRINSIC_CAST_INT = if*
-            "    ;; -- cast(int) --\n"  out-fd @64 fputs
         else dup INTRINSIC_CAST_BOOL = if*
-            "    ;; -- cast(bool) --\n" out-fd @64 fputs
         else dup INTRINSIC_SYSCALL0 = if*
-            "    ;; -- syscall0 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    syscall\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
         else dup INTRINSIC_SYSCALL1 = if*
-            "    ;; -- syscall1 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
             "    syscall\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
         else dup INTRINSIC_SYSCALL2 = if*
-            "    ;; -- syscall2 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
             "    pop rsi\n"             out-fd @64 fputs
             "    syscall\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
         else dup INTRINSIC_SYSCALL3 = if*
-            "    ;; -- syscall3 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
             "    pop rsi\n"             out-fd @64 fputs
@@ -854,7 +829,6 @@ proc generate-nasm-linux-x86_64 in
             "    syscall\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
         else dup INTRINSIC_SYSCALL4 = if*
-            "    ;; -- syscall4 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
             "    pop rsi\n"             out-fd @64 fputs
@@ -863,7 +837,6 @@ proc generate-nasm-linux-x86_64 in
             "    syscall\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
         else dup INTRINSIC_SYSCALL5 = if*
-            "    ;; -- syscall5 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
             "    pop rsi\n"             out-fd @64 fputs
@@ -873,7 +846,6 @@ proc generate-nasm-linux-x86_64 in
             "    syscall\n"             out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
         else dup INTRINSIC_SYSCALL6 = if*
-            "    ;; -- syscall6 --\n"   out-fd @64 fputs
             "    pop rax\n"             out-fd @64 fputs
             "    pop rdi\n"             out-fd @64 fputs
             "    pop rsi\n"             out-fd @64 fputs
@@ -2229,6 +2201,10 @@ proc compile-file-into-ops ptr in
           else dup Op.type + @64 OP_DO = if*
             over token enclose-while-do
           else dup Op.type + @64 OP_PREP_PROC = if*
+            local-memory-capacity @64
+            over Op.operand +
+            !64
+
             inside-proc @bool lnot if
               here eputs ": Assertion failed: OP_PREP_PROC outside of actual proc\n" eputs
               1 exit
@@ -2243,7 +2219,10 @@ proc compile-file-into-ops ptr in
               1 exit
             end
 
-            OP_RET 0 token push-op-int-operand
+            OP_RET
+            local-memory-capacity @64
+            token
+            push-op-int-operand
 
             Op.operand + ops-count @64 swap !64
 
