@@ -135,19 +135,19 @@ in
   ops-count inc64
 end
 
-const STRLIT_CAP 16 1024 * end
-memory strlit-size sizeof(int) end
-memory strlit-start STRLIT_CAP end
+const STRBUF_CAP 16 1024 * end
+memory strbuf-size sizeof(int) end
+memory strbuf-start STRBUF_CAP end
 
-proc strlit-end -- ptr in strlit-start strlit-size @int + end
-proc strlit-append-char int in
-  strlit-size @int STRLIT_CAP >= if
+proc strbuf-end -- ptr in strbuf-start strbuf-size @int + end
+proc strbuf-append-char int in
+  strbuf-size @int STRBUF_CAP >= if
     here eputs ": Assertion Failed: string literal buffer overflow\n" eputs
     1 exit
   end
 
-  strlit-end !8
-  strlit-size inc64
+  strbuf-end !8
+  strbuf-size inc64
 end
 
 const INTRINSIC_PLUS      1 offset end
@@ -1364,7 +1364,7 @@ in
   lexer !ptr
 
   memory start sizeof(ptr) end
-  strlit-end start !ptr
+  strbuf-end start !ptr
 
   memory count sizeof(int) end
   0 count !int
@@ -1387,17 +1387,17 @@ in
           end
 
           dup @Str.data @8 'n' = if
-            10 strlit-append-char
+            10 strbuf-append-char
             dup str-chop-one-left
             count inc64
             true
           else dup @Str.data @8 '\\' = if*
-            92 strlit-append-char
+            92 strbuf-append-char
             dup str-chop-one-left
             count inc64
             true
           else dup @Str.data @8 '\"' = if*
-            34 strlit-append-char
+            34 strbuf-append-char
             dup str-chop-one-left
             count inc64
             true
@@ -1408,7 +1408,7 @@ in
             false
           end
         else
-          dup @Str.data @8 strlit-append-char
+          dup @Str.data @8 strbuf-append-char
           dup str-chop-one-left
           count inc64
           true
@@ -2459,7 +2459,7 @@ proc summary in
   "Ops count:                    " puts ops-count @int putu "\n" puts
   "Consts count:                 " puts consts-count @int putu "\n" puts
   "Procs count:                  " puts procs-count @int putu "\n" puts
-  "String literals size (bytes): " puts strlit-size @int putu "\n" puts
+  "String literals size (bytes): " puts strbuf-size @int putu "\n" puts
   "Global memory size (bytes):   " puts global-memory-capacity @int putu "\n" puts
 end
 
