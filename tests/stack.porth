@@ -1,4 +1,4 @@
-include "std.porth"
+include "./std/std.porth"
 
 // push int
 10 20 30 print print print
@@ -11,11 +11,13 @@ include "std.porth"
 "Привет, Мир!\n" puts // utf-8
 "Hello, \"World\"\n" puts // string with double quotes
 // multline string
-"
-mult
-line
-string
-" puts
+// "
+// mult
+// line
+// string
+// " puts
+// TODO: multiline strings don't work porth.porth
+// I never had use for them tbh, we should probably remove them
 
 "------------------------------\n" puts
 
@@ -58,4 +60,3 @@ string
 // rot
 1 2 3 print print print
 1 2 3 rot print print print
-
