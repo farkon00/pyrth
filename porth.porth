@@ -2106,7 +2106,7 @@ in
   push-op-int-operand
 end
 
-proc parse_file_path_cstr_into_ops ptr in
+proc compile-file-into-ops ptr in
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
 
@@ -2275,7 +2275,7 @@ proc parse_file_path_cstr_into_ops ptr in
           end
 
           // TODO: introduce include limit
-          token Token.value + @Str tmp-str-to-cstr parse_file_path_cstr_into_ops
+          token Token.value + @Str tmp-str-to-cstr compile-file-into-ops
         else dup @Str "const" streq if*
           token lexer lexer-next-token lnot if
             token Token.loc + eputloc
@@ -2470,7 +2470,7 @@ proc parse_file_path_cstr_into_ops ptr in
     drop
   end
 
-  // TODO: parse_file_path does not clean up resources after itself
+  // TODO: compile-file-into-ops does not clean up resources after itself
 end
 
 proc usage int in
@@ -2501,7 +2501,7 @@ proc main in
       1 exit
     end
 
-    2 nth_argv parse_file_path_cstr_into_ops
+    2 nth_argv compile-file-into-ops
 
     simulate-ops
   else dup "com"c cstreq if*
@@ -2511,7 +2511,7 @@ proc main in
       1 exit
     end
 
-    2 nth_argv parse_file_path_cstr_into_ops
+    2 nth_argv compile-file-into-ops
 
     compile-ops
   else dup "help"c cstreq if*
@@ -2524,7 +2524,7 @@ proc main in
       1 exit
     end
 
-    2 nth_argv parse_file_path_cstr_into_ops
+    2 nth_argv compile-file-into-ops
 
     dump-ops
   else dup "lex"c cstreq if*
