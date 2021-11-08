@@ -86,11 +86,7 @@ end
 const sizeof(Token) reset end
 
 const Op.type sizeof(u64) offset end
-const Op.operand
-  sizeof(u64)
-  sizeof(Str) max
-  offset
-end
+const Op.operand sizeof(u64) offset end
 const Op.token sizeof(Token) offset end
 const sizeof(Op) reset end
 
@@ -98,7 +94,7 @@ const OPS_CAP 16 1024 * end
 memory ops-count sizeof(u64) end
 memory ops sizeof(Op) OPS_CAP * end
 
-proc push-op-int-operand
+proc push-op
   int // type
   int // operand
   ptr // token
@@ -116,31 +112,14 @@ in
   ops-count inc64
 end
 
-proc push-op-str-operand
-  int     // type
-  int ptr // operand
-  ptr     // token
-in
-  ops-count @64 OPS_CAP >= if
-    here eputs ": ERROR: ops overflow\n" eputs 1 exit
-  end
-
-  memory top sizeof(ptr) end
-  ops-count @64 sizeof(Op) * ops + top !ptr
-
-  sizeof(Token) swap top @ptr Op.token + memcpy drop
-  top @ptr Op.operand + !Str
-  top @ptr Op.type + !64
-
-  ops-count inc64
-end
-
 const STRLITS_CAP 1024 end
 memory strlits-count sizeof(int) end
 memory strlits sizeof(Str) STRLITS_CAP * end
 
 proc strlit-define
   int ptr
+  --
+  int
 in
   memory strlit sizeof(Str) end
   strlit !Str
@@ -156,6 +135,7 @@ in
   memcpy
   drop
 
+  strlits-count @64
   strlits-count inc64
 end
 
@@ -172,6 +152,61 @@ proc strbuf-append-char int in
 
   strbuf-end !8
   strbuf-size inc64
+end
+proc strbuf-append-str int ptr in
+  memory str sizeof(Str) end
+  str !Str
+
+  while str @Str.count 0 > do
+    str @Str.data @8 strbuf-append-char
+    str str-chop-one-left
+  end
+end
+
+proc tmp-utos
+  int
+  --
+  int ptr
+in
+  memory buffer sizeof(ptr) end
+  PUTU_BUFFER_CAP tmp-alloc buffer !ptr
+
+  dup 0 = if
+    drop
+    buffer @ptr PUTU_BUFFER_CAP + 1 -
+    '0' over !64
+    1 swap
+  else
+    buffer @ptr PUTU_BUFFER_CAP +
+    while over 0 > do
+      1 - dup rot
+      10 divmod
+      rot swap '0' + swap !8 swap
+    end
+    
+    swap drop
+    
+    dup buffer @ptr PUTU_BUFFER_CAP + swap - swap 
+  end
+end
+
+proc strbuf-loc
+  ptr // loc
+  --
+  int ptr
+in
+  memory start sizeof(ptr) end
+  strbuf-end start !ptr
+
+  dup Loc.file-path + @Str   strbuf-append-str
+  ":"                        strbuf-append-str
+  dup Loc.row + @64 tmp-utos strbuf-append-str
+  ":"                        strbuf-append-str
+  dup Loc.col + @64 tmp-utos strbuf-append-str
+  drop
+
+  strbuf-end start @ptr -
+  start @ptr
 end
 
 const INTRINSIC_PLUS      1 offset end
@@ -210,7 +245,6 @@ const INTRINSIC_CAST_BOOL 1 offset end
 const INTRINSIC_ARGC      1 offset end
 const INTRINSIC_ARGV      1 offset end
 const INTRINSIC_ENVP      1 offset end
-const INTRINSIC_HERE      1 offset end
 const INTRINSIC_SYSCALL0  1 offset end
 const INTRINSIC_SYSCALL1  1 offset end
 const INTRINSIC_SYSCALL2  1 offset end
@@ -225,7 +259,7 @@ proc intrinsic-name
   --
   int ptr // name
 in
-  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 44 = end
+  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 43 = end
        dup INTRINSIC_PLUS      = if  drop "+"
   else dup INTRINSIC_MINUS     = if* drop "-"
   else dup INTRINSIC_MUL       = if* drop "*"
@@ -262,7 +296,6 @@ in
   else dup INTRINSIC_ARGC      = if* drop "argc"
   else dup INTRINSIC_ARGV      = if* drop "argv"
   else dup INTRINSIC_ENVP      = if* drop "envp"
-  else dup INTRINSIC_HERE      = if* drop "here"
   else dup INTRINSIC_SYSCALL0  = if* drop "syscall0"
   else dup INTRINSIC_SYSCALL1  = if* drop "syscall1"
   else dup INTRINSIC_SYSCALL2  = if* drop "syscall2"
@@ -286,7 +319,7 @@ in
   memory name sizeof(Str) end
   name !Str
   true
-  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 44 = end
+  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 43 = end
        name @Str "+"          streq if  INTRINSIC_PLUS
   else name @Str "-"          streq if* INTRINSIC_MINUS
   else name @Str "*"          streq if* INTRINSIC_MUL
@@ -323,7 +356,6 @@ in
   else name @Str "argc"       streq if* INTRINSIC_ARGC
   else name @Str "argv"       streq if* INTRINSIC_ARGV
   else name @Str "envp"       streq if* INTRINSIC_ENVP
-  else name @Str "here"       streq if* INTRINSIC_HERE
   else name @Str "syscall0"   streq if* INTRINSIC_SYSCALL0
   else name @Str "syscall1"   streq if* INTRINSIC_SYSCALL1
   else name @Str "syscall2"   streq if* INTRINSIC_SYSCALL2
@@ -595,9 +627,18 @@ proc generate-nasm-linux-x86_64 in
        "    add rax, "      out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n"    out-fd @64 fputs
        "    push rax\n"     out-fd @64 fputs
     else dup Op.type + @64 OP_PUSH_STR = if*
-       here eputs ": TODO: OP_PUSH_STR is not implemented yet in compilation mode\n" eputs
-       dup Op.token + Token.loc + located-here
-       1 exit
+       "    mov rax, " out-fd @64 fputs
+         dup Op.operand + @64
+         sizeof(Str) *
+         strlits +
+         @Str.count
+         out-fd @64 fputu
+       "\n" out-fd @64 fputs
+
+       "    push rax\n"     out-fd @64 fputs
+       "    push str_"      out-fd @64 fputs
+       dup Op.operand + @64 out-fd @64 fputu
+       "\n"                 out-fd @64 fputs
     else dup Op.type + @64 OP_PUSH_CSTR = if*
        here eputs ": TODO: OP_PUSH_CSTR is not implemented yet in compilation mode\n" eputs
        dup Op.token + Token.loc + located-here
@@ -648,7 +689,7 @@ proc generate-nasm-linux-x86_64 in
        "    mov rsp, rax\n"             out-fd @64 fputs
     else dup Op.type + @64 OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
-          COUNT_INTRINSICS 44 =
+          COUNT_INTRINSICS 43 =
         end
 
         dup Op.operand + @64
@@ -822,13 +863,13 @@ proc generate-nasm-linux-x86_64 in
             "    add rax, 8\n"          out-fd @64 fputs
             "    push rax\n"            out-fd @64 fputs
         else dup INTRINSIC_ENVP = if*
-            here eputs ": TODO: intrinsic `envp` is not implemented yet\n" eputs
-            over Op.token + Token.loc + located-here
-            1 exit
-        else dup INTRINSIC_HERE = if*
-            here eputs ": TODO: intrinsic `here` is not implemented yet\n" eputs
-            over Op.token + Token.loc + located-here
-            1 exit
+            "    mov rax, [args_ptr]\n" out-fd @64 fputs
+            "    mov rax, [rax]\n"      out-fd @64 fputs
+            "    add rax, 2\n"          out-fd @64 fputs
+            "    shl rax, 3\n"          out-fd @64 fputs
+            "    mov rbx, [args_ptr]\n" out-fd @64 fputs
+            "    add rbx, rax\n"        out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
         else dup INTRINSIC_CAST_PTR = if*
         else dup INTRINSIC_CAST_INT = if*
         else dup INTRINSIC_CAST_BOOL = if*
@@ -1023,7 +1064,7 @@ proc simulate-ops in
       1 exit
     else sim-op Op.type + @64 OP_INTRINSIC = if*
       assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
-        COUNT_INTRINSICS 44 =
+        COUNT_INTRINSICS 43 =
       end
 
       sim-op Op.operand + @64 INTRINSIC_PLUS = if
@@ -1196,10 +1237,6 @@ proc simulate-ops in
         1 exit
       else sim-op Op.operand + @64 INTRINSIC_ENVP = if*
         here eputs ": TODO: `envp` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
-      else sim-op Op.operand + @64 INTRINSIC_HERE = if*
-        here eputs ": TODO: `here` is not implemented yet\n" eputs
         sim-op Op.token + Token.loc + located-here
         1 exit
       else sim-op Op.operand + @64 INTRINSIC_CAST_PTR = if*
@@ -1477,7 +1514,6 @@ in
        dup Lexer.line + str-chop-one-left
        lexer-consume-strlit word !Str
        word @Str token @ptr Token.value + !Str
-       word @Str strlit-define
 
        lexer @ptr Lexer.line + ?str-empty lnot if
          lexer @ptr Lexer.line + @Str.data @8 'c' = if
@@ -2060,7 +2096,7 @@ in
     1 exit
   end
 
-  OP_END while-ip @int token push-op-int-operand
+  OP_END while-ip @int token push-op
   ops-count @int do-op @ptr Op.operand + !int
 end
 
@@ -2102,7 +2138,7 @@ in
   OP_ELSE
   0
   token
-  push-op-int-operand
+  push-op
 end
 
 proc compile-file-into-ops ptr in
@@ -2130,19 +2166,19 @@ proc compile-file-into-ops ptr in
       OP_PUSH_INT
       token Token.value + @64
       token
-      push-op-int-operand
+      push-op
     else dup TOKEN_WORD = if*
       token Token.value + // token.value
 
       assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 16 = end
 
       dup @Str intrinsic-by-name if
-        OP_INTRINSIC swap token push-op-int-operand
+        OP_INTRINSIC swap token push-op
       else
         drop
         dup @Str "if" streq if
           ops-count @64 parse-block-stack-push
-          OP_IF 0 token push-op-int-operand
+          OP_IF 0 token push-op
         else dup @Str "if*" streq if*
           parse-block-stack-top lnot if
             token Token.loc + eputloc ": ERROR: `if*` can only come after `else`, but found nothing\n" eputs
@@ -2159,7 +2195,7 @@ proc compile-file-into-ops ptr in
           drop
 
           ops-count @64 parse-block-stack-push
-          OP_IFSTAR 0 token push-op-int-operand
+          OP_IFSTAR 0 token push-op
         else dup @Str "else" streq if*
           parse-block-stack-count @64 0 <= if
             token Token.loc + eputloc
@@ -2174,7 +2210,7 @@ proc compile-file-into-ops ptr in
             ops-count @64 1 + over Op.operand + !64
 
             ops-count @64 parse-block-stack-push
-            OP_ELSE 0 token push-op-int-operand
+            OP_ELSE 0 token push-op
           else dup Op.type + @64 OP_IFSTAR = if*
             over token chain-else-if*
           else
@@ -2187,7 +2223,7 @@ proc compile-file-into-ops ptr in
           drop // if_ip
         else dup @Str "while" streq if*
           ops-count @64 parse-block-stack-push
-          OP_WHILE 0 token push-op-int-operand
+          OP_WHILE 0 token push-op
         else dup @Str "do" streq if*
           parse-block-stack-count @64 0 <= if
             token Token.loc + eputloc ": ERROR: `do` is not preceded by `while`\n" eputs
@@ -2207,7 +2243,7 @@ proc compile-file-into-ops ptr in
 
           ops-count @64 parse-block-stack-push
 
-          OP_DO swap token push-op-int-operand
+          OP_DO swap token push-op
           drop // op
         else dup @Str "end" streq if*
           parse-block-stack-count @64 0 <= if
@@ -2221,10 +2257,10 @@ proc compile-file-into-ops ptr in
 
           dup Op.type + @64 OP_IF = if
             dup ops-count @64 swap Op.operand + !64
-            OP_END ops-count @64 1 + token push-op-int-operand
+            OP_END ops-count @64 1 + token push-op
           else dup Op.type + @64 OP_ELSE = if*
             dup ops-count @64 swap Op.operand + !64
-            OP_END ops-count @64 1 + token push-op-int-operand
+            OP_END ops-count @64 1 + token push-op
           else dup Op.type + @64 OP_DO = if*
             over token enclose-while-do
           else dup Op.type + @64 OP_PREP_PROC = if*
@@ -2249,7 +2285,7 @@ proc compile-file-into-ops ptr in
             OP_RET
             local-memory-capacity @64
             token
-            push-op-int-operand
+            push-op
 
             Op.operand + ops-count @64 swap !64
 
@@ -2340,12 +2376,12 @@ proc compile-file-into-ops ptr in
           sizeof(Str) token Token.value + prok Proc.name + memcpy drop
 
           ops-count @64 parse-block-stack-push
-          OP_SKIP_PROC 0 token push-op-int-operand
+          OP_SKIP_PROC 0 token push-op
 
           ops-count @64
           dup prok Proc.addr + !64
               parse-block-stack-push
-          OP_PREP_PROC 0 token push-op-int-operand
+          OP_PREP_PROC 0 token push-op
 
           lexer skip-proc-contract
 
@@ -2414,26 +2450,31 @@ proc compile-file-into-ops ptr in
             token Token.loc + eputloc ": ERROR: Static Assertion Failed: " eputs token Token.value + @Str eputs "\n" eputs
             1 exit
           end
+        else dup @Str "here" streq if*
+          OP_PUSH_STR
+          token Token.loc + strbuf-loc strlit-define
+          token
+          push-op
         else dup @Str const-lookup dup NULL != if*
           OP_PUSH_INT
           swap Const.value + @64
           token
-          push-op-int-operand
+          push-op
         else drop dup @Str proc-lookup dup NULL != if*
           OP_CALL
           swap Proc.addr + @64
           token
-          push-op-int-operand
+          push-op
         else drop dup @Str local-memories-lookup dup NULL != if*
           OP_PUSH_LOCAL_MEM
           swap Memory.offset + @64
           token
-          push-op-int-operand
+          push-op
         else drop dup @Str global-memories-lookup dup NULL != if*
           OP_PUSH_GLOBAL_MEM
           swap Memory.offset + @64
           token
-          push-op-int-operand
+          push-op
         else drop
           token Token.loc + eputloc
           ": ERROR: unknown word `" puts dup @Str puts "`\n" puts
@@ -2443,19 +2484,19 @@ proc compile-file-into-ops ptr in
       drop // token.value
     else dup TOKEN_STR = if*
       OP_PUSH_STR
-      token Token.value + @Str
+      token Token.value + @Str strlit-define
       token
-      push-op-str-operand
+      push-op
     else dup TOKEN_CSTR = if*
       OP_PUSH_CSTR
-      token Token.value + @Str
+      token Token.value + @Str strlit-define
       token
-      push-op-str-operand
+      push-op
     else dup TOKEN_CHAR = if*
       OP_PUSH_INT
       token Token.value + @int
       token
-      push-op-int-operand
+      push-op
     else
       here eputs ": Unreachable. Unknown token type.\n" eputs
       1 exit
