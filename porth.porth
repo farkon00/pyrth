@@ -189,10 +189,10 @@ in
       10 divmod
       rot swap '0' + swap !8 swap
     end
-    
+
     swap drop
-    
-    dup buffer @ptr PUTU_BUFFER_CAP + swap - swap 
+
+    dup buffer @ptr PUTU_BUFFER_CAP + swap - swap
   end
 end
 
@@ -555,7 +555,7 @@ proc fputhexstr
 in
   memory fd sizeof(u64) end
   fd !64
-  
+
   memory str sizeof(Str) end
   str !Str
 
@@ -1414,13 +1414,10 @@ in
   else false end
 end
 
-memory comment sizeof(Str) end
-".." comment !Str
-
-comment @Str.data     inc8
-comment @Str.data 1 + inc8
-
 proc remove-comment ptr ptr in
+  memory comment sizeof(Str) end
+  "//" comment !Str
+
   over 0 swap !Str.count
   2dup @Str.data swap !Str.data
   while
