@@ -1414,23 +1414,6 @@ in
   else false end
 end
 
-proc remove-comment ptr ptr in
-  memory comment sizeof(Str) end
-  "//" comment !Str
-
-  over 0 swap !Str.count
-  2dup @Str.data swap !Str.data
-  while
-    dup @Str.count 0 > if
-      dup comment @Str rot @Str str-starts-with lnot
-    else false end
-  do
-    dup str-chop-one-left
-    over Str.count inc64
-  end
-  2drop
-end
-
 const Lexer.content    sizeof(Str) offset end
 const Lexer.line       sizeof(Str) offset end
 const Lexer.line-start sizeof(ptr) offset end
@@ -1448,20 +1431,14 @@ proc lexer-next-line ptr in
   memory lexer sizeof(ptr) end
   lexer !64
 
-  memory line sizeof(Str) end
-
   '\n'
-  line
+  lexer @ptr Lexer.line +
   lexer @ptr Lexer.content +
   str-chop-by-delim
 
-  line offsetof(Str.data) + @ptr
+  lexer @ptr Lexer.line + offsetof(Str.data) + @ptr
   lexer @ptr Lexer.line-start +
   !64
-
-  lexer @ptr Lexer.line +
-  line
-  remove-comment
 
   lexer @ptr Lexer.row + inc64
 end
@@ -1580,7 +1557,10 @@ in
 
     dup Lexer.line + ?str-empty if
       dup Lexer.content + ?str-empty lnot
-    else false end
+    else
+      dup Lexer.line +
+      "//" rot @Str str-starts-with
+    end
   do dup lexer-next-line end
 
   dup Lexer.line + ?str-empty lnot if
@@ -2693,7 +2673,5 @@ proc main in
   end
   drop
 end
-
-"hello, world\n" puts
 
 main
