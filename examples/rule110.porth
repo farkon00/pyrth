@@ -1,4 +1,4 @@
-include "std.porth"
+include "./std/std.porth"
 
 // Max width of the row
 const N 100 end

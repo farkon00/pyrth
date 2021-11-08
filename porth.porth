@@ -2473,6 +2473,15 @@ proc compile-file-into-ops ptr in
   // TODO: compile-file-into-ops does not clean up resources after itself
 end
 
+proc summary in
+  // TODO: lexer stats: tokens count, lines count, etc
+  "Ops count:                    " puts ops-count @int putu "\n" puts
+  "Consts count:                 " puts consts-count @int putu "\n" puts
+  "Procs count:                  " puts procs-count @int putu "\n" puts
+  "String literals size (bytes): " puts strlit-size @int putu "\n" puts
+  "Global memory size (bytes):   " puts global-memory-capacity @int putu "\n" puts
+end
+
 proc usage int in
   memory fd sizeof(u64) end
   fd !64
@@ -2484,6 +2493,7 @@ proc usage int in
   "    com <file>       Compile the program\n"                            fd @64 fputs
   "    dump <file>      Dump the ops of the program\n"                    fd @64 fputs
   "    lex <file>       Produce lexical analysis of the file\n"           fd @64 fputs
+  "    summary <file>   Print the summary of the program\n"               fd @64 fputs
   "    help             Print this help to stdout and exit with 0 code\n" fd @64 fputs
 end
 
@@ -2536,6 +2546,16 @@ proc main in
     end
 
     2 nth_argv lex-file
+  else dup "summary"c cstreq if*
+    argc 3 < if
+      stderr usage
+      "ERROR: no input file is provided for the `dump` subcommand\n" eputs
+      1 exit
+    end
+
+    2 nth_argv compile-file-into-ops
+
+    summary
   else
     stderr usage
     "ERROR: unknown subcommand `" eputs dup cstr-to-str eputs "`\n" eputs
