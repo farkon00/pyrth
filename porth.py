@@ -1054,7 +1054,6 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
             op = program.ops[ip]
             assert len(OpType) == 18, "Exhaustive ops handling in generate_nasm_linux_x86_64"
             out.write("addr_%d:\n" % ip)
-            out.write("    ;; -- %s:%d:%d: %s (%s) --\n" % (op.token.loc + (repr(op.token.text), op.typ)))
             if op.typ in [OpType.PUSH_INT, OpType.PUSH_BOOL, OpType.PUSH_PTR]:
                 assert isinstance(op.operand, int), f"This could be a bug in the parsing step {op.operand}"
                 out.write("    mov rax, %d\n" % op.operand)
@@ -1094,8 +1093,7 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
                 out.write("    jmp addr_%d\n" % op.operand)
             elif op.typ == OpType.END:
                 assert isinstance(op.operand, int), "This could be a bug in the parsing step"
-                if ip + 1 != op.operand:
-                    out.write("    jmp addr_%d\n" % op.operand)
+                out.write("    jmp addr_%d\n" % op.operand)
             elif op.typ == OpType.DO:
                 out.write("    pop rax\n")
                 out.write("    test rax, rax\n")
@@ -1374,7 +1372,7 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
         out.write("    syscall\n")
         out.write("segment .data\n")
         for index, s in enumerate(strs):
-            out.write("str_%d: db %s\n" % (index, ','.join(map(hex, list(s)))))
+            out.write("str_%d: db %s\n" % (index, ','.join(map(str, list(s)))))
         out.write("segment .bss\n")
         out.write("args_ptr: resq 1\n")
         out.write("ret_stack_rsp: resq 1\n")
@@ -1913,13 +1911,17 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     compiler_error(token.loc, f"Include limit is exceeded. A file was included {included} times.")
                     exit(1)
                 file_included = False
-                for include_path in include_paths:
-                    try:
-                        parse_program_from_file(ctx, path.join(include_path, token.value), include_paths, included + 1)
-                        file_included = True
-                        break
-                    except FileNotFoundError:
-                        continue
+                try:
+                    parse_program_from_file(ctx, token.value, include_paths, included + 1)
+                    file_included = True
+                except FileNotFoundError:
+                    for include_path in include_paths:
+                        try:
+                            parse_program_from_file(ctx, path.join(include_path, token.value), include_paths, included + 1)
+                            file_included = True
+                            break
+                        except FileNotFoundError:
+                            continue
                 if not file_included:
                     compiler_error(token.loc, "file `%s` not found" % token.value)
                     exit(1)
