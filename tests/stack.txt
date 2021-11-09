@@ -2,7 +2,7 @@
 :b stdin 0
 
 :i returncode 0
-:b stdout 448
+:b stdout 430
 30
 20
 10
@@ -13,10 +13,6 @@
 Hello, World
 Привет, Мир!
 Hello, "World"
-
-mult
-line
-string
 ------------------------------
 69
 ------------------------------
