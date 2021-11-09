@@ -1768,6 +1768,13 @@ in
           swap
           -
           DATATYPE_INT swap const-stack-push
+        else dup INTRINSIC_PLUS = if*
+          // TODO: `+` intrinsic ignores the types in compile time evaluation
+          const-stack-pop swap drop
+          const-stack-pop swap drop
+          swap
+          +
+          DATATYPE_INT swap const-stack-push
         else dup INTRINSIC_MUL = if*
           // TODO: `*` intrinsic ignores the types in compile time evaluation
           const-stack-pop swap drop
