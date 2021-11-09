@@ -347,6 +347,7 @@ const O_RDONLY 0 end
 const O_WRONLY 1 end
 const O_RDWR   2 end
 const O_CREAT 64 end
+const O_TRUNC 512 end
 
 const CLOCK_MONOTONIC 1 end
 const TIMER_ABSTIME 1 end

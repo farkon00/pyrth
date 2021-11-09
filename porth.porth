@@ -581,8 +581,8 @@ proc generate-nasm-linux-x86_64 in
 
   memory out-fd sizeof(u64) end
 
-  420                  // mode
-  O_CREAT O_WRONLY or  // flags
+  420                     // mode
+  O_CREAT O_WRONLY or O_TRUNC or  // flags
   // TODO: the output file path should be based on the input file path
   "output.asm"c        // pathname
   // TODO: this is lame, let's just support negative numbers properly
