@@ -94,22 +94,52 @@ const OPS_CAP 16 1024 * end
 memory ops-count sizeof(u64) end
 memory ops sizeof(Op) OPS_CAP * end
 
+proc append-item
+  int // item size
+  ptr // item
+  int // array capacity
+  ptr // array
+  ptr // array count
+  --
+  int  // index of the appended item
+  bool // true - appended, false - not enough space
+in
+  memory count sizeof(ptr) end
+  count !ptr
+  memory array sizeof(ptr) end
+  array !ptr
+
+  count @ptr @int > if
+    over
+    count @ptr @int *
+    array @ptr +
+    memcpy drop
+
+    count @ptr @int
+    count @ptr inc64
+
+    true
+  else
+    2drop
+    0 false
+  end
+end
+
+
 proc push-op
   int // type
   int // operand
   ptr // token
 in
-  ops-count @64 OPS_CAP >= if
+  memory op sizeof(Op) end
+  sizeof(Token) swap op Op.token + memcpy drop
+  op Op.operand + !int
+  op Op.type + !int
+
+  sizeof(Op) op OPS_CAP ops ops-count append-item lnot if
     here eputs ": ERROR: ops overflow\n" eputs 1 exit
   end
-
-  memory top sizeof(ptr) end
-  ops-count @64 sizeof(Op) * ops + top !ptr
-
-  sizeof(Token) swap top @ptr Op.token + memcpy drop
-  top @ptr Op.operand + !64
-  top @ptr Op.type + !64
-  ops-count inc64
+  drop
 end
 
 const STRLITS_CAP 1024 end
@@ -117,7 +147,6 @@ memory strlits-count sizeof(int) end
 memory strlits sizeof(Str) STRLITS_CAP * end
 
 proc strlit-define
-  ptr
   int ptr
   --
   int
@@ -125,24 +154,13 @@ in
   memory strlit sizeof(Str) end
   strlit !Str
 
-  memory loc sizeof(ptr) end
-  loc !ptr
-
-
-  strlits-count @64 STRLITS_CAP >= if
+  sizeof(Str) strlit
+  STRLITS_CAP strlits
+  strlits-count
+  append-item lnot if
     here eputs ": ERROR: string literals capacity exceeded\n" eputs
     1 exit
   end
-
-  sizeof(Str)
-  strlit
-  strlits-count @64 sizeof(Str) * strlits +
-  memcpy
-  drop
-
-  strlits-count @64
-
-  strlits-count inc64
 end
 
 const STRBUF_CAP 16 1024 * end
@@ -412,18 +430,11 @@ end
 proc const-define
   ptr // ptr to const struct
 in
-  consts-count @64 CONST_CAP >= if
+  sizeof(Const) swap CONST_CAP consts consts-count append-item lnot if
     here eputs ": ERROR: constants definitions capacity exceeded\n" eputs
     1 exit
   end
-
-  sizeof(Const)
-  swap
-  consts-count @64 sizeof(Const) * consts +
-  memcpy
   drop
-
-  consts-count inc64
 end
 
 const Proc.name sizeof(Str) offset end
@@ -462,18 +473,11 @@ end
 proc proc-define
   ptr // proc
 in
-  procs-count @64 PROCS_CAP >= if
+  sizeof(Proc) swap PROCS_CAP procs procs-count append-item lnot if
     here eputs ": ERROR: procedure definitions capacity exceeded\n" eputs
     1 exit
   end
-
-  sizeof(Proc)
-  swap
-  procs-count @64 sizeof(Proc) * procs +
-  memcpy
   drop
-
-  procs-count inc64
 end
 
 const Memory.name sizeof(Str) offset end
@@ -1592,22 +1596,14 @@ proc const-stack-push
   int // value
 in
   memory frame sizeof(ConstFrame) end
-
   frame ConstFrame.value + !64
   frame ConstFrame.type + !64
 
-  const-stack-count @64 CONST_STACK_CAP >= if
+  sizeof(ConstFrame) frame CONST_STACK_CAP const-stack const-stack-count append-item lnot if
     here eputs ": TODO: const stack overflow\n" eputs
     1 exit
   end
-
-  sizeof(ConstFrame)
-  frame
-  const-stack-count @64 sizeof(ConstFrame) * const-stack +
-  memcpy
   drop
-
-  const-stack-count inc64
 end
 
 proc const-stack-pop
@@ -1964,35 +1960,21 @@ end
 proc local-memory-define
   ptr
 in
-  local-memories-count @64 CONST_CAP >= if
+  sizeof(Memory) swap LOCAL_MEMORIES_CAP local-memories local-memories-count append-item lnot if
     here eputs ": ERROR: local memory definitions capacity exceeded\n" eputs
     1 exit
   end
-
-  sizeof(Memory)
-  swap
-  local-memories-count @64 sizeof(Memory) * local-memories +
-  memcpy
   drop
-
-  local-memories-count inc64
 end
 
 proc global-memory-define
   ptr
 in
-  global-memories-count @64 CONST_CAP >= if
+  sizeof(Memory) swap GLOBAL_MEMORIES_CAP global-memories global-memories-count append-item lnot if
     here eputs ": ERROR: global memory definitions capacity exceeded\n" eputs
     1 exit
   end
-
-  sizeof(Memory)
-  swap
-  global-memories-count @64 sizeof(Memory) * global-memories +
-  memcpy
   drop
-
-  global-memories-count inc64
 end
 
 proc check-name-redefinition
@@ -2463,7 +2445,7 @@ proc compile-file-into-ops ptr in
           end
         else dup @Str "here" streq if*
           OP_PUSH_STR
-          token Token.loc + token Token.loc + strbuf-loc strlit-define
+          token Token.loc + strbuf-loc strlit-define
           token
           push-op
         else dup @Str const-lookup dup NULL != if*
@@ -2495,12 +2477,12 @@ proc compile-file-into-ops ptr in
       drop // token.value
     else dup TOKEN_STR = if*
       OP_PUSH_STR
-      token Token.loc + token Token.value + @Str strlit-define
+      token Token.value + @Str strlit-define
       token
       push-op
     else dup TOKEN_CSTR = if*
       OP_PUSH_CSTR
-      token Token.loc + token Token.value + @Str strlit-define
+      token Token.value + @Str strlit-define
       token
       push-op
     else dup TOKEN_CHAR = if*
