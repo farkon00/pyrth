@@ -517,6 +517,37 @@ in
   2drop
 end
 
+proc str-starts-with
+  int ptr // prefix
+  int ptr // input
+  --
+  bool
+in
+  memory prefix sizeof(Str) end
+  memory input sizeof(Str) end
+  input  !Str
+  prefix !Str
+
+  prefix @Str.count
+  input  @Str.count
+  <= if
+    0 while
+      dup prefix @Str.count < if
+        dup  input  @Str.data + @8
+        over prefix @Str.data + @8
+        =
+      else false end
+    do 1 + end
+    prefix @Str.count >=
+  else false end
+end
+
+proc ?str-empty ptr -- bool in
+  offsetof(Str.count) +
+  @64
+  0 =
+end
+
 proc streq
   int ptr int ptr
   --
