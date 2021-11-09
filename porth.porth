@@ -2563,6 +2563,8 @@ proc main in
     1 exit
   end
 
+  // TODO: porth.porth does not type check compiled program
+
   1 nth_argv
   dup "sim"c cstreq if
     argc 3 < if
