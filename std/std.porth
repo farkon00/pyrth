@@ -15,6 +15,7 @@ const stdout 1 end
 const stderr 2 end
 
 proc @ptr ptr -- ptr in @64 cast(ptr) end
+proc @@ptr ptr -- ptr in @ptr @ptr end
 proc @bool ptr -- bool in @64 cast(bool) end
 proc @int ptr -- int in @64 end
 
@@ -413,6 +414,7 @@ proc nth_argv int -- ptr in
   8 * argv + @64 cast(ptr)
 end
 
+proc inc64-by ptr int in over @64 + swap !64 end
 proc inc64 ptr in dup @64 1 + swap !64 end
 proc dec64 ptr in dup @64 1 - swap !64 end
 proc inc32 ptr in dup @32 1 + swap !32 end

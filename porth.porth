@@ -2523,11 +2523,17 @@ proc summary in
   "Global memory size (bytes):   " puts global-memory-capacity @int putu "\n" puts
 end
 
-proc usage int in
+proc usage
+  ptr // program name
+  int // fd
+in
   memory fd sizeof(u64) end
   fd !64
 
-  "Usage: porth <SUBCOMMAND>\n"                                           fd @64 fputs
+  memory name sizeof(ptr) end
+  name !ptr
+
+  "Usage: " eputs name @ptr cstr-to-str puts " <SUBCOMMAND>\n"            fd @64 fputs
   "  SUBCOMMANDS:\n"                                                      fd @64 fputs
   "    sim <file>       Simulate the program.\n"                          fd @64 fputs
   // TODO: -r flag for com subcommand
@@ -2539,72 +2545,82 @@ proc usage int in
 end
 
 proc main in
-  argc 2 < if
-    stderr usage
+  memory args sizeof(ptr) end
+  argv args !ptr
+
+  memory program sizeof(ptr) end
+  args @@ptr program !ptr
+
+  args sizeof(ptr) inc64-by
+  args @@ptr NULL = if
+    program @ptr stderr usage
     "ERROR: subcommand is not provided\n" eputs
     1 exit
   end
 
   // TODO: porth.porth does not type check compiled program
 
-  1 nth_argv
-  dup "sim"c cstreq if
-    argc 3 < if
-      stderr usage
+  args @@ptr "sim"c cstreq if
+    args sizeof(ptr) inc64-by
+    args @@ptr NULL = if
+      program @ptr stderr usage
       "ERROR: no input file is provided for the `sim` subcommand\n" eputs
       1 exit
     end
 
-    2 nth_argv compile-file-into-ops
+    args @@ptr compile-file-into-ops
 
     simulate-ops
-  else dup "com"c cstreq if*
-    argc 3 < if
-      stderr usage
+  else args @@ptr "com"c cstreq if*
+    args sizeof(ptr) inc64-by
+    args @@ptr NULL = if
+      program @ptr stderr usage
       "ERROR: no input file is provided for the `com` subcommand\n" eputs
       1 exit
     end
 
-    2 nth_argv compile-file-into-ops
+    args @@ptr compile-file-into-ops
 
     generate-nasm-linux-x86_64
-  else dup "help"c cstreq if*
-    stdout usage
+  else args @@ptr "help"c cstreq if*
+    program @ptr stdout usage
     0 exit
-  else dup "dump"c cstreq if*
-    argc 3 < if
-      stderr usage
+  else args @@ptr "dump"c cstreq if*
+    args sizeof(ptr) inc64-by
+    args @@ptr NULL = if
+      program @ptr stderr usage
       "ERROR: no input file is provided for the `dump` subcommand\n" eputs
       1 exit
     end
 
-    2 nth_argv compile-file-into-ops
+    args @@ptr compile-file-into-ops
 
     dump-ops
-  else dup "lex"c cstreq if*
-    argc 3 < if
-      stderr usage
+  else args @@ptr "lex"c cstreq if*
+    args sizeof(ptr) inc64-by
+    args @@ptr NULL = if
+      program @ptr stderr usage
       "ERROR: no input file is provided for the `lex` subcommand\n" eputs
       1 exit
     end
 
-    2 nth_argv lex-file
-  else dup "summary"c cstreq if*
-    argc 3 < if
-      stderr usage
+    args @@ptr lex-file
+  else args @@ptr "summary"c cstreq if*
+    args sizeof(ptr) inc64-by
+    args @@ptr NULL = if
+      program @ptr stderr usage
       "ERROR: no input file is provided for the `dump` subcommand\n" eputs
       1 exit
     end
 
-    2 nth_argv compile-file-into-ops
+    args @@ptr compile-file-into-ops
 
     summary
   else
-    stderr usage
-    "ERROR: unknown subcommand `" eputs dup cstr-to-str eputs "`\n" eputs
+    program @ptr stderr usage
+    "ERROR: unknown subcommand `" eputs args @@ptr cstr-to-str eputs "`\n" eputs
     1 exit
   end
-  drop
 end
 
 main
