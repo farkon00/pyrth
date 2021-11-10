@@ -16,10 +16,6 @@ PORTH_EXT = '.porth'
 X86_64_RET_STACK_CAP=8192
 # TODO: INCLUDE_LIMIT should be probably customizable
 INCLUDE_LIMIT=100
-SIM_NULL_POINTER_PADDING = 1 # just a little bit of a padding at the beginning of the memory to make 0 an invalid address
-SIM_STR_CAPACITY  = 640_000
-SIM_ARGV_CAPACITY = 640_000
-SIM_LOCAL_MEMORY_CAPACITY = 640_000
 
 debug=False
 
@@ -160,6 +156,22 @@ def get_cstr_from_mem(mem: bytearray, ptr: int) -> bytes:
     while mem[end] != 0:
         end += 1
     return mem[ptr:end]
+
+def get_cstr_list_from_mem(mem: bytearray, ptr: int) -> List[str]:
+    result = []
+    while deref_u64(mem, ptr) != 0:
+        result.append(get_cstr_from_mem(mem, deref_u64(mem, ptr)).decode('utf-8'))
+        ptr += 8
+    return result
+
+def deref_u64(mem: bytearray, ptr: int) -> int:
+    return int.from_bytes(mem[ptr:ptr+8], byteorder='little')
+
+SIM_NULL_POINTER_PADDING = 1 # just a little bit of a padding at the beginning of the memory to make 0 an invalid address
+SIM_STR_CAPACITY  = 640_000
+SIM_ARGV_CAPACITY = 640_000
+SIM_ENVP_CAPACITY = 640_000
+SIM_LOCAL_MEMORY_CAPACITY = 640_000
 
 def simulate_little_endian_linux(program: Program, argv: List[str]):
     AT_FDCWD=-100
@@ -504,6 +516,14 @@ def simulate_little_endian_linux(program: Program, argv: List[str]):
                         fds[fd].write(mem[buf:buf+count])
                         fds[fd].flush()
                         stack.append(count)
+                    elif syscall_number == 59: # SYS_execve
+                        execve_path = get_cstr_from_mem(mem, arg1).decode('utf-8')
+                        execve_argv = get_cstr_list_from_mem(mem, arg2)
+                        execve_envp = { k: v for s in get_cstr_list_from_mem(mem, arg3) for (k, v) in (s.split('='), ) }
+                        try:
+                            os.execve(execve_path, execve_argv, execve_envp)
+                        except FileNotFoundError:
+                            stack.append(-ENOENT)
                     else:
                         assert False, "unknown syscall number %d" % syscall_number
                     ip += 1
