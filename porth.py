@@ -151,26 +151,42 @@ class Program:
     ops: List[Op] = field(default_factory=list)
     memory_capacity: int = 0
 
-def get_cstr_from_mem(mem: bytearray, ptr: int) -> bytes:
+SimPtr=int
+
+def get_cstr_from_mem(mem: bytearray, ptr: SimPtr) -> bytes:
     end = ptr
     while mem[end] != 0:
         end += 1
     return mem[ptr:end]
 
-def get_cstr_list_from_mem(mem: bytearray, ptr: int) -> List[str]:
+def get_cstr_list_from_mem(mem: bytearray, ptr: SimPtr) -> List[str]:
     result = []
     while deref_u64(mem, ptr) != 0:
         result.append(get_cstr_from_mem(mem, deref_u64(mem, ptr)).decode('utf-8'))
         ptr += 8
     return result
 
-def deref_u64(mem: bytearray, ptr: int) -> int:
+def deref_u64(mem: bytearray, ptr: SimPtr) -> int:
     return int.from_bytes(mem[ptr:ptr+8], byteorder='little')
 
-def mem_alloc(mem: bytearray, size: int) -> int:
+def mem_alloc(mem: bytearray, size: int) -> SimPtr:
     result = len(mem)
     mem += bytearray(size)
     return result
+
+@dataclass
+class SimBuffer:
+    start: SimPtr
+    capacity: int
+    size: int = 0
+
+def sim_buffer_append(mem: bytearray, sim_buf: SimBuffer, data: bytes) -> SimPtr:
+    size = len(data)
+    assert sim_buf.size + size <= sim_buf.capacity, "Simulated buffer overflow"
+    ptr = sim_buf.start + sim_buf.size
+    mem[ptr:ptr+size] = data
+    sim_buf.size += size
+    return ptr
 
 SIM_STR_CAPACITY  = 640_000
 SIM_ARGV_CAPACITY = 640_000
@@ -188,34 +204,28 @@ def simulate_little_endian_linux(program: Program, argv: List[str]):
     ret_stack: List[OpAddr] = []
     mem = bytearray(1) # NOTE: 1 is just a little bit of a padding at the beginning of the memory to make 0 an "invalid" address
 
-    str_buf_ptr = mem_alloc(mem, SIM_STR_CAPACITY)
+    str_buf = SimBuffer(start=mem_alloc(mem, SIM_STR_CAPACITY), capacity = SIM_STR_CAPACITY)
     str_ptrs: Dict[int, int] = {}
-    str_size = 0
 
     argv_buf_ptr = mem_alloc(mem, SIM_ARGV_CAPACITY)
     argc = 0
+
+    envp_buf_ptr = mem_alloc(mem, SIM_ENVP_CAPACITY)
 
     local_memory_ptr = mem_alloc(mem, SIM_LOCAL_MEMORY_CAPACITY)
     local_memory_rsp = local_memory_ptr + SIM_LOCAL_MEMORY_CAPACITY
 
     mem_buf_ptr = mem_alloc(mem, program.memory_capacity)
 
-    fds: List[BinaryIO] = [sys.stdin.buffer, sys.stdout.buffer, sys.stderr.buffer]
-
     for arg in argv:
-        value = arg.encode('utf-8')
-        n = len(value)
-
-        arg_ptr = str_buf_ptr + str_size
-        mem[arg_ptr:arg_ptr+n] = value
-        mem[arg_ptr+n] = 0
-        str_size += n + 1
-        assert str_size <= SIM_STR_CAPACITY, "String buffer overflow"
+        arg_ptr = sim_buffer_append(mem, str_buf, arg.encode('utf-8') + b'\0')
 
         argv_ptr = argv_buf_ptr+argc*8
         mem[argv_ptr:argv_ptr+8] = arg_ptr.to_bytes(8, byteorder='little')
         argc += 1
         assert argc*8 <= SIM_ARGV_CAPACITY, "Argv buffer, overflow"
+
+    fds: List[BinaryIO] = [sys.stdin.buffer, sys.stdout.buffer, sys.stderr.buffer]
 
     ip = 0
     while ip < len(program.ops):
@@ -229,26 +239,16 @@ def simulate_little_endian_linux(program: Program, argv: List[str]):
             elif op.typ == OpType.PUSH_STR:
                 assert isinstance(op.operand, str), "This could be a bug in the parsing step"
                 value = op.operand.encode('utf-8')
-                n = len(value)
-                stack.append(n)
+                stack.append(len(value))
                 if ip not in str_ptrs:
-                    str_ptr = str_buf_ptr+str_size
-                    str_ptrs[ip] = str_ptr
-                    mem[str_ptr:str_ptr+n] = value
-                    str_size += n
-                    assert str_size <= SIM_STR_CAPACITY, "String buffer overflow"
+                    str_ptrs[ip] = sim_buffer_append(mem, str_buf, value)
                 stack.append(str_ptrs[ip])
                 ip += 1
             elif op.typ == OpType.PUSH_CSTR:
                 assert isinstance(op.operand, str), "This could be a bug in the parsing step"
-                value = op.operand.encode('utf-8') + b'\0'
-                n = len(value)
                 if ip not in str_ptrs:
-                    str_ptr = str_buf_ptr+str_size
-                    str_ptrs[ip] = str_ptr
-                    mem[str_ptr:str_ptr+n] = value
-                    str_size += n
-                    assert str_size <= SIM_STR_CAPACITY, "String buffer overflow"
+                    value = op.operand.encode('utf-8') + b'\0'
+                    str_ptrs[ip] = sim_buffer_append(mem, str_buf, value)
                 stack.append(str_ptrs[ip])
                 ip += 1
             elif op.typ == OpType.PUSH_MEM:
@@ -459,14 +459,9 @@ def simulate_little_endian_linux(program: Program, argv: List[str]):
                     assert False, "TODO: `envp` intrinsic is not implemented for the simulation mode"
                 elif op.operand == Intrinsic.HERE:
                     value = ("%s:%d:%d" % op.token.loc).encode('utf-8')
-                    n = len(value)
-                    stack.append(n)
+                    stack.append(len(value))
                     if ip not in str_ptrs:
-                        str_ptr = str_buf_ptr+str_size
-                        str_ptrs[ip] = str_ptr
-                        mem[str_ptr:str_ptr+n] = value
-                        str_size += n
-                        assert str_size <= SIM_STR_CAPACITY, "String buffer overflow"
+                        str_ptrs[ip] = sim_buffer_append(mem, str_buf, value)
                     stack.append(str_ptrs[ip])
                     ip += 1
                 elif op.operand == Intrinsic.CAST_PTR:
