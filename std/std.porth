@@ -780,11 +780,10 @@ in
       ':' path paths str-chop-by-delim
 
       tmp-end
-
-      // TODO: this may not always be a null-terminated string
-      path @Str tmp-append drop
-      "/" tmp-append drop
+      path @Str                  tmp-append drop
+      "/"                        tmp-append drop
       file-path @ptr cstr-to-str tmp-append drop
+      1                          tmp-alloc  drop  // NULL terminator
 
       empty_envp swap
       argvp @ptr swap
