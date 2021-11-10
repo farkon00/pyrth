@@ -632,48 +632,57 @@ def human_type_name(typ: Union[DataType, str]) -> str:
     else:
         assert False, "unreachable"
 
+MessageGroup=List[CompilerMessage]
+
 def type_check_contracts(intro_token: Token, ctx: Context, contracts: List[Contract]):
-    log = []
+    log: List[MessageGroup] = []
     for contract in contracts:
         ins = list(contract.ins)
         stack = copy(ctx.stack)
         error = False
         generics: Dict[str, Union[DataType, str]] = {}
+        arg_count = 0
         while len(stack) > 0 and len(ins) > 0:
             actual, actual_loc = stack.pop()
             expected, expected_loc = ins.pop()
             if isinstance(expected, DataType):
                 if actual != expected:
                     error = True
-                    log.append(CompilerMessage(loc=actual_loc, label="ERROR", text=f"Unexpected type {human_type_name(actual)}"))
-                    log.append(CompilerMessage(loc=expected_loc, label="NOTE", text=f"Expected `{DATATYPE_NAMES[expected]}`"))
+                    log.append([CompilerMessage(loc=intro_token.loc, label="ERROR", text=f"Argument {arg_count} of `{intro_token.text}` is expected to be {human_type_name(expected)} but got {human_type_name(actual)}"),
+                                CompilerMessage(loc=actual_loc, label="NOTE", text=f"Argument {arg_count} was provided here"),
+                                CompilerMessage(loc=expected_loc, label="NOTE", text=f"Expected type was declared here")])
                     break;
             elif isinstance(expected, str):
                 if expected in generics:
                     if actual != generics[expected]:
                         error = True
-                        log.append(CompilerMessage(loc=actual_loc, label="ERROR", text=f"Unexpected type {human_type_name(actual)}."))
-                        log.append(CompilerMessage(loc=expected_loc, label="NOTE", text=f"Expected {human_type_name(generics[expected])}"))
+                        log.append([CompilerMessage(loc=intro_token.loc, label="ERROR", text=f"Argument {arg_count} of `{intro_token.text}` is expected to be {human_type_name(generics[expected])} but got {human_type_name(actual)}"),
+                                    CompilerMessage(loc=actual_loc, label="NOTE", text=f"Argument {arg_count} was provided here"),
+                                    CompilerMessage(loc=expected_loc, label="NOTE", text=f"Expected type was declared here")])
                         break;
                 else:
                     generics[expected] = actual
             else:
                 assert False, "unreachable"
+            arg_count += 1
         if error:
             continue
         if len(stack) < len(ins):
-            log.append(CompilerMessage(loc=intro_token.loc, label="ERROR", text=f"Not enough arguments provided for `{intro_token.value}`. Expected:"))
+            group = []
+            group.append(CompilerMessage(loc=intro_token.loc, label="ERROR", text=f"Not enough arguments provided for `{intro_token.value}`. Expected {len(contract.ins)} but got {arg_count}."))
+            group.append(CompilerMessage(loc=intro_token.loc, label="NOTE", text=f"Not provided arguments:"))
             while len(ins) > 0:
                 typ, loc = ins.pop()
                 if isinstance(typ, DataType):
-                    log.append(CompilerMessage(loc=loc, label="NOTE", text=f"{DATATYPE_NAMES[typ]}"))
+                    group.append(CompilerMessage(loc=loc, label="NOTE", text=f"{DATATYPE_NAMES[typ]}"))
                 elif isinstance(typ, str):
                     if typ in generics:
-                        log.append(CompilerMessage(loc=loc, label="NOTE", text=human_type_name(generics[typ])))
+                        group.append(CompilerMessage(loc=loc, label="NOTE", text=human_type_name(generics[typ])))
                     else:
-                        log.append(CompilerMessage(loc=loc, label="NOTE", text=human_type_name(typ)))
+                        group.append(CompilerMessage(loc=loc, label="NOTE", text=human_type_name(typ)))
                 else:
                     assert False, "unreachable"
+            log.append(group)
             continue
         for typ, loc in contract.outs:
             if isinstance(typ, DataType):
@@ -682,15 +691,17 @@ def type_check_contracts(intro_token: Token, ctx: Context, contracts: List[Contr
                 if typ in generics:
                     stack.append((generics[typ], intro_token.loc))
                 else:
-                    # log.append(CompilerMessage(loc=loc, label="ERROR", text=f"Unknown generic {repr(typ)} in output parameters. All generics should appear at least once in input parameters first."))
+                    # log.append([CompilerMessage(loc=loc, label="ERROR", text=f"Unknown generic {repr(typ)} in output parameters. All generics should appear at least once in input parameters first.")])
                     # continue
-                    assert False, "Unreachable. Such function won't compile in the first place since you can't prodice an instance of a generic type at the moment"
+                    assert False, "Unreachable. Such function won't compile in the first place since you can't produce an instance of a generic type at the moment"
             else:
                 assert False, "unreachable"
         ctx.stack = stack
         return
-    for msg in log:
-        compiler_diagnostic(msg.loc, msg.label, msg.text)
+    for group in log:
+        for msg in group:
+            compiler_diagnostic(msg.loc, msg.label, msg.text)
+        print(file=sys.stderr)
     exit(1)
 
 def type_check_context_outs(ctx: Context):

@@ -4,7 +4,9 @@
 :i returncode 1
 :b stdout 0
 
-:b stderr 159
-./tests/if-else-less-fail.porth:1:24: ERROR: Not enough arguments provided for `print`. Expected:
+:b stderr 240
+./tests/if-else-less-fail.porth:1:24: ERROR: Not enough arguments provided for `print`. Expected 1 but got 0.
+./tests/if-else-less-fail.porth:1:24: NOTE: Not provided arguments:
 ./tests/if-else-less-fail.porth:1:24: NOTE: generic type 'a'
+
 
