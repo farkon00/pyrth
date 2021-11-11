@@ -1001,26 +1001,6 @@ proc generate-nasm-linux-x86_64 in
   "\n"                       out-fd @64 fputs
 
   out-fd @64 close drop
-
-  memory nasm-argv sizeof(ptr) 4 * end
-  "nasm"c          nasm-argv 0 8 * + !64
-  "-felf64"c       nasm-argv 1 8 * + !64
-  "output.asm"c    nasm-argv 2 8 * + !64
-  NULL             nasm-argv 3 8 * + !64
-  nasm-argv cmd-echoed
-
-  memory ld-argv sizeof(ptr) 5 * end
-  "ld"c          ld-argv 0 8 * + !64
-  "-o"c          ld-argv 1 8 * + !64
-  "output"c      ld-argv 2 8 * + !64
-  "output.o"c    ld-argv 3 8 * + !64
-  NULL           ld-argv 4 8 * + !64
-  ld-argv cmd-echoed
-
-  memory output-argv sizeof(ptr) 2 * end
-  "./output"c output-argv 0 8 * + !64
-  NULL        output-argv 1 8 * + !64
-  output-argv cmd-echoed
 end
 
 // TODO: implement reusable stack data structure
@@ -2533,15 +2513,16 @@ in
   memory name sizeof(ptr) end
   name !ptr
 
-  "Usage: " eputs name @ptr cstr-to-str puts " <SUBCOMMAND>\n"            fd @64 fputs
-  "  SUBCOMMANDS:\n"                                                      fd @64 fputs
-  "    sim <file>       Simulate the program.\n"                          fd @64 fputs
-  // TODO: -r flag for com subcommand
-  "    com <file>       Compile the program\n"                            fd @64 fputs
-  "    dump <file>      Dump the ops of the program\n"                    fd @64 fputs
-  "    lex <file>       Produce lexical analysis of the file\n"           fd @64 fputs
-  "    summary <file>   Print the summary of the program\n"               fd @64 fputs
-  "    help             Print this help to stdout and exit with 0 code\n" fd @64 fputs
+  "Usage: " eputs name @ptr cstr-to-str puts " <SUBCOMMAND>\n"                 fd @64 fputs
+  "  SUBCOMMANDS:\n"                                                           fd @64 fputs
+  "    sim <file>            Simulate the program.\n"                          fd @64 fputs
+  "    com [OPTIONS] <file>  Compile the program\n"                            fd @64 fputs
+  "      OPTIONS:\n"                                                           fd @64 fputs
+  "        -r                  Run the program after successful compilation\n" fd @64 fputs
+  "    dump <file>           Dump the ops of the program\n"                    fd @64 fputs
+  "    lex <file>            Produce lexical analysis of the file\n"           fd @64 fputs
+  "    summary <file>        Print the summary of the program\n"               fd @64 fputs
+  "    help                  Print this help to stdout and exit with 0 code\n" fd @64 fputs
 end
 
 proc main in
@@ -2558,6 +2539,11 @@ proc main in
     1 exit
   end
 
+  memory file-path-cstr sizeof(ptr) end
+  NULL file-path-cstr !ptr
+  memory run sizeof(bool) end
+  false run !bool
+
   // TODO: porth.porth does not type check compiled program
 
   args @@ptr "sim"c cstreq if
@@ -2572,16 +2558,50 @@ proc main in
 
     simulate-ops
   else args @@ptr "com"c cstreq if*
-    args sizeof(ptr) inc64-by
-    args @@ptr NULL = if
+    while
+      args sizeof(ptr) inc64-by
+      args @@ptr NULL = if
+        false
+      else args @@ptr "-r"c cstreq if*
+        true run !bool
+        true
+      else
+        args @@ptr file-path-cstr !ptr
+        false
+      end
+    do end
+
+    file-path-cstr @ptr NULL = if
       program @ptr stderr usage
-      "ERROR: no input file is provided for the `com` subcommand\n" eputs
+      "[ERROR] no input file is provided for the compilation\n" eputs
       1 exit
     end
 
-    args @@ptr compile-file-into-ops
+    file-path-cstr @ptr compile-file-into-ops
 
     generate-nasm-linux-x86_64
+
+    memory nasm-argv sizeof(ptr) 4 * end
+    "nasm"c          nasm-argv 0 8 * + !64
+    "-felf64"c       nasm-argv 1 8 * + !64
+    "output.asm"c    nasm-argv 2 8 * + !64
+    NULL             nasm-argv 3 8 * + !64
+    nasm-argv cmd-echoed
+
+    memory ld-argv sizeof(ptr) 5 * end
+    "ld"c          ld-argv 0 8 * + !64
+    "-o"c          ld-argv 1 8 * + !64
+    "output"c      ld-argv 2 8 * + !64
+    "output.o"c    ld-argv 3 8 * + !64
+    NULL           ld-argv 4 8 * + !64
+    ld-argv cmd-echoed
+
+    run @bool if
+      memory output-argv sizeof(ptr) 2 * end
+      "./output"c output-argv 0 8 * + !64
+      NULL        output-argv 1 8 * + !64
+      output-argv cmd-echoed
+    end
   else args @@ptr "help"c cstreq if*
     program @ptr stdout usage
     0 exit
