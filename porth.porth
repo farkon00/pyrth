@@ -495,17 +495,21 @@ memory local-memories-count sizeof(u64) end
 memory local-memories sizeof(Memory) LOCAL_MEMORIES_CAP * end
 memory local-memory-capacity sizeof(u64) end
 
-proc cmd-echoed ptr in
-  memory wstatus sizeof(u64) end
+memory silent sizeof(bool) end
 
-  "[CMD]" puts
-  dup while dup @64 0 != do
-    " " puts
-    // TODO: properly escape the logged CMD
-    dup @64 cast(ptr) cstr-to-str puts
-    8 +
-  end drop
-  "\n" puts
+proc cmd-echoed ptr in
+  silent @bool lnot if
+    "[CMD]" puts
+    dup while dup @64 0 != do
+      " " puts
+      // TODO: properly escape the logged CMD
+      dup @64 cast(ptr) cstr-to-str puts
+      8 +
+    end drop
+    "\n" puts
+  end
+
+  memory wstatus sizeof(u64) end
 
   fork
 
@@ -581,7 +585,9 @@ in
 end
 
 proc generate-nasm-linux-x86_64 in
-  "[INFO] Generating output.asm\n" puts
+  silent @bool lnot if
+    "[INFO] Generating output.asm\n" puts
+  end
 
   memory out-fd sizeof(u64) end
 
@@ -2513,16 +2519,17 @@ in
   memory name sizeof(ptr) end
   name !ptr
 
-  "Usage: " eputs name @ptr cstr-to-str puts " <SUBCOMMAND>\n"                 fd @64 fputs
-  "  SUBCOMMANDS:\n"                                                           fd @64 fputs
-  "    sim <file>            Simulate the program.\n"                          fd @64 fputs
-  "    com [OPTIONS] <file>  Compile the program\n"                            fd @64 fputs
-  "      OPTIONS:\n"                                                           fd @64 fputs
-  "        -r                  Run the program after successful compilation\n" fd @64 fputs
-  "    dump <file>           Dump the ops of the program\n"                    fd @64 fputs
-  "    lex <file>            Produce lexical analysis of the file\n"           fd @64 fputs
-  "    summary <file>        Print the summary of the program\n"               fd @64 fputs
-  "    help                  Print this help to stdout and exit with 0 code\n" fd @64 fputs
+  "Usage: " eputs name @ptr cstr-to-str puts " <SUBCOMMAND>\n"                               fd @64 fputs
+  "  SUBCOMMANDS:\n"                                                                         fd @64 fputs
+  "    sim <file>            Simulate the program.\n"                                        fd @64 fputs
+  "    com [OPTIONS] <file>  Compile the program\n"                                          fd @64 fputs
+  "      OPTIONS:\n"                                                                         fd @64 fputs
+  "        -r                  Run the program after successful compilation\n"               fd @64 fputs
+  "        -s                  Silent mode. Don't print any info about compilation phases\n" fd @64 fputs
+  "    dump <file>           Dump the ops of the program\n"                                  fd @64 fputs
+  "    lex <file>            Produce lexical analysis of the file\n"                         fd @64 fputs
+  "    summary <file>        Print the summary of the program\n"                             fd @64 fputs
+  "    help                  Print this help to stdout and exit with 0 code\n"               fd @64 fputs
 end
 
 proc main in
@@ -2561,13 +2568,16 @@ proc main in
     while
       args sizeof(ptr) inc64-by
       args @@ptr NULL = if
-        false
+        false // break
       else args @@ptr "-r"c cstreq if*
         true run !bool
-        true
+        true  // continue
+      else args @@ptr "-s"c cstreq if*
+        true silent !bool
+        true  // continue
       else
         args @@ptr file-path-cstr !ptr
-        false
+        false // break
       end
     do end
 
