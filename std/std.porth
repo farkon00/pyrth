@@ -749,6 +749,9 @@ end
 
 proc tmp-str-to-cstr int ptr -- ptr in over 1 + tmp-alloc memcpy end
 proc tmp-append int ptr -- ptr in over tmp-alloc memcpy end
+proc tmp-append-ptr ptr in
+  sizeof(ptr) tmp-alloc !ptr
+end
 
 proc execvp
   ptr // argv

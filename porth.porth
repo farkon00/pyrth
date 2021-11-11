@@ -2591,27 +2591,32 @@ proc main in
 
     generate-nasm-linux-x86_64
 
-    memory nasm-argv sizeof(ptr) 4 * end
-    "nasm"c          nasm-argv 0 8 * + !64
-    "-felf64"c       nasm-argv 1 8 * + !64
-    "output.asm"c    nasm-argv 2 8 * + !64
-    NULL             nasm-argv 3 8 * + !64
-    nasm-argv cmd-echoed
+    // TODO: implement tmp-rewind for this specific usecase
+    tmp-clean
 
-    memory ld-argv sizeof(ptr) 5 * end
-    "ld"c          ld-argv 0 8 * + !64
-    "-o"c          ld-argv 1 8 * + !64
-    "output"c      ld-argv 2 8 * + !64
-    "output.o"c    ld-argv 3 8 * + !64
-    NULL           ld-argv 4 8 * + !64
-    ld-argv cmd-echoed
+    tmp-end
+    "nasm"c       tmp-append-ptr
+    "-felf64"c    tmp-append-ptr
+    "output.asm"c tmp-append-ptr
+    NULL          tmp-append-ptr
+    cmd-echoed
+
+    tmp-end
+    "ld"c         tmp-append-ptr
+    "-o"c         tmp-append-ptr
+    "output"c     tmp-append-ptr
+    "output.o"c   tmp-append-ptr
+    NULL          tmp-append-ptr
+    cmd-echoed
 
     run @bool if
-      memory output-argv sizeof(ptr) 2 * end
-      "./output"c output-argv 0 8 * + !64
-      NULL        output-argv 1 8 * + !64
-      output-argv cmd-echoed
+      tmp-end
+      "./output"c tmp-append-ptr
+      NULL        tmp-append-ptr
+      cmd-echoed
     end
+
+    tmp-clean
   else args @@ptr "help"c cstreq if*
     program @ptr stdout usage
     0 exit
