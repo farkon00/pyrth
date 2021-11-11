@@ -2591,9 +2591,6 @@ proc main in
 
     generate-nasm-linux-x86_64
 
-    // TODO: implement tmp-rewind for this specific usecase
-    tmp-clean
-
     tmp-end
     "nasm"c       tmp-append-ptr
     "-felf64"c    tmp-append-ptr
@@ -2615,8 +2612,6 @@ proc main in
       NULL        tmp-append-ptr
       cmd-echoed
     end
-
-    tmp-clean
   else args @@ptr "help"c cstreq if*
     program @ptr stdout usage
     0 exit

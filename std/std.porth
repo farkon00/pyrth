@@ -732,6 +732,7 @@ memory tmp-size sizeof(u64) end
 
 proc tmp-clean in 0 tmp-size !64 end
 proc tmp-end -- ptr in tmp-start tmp-size @64 + end
+proc tmp-rewind ptr in tmp-start - tmp-size !int end
 
 proc tmp-alloc
   int
