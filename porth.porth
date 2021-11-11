@@ -1,7 +1,6 @@
 // In progress rewrite of ./porth.py in Porth
 
-// TODO: support for include path searching
-include "std/std.porth"
+include "std.porth"
 
 const OP_PUSH_INT        1 offset end
 const OP_PUSH_LOCAL_MEM  1 offset end
@@ -2120,6 +2119,50 @@ in
   push-op
 end
 
+// NOTE: stands for File Path Buffer
+// This is a memory region where we store file paths for compile-file-into-ops operation.
+// This buffer is created to ensure that the file path string live long enough for
+// compile-file-into-ops to process the files properly.
+const FPB_CAP 8 1024 * end
+memory fpb-start FPB_CAP end
+memory fpb-size sizeof(u64) end
+
+proc fpb-end -- ptr in fpb-start fpb-size @64 + end
+proc fpb-rewind ptr in fpb-start - fpb-size !int end
+
+proc fpb-alloc
+  int
+  --
+  ptr // result
+in
+  dup fpb-size @64 + FPB_CAP > if
+    here eputs ": File Path Buffer capacity exceeded.\n" eputs
+    1 exit
+  end
+
+  dup 0 fpb-end memset
+  fpb-size @64 rot + fpb-size !64
+end
+
+proc fpb-append int ptr -- ptr in over fpb-alloc memcpy end
+
+proc ?file-exist ptr -- bool in
+  memory statbuf sizeof(stat) end
+
+  statbuf swap stat
+
+  dup 0 = if
+    drop true
+    // TODO: introduce ENOENT when the negative number stuff is fixed
+  else dup 0 2 - = if*
+    drop false
+  else
+    drop false
+    here eputs ": ERROR: ?file-exist failed\n" eputs
+    1 exit
+  end
+end
+
 proc compile-file-into-ops ptr in
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
@@ -2296,7 +2339,21 @@ proc compile-file-into-ops ptr in
           end
 
           // TODO: introduce include limit
-          token Token.value + @Str tmp-str-to-cstr compile-file-into-ops
+          fpb-end
+          "./"                     fpb-append drop
+          token Token.value + @Str fpb-append drop
+          1                        fpb-alloc drop
+
+          // TODO: customizable include path list
+          dup ?file-exist lnot if
+            fpb-rewind
+            fpb-end
+            "./std/"                 fpb-append drop
+            token Token.value + @Str fpb-append drop
+            1                        fpb-alloc drop
+          end
+
+          compile-file-into-ops
         else dup @Str "const" streq if*
           token lexer lexer-next-token lnot if
             token Token.loc + eputloc
@@ -2501,11 +2558,11 @@ end
 
 proc summary in
   // TODO: lexer stats: tokens count, lines count, etc
-  "Ops count:                    " puts ops-count @int putu "\n" puts
-  "Consts count:                 " puts consts-count @int putu "\n" puts
-  "Procs count:                  " puts procs-count @int putu "\n" puts
-  "String literals count:        " puts strlits-count @int putu "\n" puts
-  "String literals size (bytes): " puts strbuf-size @int putu "\n" puts
+  "Ops count:                    " puts ops-count              @int putu "\n" puts
+  "Consts count:                 " puts consts-count           @int putu "\n" puts
+  "Procs count:                  " puts procs-count            @int putu "\n" puts
+  "String literals count:        " puts strlits-count          @int putu "\n" puts
+  "String literals size (bytes): " puts strbuf-size            @int putu "\n" puts
   "Global memory size (bytes):   " puts global-memory-capacity @int putu "\n" puts
 end
 
