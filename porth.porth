@@ -583,7 +583,10 @@ in
   end
 end
 
-proc generate-nasm-linux-x86_64 in
+proc generate-nasm-linux-x86_64 ptr in
+  memory file-path sizeof(ptr) end
+  file-path !ptr
+
   silent @bool lnot if
     "[INFO] Generating output.asm\n" puts
   end
@@ -592,8 +595,7 @@ proc generate-nasm-linux-x86_64 in
 
   420                     // mode
   O_CREAT O_WRONLY or O_TRUNC or  // flags
-  // TODO: the output file path should be based on the input file path
-  "output.asm"c        // pathname
+  file-path @ptr        // pathname
   // TODO: this is lame, let's just support negative numbers properly
   0 100 - //AT_FDCWD
   openat
@@ -2646,7 +2648,8 @@ proc main in
 
     file-path-cstr @ptr compile-file-into-ops
 
-    generate-nasm-linux-x86_64
+    // TODO: the output file path should be based on the input file path
+    "output.asm"c generate-nasm-linux-x86_64
 
     tmp-end
     "nasm"c       tmp-append-ptr
