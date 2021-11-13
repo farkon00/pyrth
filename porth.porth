@@ -2,6 +2,51 @@
 
 include "std.porth"
 
+/// BEGIN Loc //////////////////////////////
+/// Loc is a location within the source code: file path, row, col
+const Loc.file-path sizeof(Str) offset end
+const Loc.row sizeof(u64) offset end
+const Loc.col sizeof(u64) offset end
+const sizeof(Loc) reset end
+
+proc fputloc ptr int in
+  memory fd sizeof(u64) end
+  fd !64
+  dup Loc.file-path + @Str fd @64 fputs
+  ":"                      fd @64 fputs
+  dup Loc.row + @64        fd @64 fputu
+  ":"                      fd @64 fputs
+  dup Loc.col + @64        fd @64 fputu
+  drop
+end
+proc putloc ptr in stdout fputloc end
+proc eputloc ptr in stderr fputloc end
+/// END Loc //////////////////////////////
+
+/// BEGIN Token //////////////////////////////
+/// Token is a group of characters within the source code that is
+/// recognized as certain class: int, word, string, etc.
+const TOKEN_INT  1 offset end
+const TOKEN_WORD 1 offset end
+const TOKEN_STR  1 offset end
+const TOKEN_CSTR 1 offset end
+const TOKEN_CHAR 1 offset end
+const COUNT_TOKENS reset end
+
+const Token.type sizeof(u64) offset end
+const Token.loc  sizeof(Loc) offset end
+const Token.text sizeof(Str) offset end
+const Token.value
+   sizeof(u64)
+   sizeof(Str) max
+   offset
+end
+const sizeof(Token) reset end
+/// END Token //////////////////////////////
+
+/// BEGIN Op //////////////////////////////
+/// "Op" is a single operation within the Porth's Intermediate Representation (IR):
+/// https://en.wikipedia.org/wiki/Intermediate_representation
 const OP_PUSH_INT        1 offset end
 const OP_PUSH_LOCAL_MEM  1 offset end
 const OP_PUSH_GLOBAL_MEM 1 offset end
@@ -49,81 +94,14 @@ in
   rot drop
 end
 
-const Loc.file-path sizeof(Str) offset end
-const Loc.row sizeof(u64) offset end
-const Loc.col sizeof(u64) offset end
-const sizeof(Loc) reset end
-
-proc fputloc ptr int in
-  memory fd sizeof(u64) end
-  fd !64
-  dup Loc.file-path + @Str fd @64 fputs
-  ":"                      fd @64 fputs
-  dup Loc.row + @64        fd @64 fputu
-  ":"                      fd @64 fputs
-  dup Loc.col + @64        fd @64 fputu
-  drop
-end
-proc putloc ptr in stdout fputloc end
-proc eputloc ptr in stderr fputloc end
-
-const TOKEN_INT  1 offset end
-const TOKEN_WORD 1 offset end
-const TOKEN_STR  1 offset end
-const TOKEN_CSTR 1 offset end
-const TOKEN_CHAR 1 offset end
-const COUNT_TOKENS reset end
-
-const Token.type sizeof(u64) offset end
-const Token.loc  sizeof(Loc) offset end
-const Token.text sizeof(Str) offset end
-const Token.value
-   sizeof(u64)
-   sizeof(Str) max
-   offset
-end
-const sizeof(Token) reset end
-
-const Op.type sizeof(u64) offset end
-const Op.operand sizeof(u64) offset end
-const Op.token sizeof(Token) offset end
+const Op.type    sizeof(u64)   offset end
+const Op.operand sizeof(u64)   offset end
+const Op.token   sizeof(Token) offset end
 const sizeof(Op) reset end
 
 const OPS_CAP 16 1024 * end
 memory ops-count sizeof(u64) end
 memory ops sizeof(Op) OPS_CAP * end
-
-proc append-item
-  int // item size
-  ptr // item
-  int // array capacity
-  ptr // array
-  ptr // array count
-  --
-  int  // index of the appended item
-  bool // true - appended, false - not enough space
-in
-  memory count sizeof(ptr) end
-  count !ptr
-  memory array sizeof(ptr) end
-  array !ptr
-
-  count @ptr @int > if
-    over
-    count @ptr @int *
-    array @ptr +
-    memcpy drop
-
-    count @ptr @int
-    count @ptr inc64
-
-    true
-  else
-    2drop
-    0 false
-  end
-end
-
 
 proc push-op
   int // type
@@ -140,6 +118,7 @@ in
   end
   drop
 end
+// END Op ////////////////////////////
 
 const STRLITS_CAP 1024 end
 memory strlits-count sizeof(int) end
@@ -549,8 +528,6 @@ proc dump-ops in
   end
   drop
 end
-
-const MEM_CAPACITY 640000 end
 
 proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
 
