@@ -44,7 +44,274 @@ end
 const sizeof(Token) reset end
 /// END Token //////////////////////////////
 
+/// BEGIN Strbuf //////////////////////////////
+/// The buffer that holds the date of the string literals of
+/// the compiled program. (see Strlit)
+const STRBUF_CAP 16 1024 * end
+memory strbuf-size sizeof(int) end
+memory strbuf-start STRBUF_CAP end
+
+proc strbuf-end -- ptr in strbuf-start strbuf-size @int + end
+proc strbuf-append-char int in
+  strbuf-size @int STRBUF_CAP >= if
+    here eputs ": Assertion Failed: string literal buffer overflow\n" eputs
+    1 exit
+  end
+
+  strbuf-end !8
+  strbuf-size inc64
+end
+
+proc strbuf-append-str int ptr in
+  memory str sizeof(Str) end
+  str !Str
+
+  while str @Str.count 0 > do
+    str @Str.data @8 strbuf-append-char
+    str str-chop-one-left
+  end
+end
+
+proc strbuf-loc
+  ptr // loc
+  --
+  int ptr
+in
+  memory start sizeof(ptr) end
+  strbuf-end start !ptr
+
+  dup Loc.file-path + @Str   strbuf-append-str
+  ":"                        strbuf-append-str
+  dup Loc.row + @64 tmp-utos strbuf-append-str
+  ":"                        strbuf-append-str
+  dup Loc.col + @64 tmp-utos strbuf-append-str
+  drop
+
+  strbuf-end start @ptr -
+  start @ptr
+end
+/// END Strbuf //////////////////////////////
+
+/// BEGIN Lexer //////////////////////////////
+/// Lexer is an entity that turns a string into a sequence of Tokens
+const Lexer.content    sizeof(Str) offset end
+const Lexer.line       sizeof(Str) offset end
+const Lexer.line-start sizeof(ptr) offset end
+const Lexer.file-path  sizeof(Str) offset end
+const Lexer.row        sizeof(u64) offset end
+const sizeof(Lexer) reset end
+
+proc lexer-next-line ptr in
+  memory lexer sizeof(ptr) end
+  lexer !64
+
+  '\n'
+  lexer @ptr Lexer.line +
+  lexer @ptr Lexer.content +
+  str-chop-by-delim
+
+  lexer @ptr Lexer.line + offsetof(Str.data) + @ptr
+  lexer @ptr Lexer.line-start +
+  !64
+
+  lexer @ptr Lexer.row + inc64
+end
+
+proc lexer-loc
+  ptr // loc
+  ptr // lexer
+in
+  memory lexer sizeof(ptr) end
+  lexer !ptr
+  memory loc sizeof(ptr) end
+  loc !ptr
+
+  // File Path
+  sizeof(Str)
+  lexer @ptr Lexer.file-path +
+  loc   @ptr Loc.file-path   +
+  memcpy
+  drop
+
+  // Row
+  lexer @ptr Lexer.row + @int
+  loc   @ptr Loc.row   + !int
+
+  // Column
+  lexer @ptr Lexer.line + offsetof(Str.data) + @ptr
+  lexer @ptr Lexer.line-start + @ptr
+  -
+  1 +
+  loc @ptr Loc.col +
+  !int
+end
+
+proc lexer-consume-strlit
+  ptr // lexer
+  --
+  int ptr // string literal
+in
+  memory lexer sizeof(ptr) end
+  lexer !ptr
+
+  memory start sizeof(ptr) end
+  strbuf-end start !ptr
+
+  memory count sizeof(int) end
+  0 count !int
+
+  memory loc sizeof(Loc) end
+
+  lexer @ptr Lexer.line +
+    while
+      dup ?str-empty lnot if
+        dup @Str.data @8 '"' = if
+          dup str-chop-one-left
+          false
+        else dup @Str.data @8 '\\' = if*
+          dup str-chop-one-left
+
+          dup ?str-empty if
+            loc lexer @ptr lexer-loc
+            loc eputloc ": ERROR: unfinished escape sequence\n" eputs
+            1 exit
+          end
+
+          dup @Str.data @8 'n' = if
+            10 strbuf-append-char
+            dup str-chop-one-left
+            count inc64
+            true
+          else dup @Str.data @8 '\\' = if*
+            92 strbuf-append-char
+            dup str-chop-one-left
+            count inc64
+            true
+          else dup @Str.data @8 '\"' = if*
+            34 strbuf-append-char
+            dup str-chop-one-left
+            count inc64
+            true
+          else
+            loc lexer @ptr lexer-loc
+            loc eputloc ": ERROR: unknown escape character `" eputs 1 over @Str.data eputs "`\n" eputs
+            1 exit
+            false
+          end
+        else
+          dup @Str.data @8 strbuf-append-char
+          dup str-chop-one-left
+          count inc64
+          true
+        end
+      else false end
+    do end
+  drop
+
+  count @int start @ptr
+  // TODO: check if the string literal was actually closed at the end
+end
+
+proc lexer-next-token
+  ptr // token
+  ptr // lexer
+  --
+  bool
+in
+  memory lexer sizeof(ptr) end
+  lexer !64
+  memory token sizeof(ptr) end
+  token !64
+
+  memory word sizeof(Str) end
+
+  lexer @ptr
+  while
+    dup Lexer.line + str-trim-left
+
+    dup Lexer.line + ?str-empty if
+      dup Lexer.content + ?str-empty lnot
+    else
+      dup Lexer.line +
+      "//" rot @Str str-starts-with
+    end
+  do dup lexer-next-line end
+
+  dup Lexer.line + ?str-empty lnot if
+    token @ptr Token.loc +
+    lexer @ptr
+    lexer-loc
+
+    dup Lexer.line + @Str.data @8 '"' = if
+       // String literal
+       dup Lexer.line + str-chop-one-left
+       lexer-consume-strlit word !Str
+       word @Str token @ptr Token.value + !Str
+
+       lexer @ptr Lexer.line + ?str-empty lnot if
+         lexer @ptr Lexer.line + @Str.data @8 'c' = if
+           lexer @ptr Lexer.line + str-chop-one-left
+           0 strbuf-append-char
+           token @ptr Token.value + offsetof(Str.count) + inc64
+           TOKEN_CSTR token @ptr Token.type + !64
+         else
+           TOKEN_STR token @ptr Token.type + !64
+         end
+       else
+         TOKEN_STR token @ptr Token.type + !64
+       end
+    else dup Lexer.line + @Str.data @8 39 = if* // TODO: can't use ' directly for some reason
+       // Character literal
+       dup Lexer.line + str-chop-one-left
+       39 word rot Lexer.line + str-chop-by-delim
+
+       word @Str "\\n" streq if
+         10 token @ptr Token.value + !int
+       else word @Str "\\\\" streq if*
+         92 token @ptr Token.value + !int
+       else word @Str "\\\"" streq if*
+         34 token @ptr Token.value + !int
+       else word @Str.count 1 = if*
+         word @Str.data @8 token @ptr Token.value + !int
+       else
+         token @ptr Token.loc + eputloc ": only a single byte is allowed inside of a character literal\n" eputs
+         1 exit
+       end
+
+       TOKEN_CHAR token @ptr Token.type + !64
+
+       // TODO: check if the character literal was actually closed at the end
+       // TODO: character literals don't support escaping
+    else
+       // Word or integer literal
+
+       ' '               // delim
+       word              // word
+       rot Lexer.line +  // line
+       str-chop-by-delim
+
+       word @Str try-parse-int if
+          token @ptr Token.value + !64
+          TOKEN_INT token @ptr Token.type  + !64
+       else
+          drop // number from try-parse-int
+          word @Str  token @ptr Token.value + !Str
+          TOKEN_WORD token @ptr Token.type + !64
+       end
+    end
+
+    word @Str token @ptr Token.text + !Str
+
+    true
+  else
+    drop // lexer
+    false
+  end
+end
+/// END Lexer //////////////////////////////
+
 /// BEGIN Intrinsics //////////////////////////////
+/// Intrinsics are built-in function of the language with the hardcoded implementation.
 const INTRINSIC_PLUS      1 offset end
 const INTRINSIC_MINUS     1 offset end
 const INTRINSIC_MUL       1 offset end
@@ -324,54 +591,8 @@ in
 end
 /// END Strlit //////////////////////////////
 
-/// BEGIN Strbuf //////////////////////////////
-/// The buffer that holds the date of the string literals of
-/// the compiled program. (see Strlit)
-const STRBUF_CAP 16 1024 * end
-memory strbuf-size sizeof(int) end
-memory strbuf-start STRBUF_CAP end
-
-proc strbuf-end -- ptr in strbuf-start strbuf-size @int + end
-proc strbuf-append-char int in
-  strbuf-size @int STRBUF_CAP >= if
-    here eputs ": Assertion Failed: string literal buffer overflow\n" eputs
-    1 exit
-  end
-
-  strbuf-end !8
-  strbuf-size inc64
-end
-
-proc strbuf-append-str int ptr in
-  memory str sizeof(Str) end
-  str !Str
-
-  while str @Str.count 0 > do
-    str @Str.data @8 strbuf-append-char
-    str str-chop-one-left
-  end
-end
-
-proc strbuf-loc
-  ptr // loc
-  --
-  int ptr
-in
-  memory start sizeof(ptr) end
-  strbuf-end start !ptr
-
-  dup Loc.file-path + @Str   strbuf-append-str
-  ":"                        strbuf-append-str
-  dup Loc.row + @64 tmp-utos strbuf-append-str
-  ":"                        strbuf-append-str
-  dup Loc.col + @64 tmp-utos strbuf-append-str
-  drop
-
-  strbuf-end start @ptr -
-  start @ptr
-end
-/// END Strbuf //////////////////////////////
-
+/// BEGIN Const //////////////////////////////
+/// Array of the constants of the compiled program
 const Const.name  sizeof(Str) offset end
 const Const.loc   sizeof(Loc) offset end
 const Const.value sizeof(u64) offset end
@@ -415,7 +636,10 @@ in
   end
   drop
 end
+/// END Const //////////////////////////////
 
+/// BEGIN Proc //////////////////////////////
+/// Array of procedures of the compiled program
 const Proc.name sizeof(Str) offset end
 const Proc.addr sizeof(u64) offset end
 const Proc.loc sizeof(Loc) offset end
@@ -458,7 +682,9 @@ in
   end
   drop
 end
+/// END Proc //////////////////////////////
 
+/// BEGIN Memory //////////////////////////////
 const Memory.name sizeof(Str) offset end
 const Memory.offset sizeof(u64) offset end
 const Memory.loc sizeof(Loc) offset end
@@ -473,6 +699,7 @@ const LOCAL_MEMORIES_CAP 1024 end
 memory local-memories-count sizeof(u64) end
 memory local-memories sizeof(Memory) LOCAL_MEMORIES_CAP * end
 memory local-memory-capacity sizeof(u64) end
+/// END Memory //////////////////////////////
 
 memory silent sizeof(bool) end
 
@@ -1309,221 +1536,6 @@ proc parse-block-stack-top -- int bool in
   else
     parse-block-stack parse-block-stack-count @64 1 - sizeof(u64) * + @64
     true
-  end
-end
-
-const Lexer.content    sizeof(Str) offset end
-const Lexer.line       sizeof(Str) offset end
-const Lexer.line-start sizeof(ptr) offset end
-const Lexer.file-path  sizeof(Str) offset end
-const Lexer.row        sizeof(u64) offset end
-const sizeof(Lexer) reset end
-
-proc lexer-next-line ptr in
-  memory lexer sizeof(ptr) end
-  lexer !64
-
-  '\n'
-  lexer @ptr Lexer.line +
-  lexer @ptr Lexer.content +
-  str-chop-by-delim
-
-  lexer @ptr Lexer.line + offsetof(Str.data) + @ptr
-  lexer @ptr Lexer.line-start +
-  !64
-
-  lexer @ptr Lexer.row + inc64
-end
-
-proc lexer-loc
-  ptr // loc
-  ptr // lexer
-in
-  memory lexer sizeof(ptr) end
-  lexer !ptr
-  memory loc sizeof(ptr) end
-  loc !ptr
-
-  // File Path
-  sizeof(Str)
-  lexer @ptr Lexer.file-path +
-  loc   @ptr Loc.file-path   +
-  memcpy
-  drop
-
-  // Row
-  lexer @ptr Lexer.row + @int
-  loc   @ptr Loc.row   + !int
-
-  // Column
-  lexer @ptr Lexer.line + offsetof(Str.data) + @ptr
-  lexer @ptr Lexer.line-start + @ptr
-  -
-  1 +
-  loc @ptr Loc.col +
-  !int
-end
-
-proc lexer-consume-strlit
-  ptr // lexer
-  --
-  int ptr // string literal
-in
-  memory lexer sizeof(ptr) end
-  lexer !ptr
-
-  memory start sizeof(ptr) end
-  strbuf-end start !ptr
-
-  memory count sizeof(int) end
-  0 count !int
-
-  memory loc sizeof(Loc) end
-
-  lexer @ptr Lexer.line +
-    while
-      dup ?str-empty lnot if
-        dup @Str.data @8 '"' = if
-          dup str-chop-one-left
-          false
-        else dup @Str.data @8 '\\' = if*
-          dup str-chop-one-left
-
-          dup ?str-empty if
-            loc lexer @ptr lexer-loc
-            loc eputloc ": ERROR: unfinished escape sequence\n" eputs
-            1 exit
-          end
-
-          dup @Str.data @8 'n' = if
-            10 strbuf-append-char
-            dup str-chop-one-left
-            count inc64
-            true
-          else dup @Str.data @8 '\\' = if*
-            92 strbuf-append-char
-            dup str-chop-one-left
-            count inc64
-            true
-          else dup @Str.data @8 '\"' = if*
-            34 strbuf-append-char
-            dup str-chop-one-left
-            count inc64
-            true
-          else
-            loc lexer @ptr lexer-loc
-            loc eputloc ": ERROR: unknown escape character `" eputs 1 over @Str.data eputs "`\n" eputs
-            1 exit
-            false
-          end
-        else
-          dup @Str.data @8 strbuf-append-char
-          dup str-chop-one-left
-          count inc64
-          true
-        end
-      else false end
-    do end
-  drop
-
-  count @int start @ptr
-  // TODO: check if the string literal was actually closed at the end
-end
-
-proc lexer-next-token
-  ptr // token
-  ptr // lexer
-  --
-  bool
-in
-  memory lexer sizeof(ptr) end
-  lexer !64
-  memory token sizeof(ptr) end
-  token !64
-
-  memory word sizeof(Str) end
-
-  lexer @ptr
-  while
-    dup Lexer.line + str-trim-left
-
-    dup Lexer.line + ?str-empty if
-      dup Lexer.content + ?str-empty lnot
-    else
-      dup Lexer.line +
-      "//" rot @Str str-starts-with
-    end
-  do dup lexer-next-line end
-
-  dup Lexer.line + ?str-empty lnot if
-    token @ptr Token.loc +
-    lexer @ptr
-    lexer-loc
-
-    dup Lexer.line + @Str.data @8 '"' = if
-       // String literal
-       dup Lexer.line + str-chop-one-left
-       lexer-consume-strlit word !Str
-       word @Str token @ptr Token.value + !Str
-
-       lexer @ptr Lexer.line + ?str-empty lnot if
-         lexer @ptr Lexer.line + @Str.data @8 'c' = if
-           lexer @ptr Lexer.line + str-chop-one-left
-           0 strbuf-append-char
-           token @ptr Token.value + offsetof(Str.count) + inc64
-           TOKEN_CSTR token @ptr Token.type + !64
-         else
-           TOKEN_STR token @ptr Token.type + !64
-         end
-       else
-         TOKEN_STR token @ptr Token.type + !64
-       end
-    else dup Lexer.line + @Str.data @8 39 = if* // TODO: can't use ' directly for some reason
-       // Character literal
-       dup Lexer.line + str-chop-one-left
-       39 word rot Lexer.line + str-chop-by-delim
-
-       word @Str "\\n" streq if
-         10 token @ptr Token.value + !int
-       else word @Str "\\\\" streq if*
-         92 token @ptr Token.value + !int
-       else word @Str "\\\"" streq if*
-         34 token @ptr Token.value + !int
-       else word @Str.count 1 = if*
-         word @Str.data @8 token @ptr Token.value + !int
-       else
-         token @ptr Token.loc + eputloc ": only a single byte is allowed inside of a character literal\n" eputs
-         1 exit
-       end
-
-       TOKEN_CHAR token @ptr Token.type + !64
-
-       // TODO: check if the character literal was actually closed at the end
-       // TODO: character literals don't support escaping
-    else
-       // Word or integer literal
-
-       ' '               // delim
-       word              // word
-       rot Lexer.line +  // line
-       str-chop-by-delim
-
-       word @Str try-parse-int if
-          token @ptr Token.value + !64
-          TOKEN_INT token @ptr Token.type  + !64
-       else
-          drop // number from try-parse-int
-          word @Str  token @ptr Token.value + !Str
-          TOKEN_WORD token @ptr Token.type + !64
-       end
-    end
-
-    word @Str token @ptr Token.text + !Str
-
-    true
-  else
-    drop // lexer
-    false
   end
 end
 
