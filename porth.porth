@@ -44,173 +44,7 @@ end
 const sizeof(Token) reset end
 /// END Token //////////////////////////////
 
-/// BEGIN Op //////////////////////////////
-/// "Op" is a single operation within the Porth's Intermediate Representation (IR):
-/// https://en.wikipedia.org/wiki/Intermediate_representation
-const OP_PUSH_INT        1 offset end
-const OP_PUSH_LOCAL_MEM  1 offset end
-const OP_PUSH_GLOBAL_MEM 1 offset end
-const OP_PUSH_STR        1 offset end
-const OP_PUSH_CSTR       1 offset end
-const OP_IF              1 offset end
-const OP_IFSTAR          1 offset end
-const OP_ELSE            1 offset end
-const OP_END             1 offset end
-const OP_SKIP_PROC       1 offset end
-const OP_PREP_PROC       1 offset end
-const OP_RET             1 offset end
-const OP_CALL            1 offset end
-const OP_WHILE           1 offset end
-const OP_DO              1 offset end
-const OP_INTRINSIC       1 offset end
-const COUNT_OPS             reset end
-
-proc op-type-as-str
-  int // Op type
-  --
-  int ptr // str
-in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 16 = end
-       dup OP_PUSH_INT        =  if  "OP_PUSH_INT"
-  else dup OP_PUSH_LOCAL_MEM  =  if* "OP_PUSH_LOCAL_MEM"
-  else dup OP_PUSH_GLOBAL_MEM =  if* "OP_PUSH_GLOBAL_MEM"
-  else dup OP_PUSH_STR        =  if* "OP_PUSH_STR"
-  else dup OP_PUSH_CSTR       =  if* "OP_PUSH_CSTR"
-  else dup OP_INTRINSIC       =  if* "OP_INTRINSIC"
-  else dup OP_IF              =  if* "OP_IF"
-  else dup OP_IFSTAR          =  if* "OP_IFSTAR"
-  else dup OP_ELSE            =  if* "OP_ELSE"
-  else dup OP_END             =  if* "OP_END"
-  else dup OP_SKIP_PROC       =  if* "OP_SKIP_PROC"
-  else dup OP_PREP_PROC       =  if* "OP_PREP_PROC"
-  else dup OP_RET             =  if* "OP_RET"
-  else dup OP_CALL            =  if* "OP_CALL"
-  else dup OP_WHILE           =  if* "OP_WHILE"
-  else dup OP_DO              =  if* "OP_DO"
-  else
-    here eputs ": Unknown op type\n" eputs 1 exit
-    0 NULL
-  end
-  rot drop
-end
-
-const Op.type    sizeof(u64)   offset end
-const Op.operand sizeof(u64)   offset end
-const Op.token   sizeof(Token) offset end
-const sizeof(Op) reset end
-
-const OPS_CAP 16 1024 * end
-memory ops-count sizeof(u64) end
-memory ops sizeof(Op) OPS_CAP * end
-
-proc push-op
-  int // type
-  int // operand
-  ptr // token
-in
-  memory op sizeof(Op) end
-  sizeof(Token) swap op Op.token + memcpy drop
-  op Op.operand + !int
-  op Op.type + !int
-
-  sizeof(Op) op OPS_CAP ops ops-count append-item lnot if
-    here eputs ": ERROR: ops overflow\n" eputs 1 exit
-  end
-  drop
-end
-// END Op ////////////////////////////
-
-const STRLITS_CAP 1024 end
-memory strlits-count sizeof(int) end
-memory strlits sizeof(Str) STRLITS_CAP * end
-
-proc strlit-define
-  int ptr
-  --
-  int
-in
-  memory strlit sizeof(Str) end
-  strlit !Str
-
-  sizeof(Str) strlit
-  STRLITS_CAP strlits
-  strlits-count
-  append-item lnot if
-    here eputs ": ERROR: string literals capacity exceeded\n" eputs
-    1 exit
-  end
-end
-
-const STRBUF_CAP 16 1024 * end
-memory strbuf-size sizeof(int) end
-memory strbuf-start STRBUF_CAP end
-
-proc strbuf-end -- ptr in strbuf-start strbuf-size @int + end
-proc strbuf-append-char int in
-  strbuf-size @int STRBUF_CAP >= if
-    here eputs ": Assertion Failed: string literal buffer overflow\n" eputs
-    1 exit
-  end
-
-  strbuf-end !8
-  strbuf-size inc64
-end
-proc strbuf-append-str int ptr in
-  memory str sizeof(Str) end
-  str !Str
-
-  while str @Str.count 0 > do
-    str @Str.data @8 strbuf-append-char
-    str str-chop-one-left
-  end
-end
-
-proc tmp-utos
-  int
-  --
-  int ptr
-in
-  memory buffer sizeof(ptr) end
-  PUTU_BUFFER_CAP tmp-alloc buffer !ptr
-
-  dup 0 = if
-    drop
-    buffer @ptr PUTU_BUFFER_CAP + 1 -
-    '0' over !64
-    1 swap
-  else
-    buffer @ptr PUTU_BUFFER_CAP +
-    while over 0 > do
-      1 - dup rot
-      10 divmod
-      rot swap '0' + swap !8 swap
-    end
-
-    swap drop
-
-    dup buffer @ptr PUTU_BUFFER_CAP + swap - swap
-  end
-end
-
-proc strbuf-loc
-  ptr // loc
-  --
-  int ptr
-in
-  memory start sizeof(ptr) end
-  strbuf-end start !ptr
-
-  dup Loc.file-path + @Str   strbuf-append-str
-  ":"                        strbuf-append-str
-  dup Loc.row + @64 tmp-utos strbuf-append-str
-  ":"                        strbuf-append-str
-  dup Loc.col + @64 tmp-utos strbuf-append-str
-  drop
-
-  strbuf-end start @ptr -
-  start @ptr
-end
-
+/// BEGIN Intrinsics //////////////////////////////
 const INTRINSIC_PLUS      1 offset end
 const INTRINSIC_MINUS     1 offset end
 const INTRINSIC_MUL       1 offset end
@@ -370,6 +204,173 @@ in
   end
   swap
 end
+/// END Intrinsics //////////////////////////////
+
+/// BEGIN Op //////////////////////////////
+/// "Op" is a single operation within the Porth's Intermediate Representation (IR):
+/// https://en.wikipedia.org/wiki/Intermediate_representation
+const OP_PUSH_INT        1 offset end
+const OP_PUSH_LOCAL_MEM  1 offset end
+const OP_PUSH_GLOBAL_MEM 1 offset end
+const OP_PUSH_STR        1 offset end
+const OP_PUSH_CSTR       1 offset end
+const OP_IF              1 offset end
+const OP_IFSTAR          1 offset end
+const OP_ELSE            1 offset end
+const OP_END             1 offset end
+const OP_SKIP_PROC       1 offset end
+const OP_PREP_PROC       1 offset end
+const OP_RET             1 offset end
+const OP_CALL            1 offset end
+const OP_WHILE           1 offset end
+const OP_DO              1 offset end
+const OP_INTRINSIC       1 offset end
+const COUNT_OPS             reset end
+
+proc op-type-as-str
+  int // Op type
+  --
+  int ptr // str
+in
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 16 = end
+       dup OP_PUSH_INT        =  if  "OP_PUSH_INT"
+  else dup OP_PUSH_LOCAL_MEM  =  if* "OP_PUSH_LOCAL_MEM"
+  else dup OP_PUSH_GLOBAL_MEM =  if* "OP_PUSH_GLOBAL_MEM"
+  else dup OP_PUSH_STR        =  if* "OP_PUSH_STR"
+  else dup OP_PUSH_CSTR       =  if* "OP_PUSH_CSTR"
+  else dup OP_INTRINSIC       =  if* "OP_INTRINSIC"
+  else dup OP_IF              =  if* "OP_IF"
+  else dup OP_IFSTAR          =  if* "OP_IFSTAR"
+  else dup OP_ELSE            =  if* "OP_ELSE"
+  else dup OP_END             =  if* "OP_END"
+  else dup OP_SKIP_PROC       =  if* "OP_SKIP_PROC"
+  else dup OP_PREP_PROC       =  if* "OP_PREP_PROC"
+  else dup OP_RET             =  if* "OP_RET"
+  else dup OP_CALL            =  if* "OP_CALL"
+  else dup OP_WHILE           =  if* "OP_WHILE"
+  else dup OP_DO              =  if* "OP_DO"
+  else
+    here eputs ": Unknown op type\n" eputs 1 exit
+    0 NULL
+  end
+  rot drop
+end
+
+const Op.type    sizeof(u64)   offset end
+const Op.operand sizeof(u64)   offset end
+const Op.token   sizeof(Token) offset end
+const sizeof(Op) reset end
+
+const OPS_CAP 16 1024 * end
+memory ops-count sizeof(u64) end
+memory ops sizeof(Op) OPS_CAP * end
+
+proc push-op
+  int // type
+  int // operand
+  ptr // token
+in
+  memory op sizeof(Op) end
+  sizeof(Token) swap op Op.token + memcpy drop
+  op Op.operand + !int
+  op Op.type + !int
+
+  sizeof(Op) op OPS_CAP ops ops-count append-item lnot if
+    here eputs ": ERROR: ops overflow\n" eputs 1 exit
+  end
+  drop
+end
+
+proc dump-ops in
+  0 while dup ops-count @64 < do
+    dup sizeof(Op) * ops +
+    dup Op.token + Token.loc + putloc ": " puts
+    over putu ": " puts dup Op.type + @64 op-type-as-str puts " " puts
+    dup Op.type + @64 OP_INTRINSIC = if
+      Op.operand + @64 intrinsic-name puts
+    else
+      Op.operand + @64 putu
+    end
+    "\n" puts
+    1 +
+  end
+  drop
+end
+/// END Op ////////////////////////////
+
+/// BEGIN Strlit //////////////////////////////
+/// Array of string literals of the compiled program.
+/// The operand of OP_PUSH_STR and OP_PUSH_CSTR is the
+/// index within this array
+const STRLITS_CAP 1024 end
+memory strlits-count sizeof(int) end
+memory strlits sizeof(Str) STRLITS_CAP * end
+
+proc strlit-define
+  int ptr
+  --
+  int
+in
+  memory strlit sizeof(Str) end
+  strlit !Str
+
+  sizeof(Str) strlit
+  STRLITS_CAP strlits
+  strlits-count
+  append-item lnot if
+    here eputs ": ERROR: string literals capacity exceeded\n" eputs
+    1 exit
+  end
+end
+/// END Strlit //////////////////////////////
+
+/// BEGIN Strbuf //////////////////////////////
+/// The buffer that holds the date of the string literals of
+/// the compiled program. (see Strlit)
+const STRBUF_CAP 16 1024 * end
+memory strbuf-size sizeof(int) end
+memory strbuf-start STRBUF_CAP end
+
+proc strbuf-end -- ptr in strbuf-start strbuf-size @int + end
+proc strbuf-append-char int in
+  strbuf-size @int STRBUF_CAP >= if
+    here eputs ": Assertion Failed: string literal buffer overflow\n" eputs
+    1 exit
+  end
+
+  strbuf-end !8
+  strbuf-size inc64
+end
+
+proc strbuf-append-str int ptr in
+  memory str sizeof(Str) end
+  str !Str
+
+  while str @Str.count 0 > do
+    str @Str.data @8 strbuf-append-char
+    str str-chop-one-left
+  end
+end
+
+proc strbuf-loc
+  ptr // loc
+  --
+  int ptr
+in
+  memory start sizeof(ptr) end
+  strbuf-end start !ptr
+
+  dup Loc.file-path + @Str   strbuf-append-str
+  ":"                        strbuf-append-str
+  dup Loc.row + @64 tmp-utos strbuf-append-str
+  ":"                        strbuf-append-str
+  dup Loc.col + @64 tmp-utos strbuf-append-str
+  drop
+
+  strbuf-end start @ptr -
+  start @ptr
+end
+/// END Strbuf //////////////////////////////
 
 const Const.name  sizeof(Str) offset end
 const Const.loc   sizeof(Loc) offset end
@@ -511,22 +512,6 @@ proc cmd-echoed ptr in
     "[ERROR] could not fork a child\n" eputs
     1 exit
   end
-end
-
-proc dump-ops in
-  0 while dup ops-count @64 < do
-    dup sizeof(Op) * ops +
-    dup Op.token + Token.loc + putloc ": " puts
-    over putu ": " puts dup Op.type + @64 op-type-as-str puts " " puts
-    dup Op.type + @64 OP_INTRINSIC = if
-      Op.operand + @64 intrinsic-name puts
-    else
-      Op.operand + @64 putu
-    end
-    "\n" puts
-    1 +
-  end
-  drop
 end
 
 proc located-here ptr in eputloc ": NOTE: located here\n" eputs end

@@ -834,3 +834,31 @@ in
     0 false
   end
 end
+
+/// Convert unsigned integer to string stored in the tmp scratch buffer
+proc tmp-utos
+  int
+  --
+  int ptr
+in
+  memory buffer sizeof(ptr) end
+  PUTU_BUFFER_CAP tmp-alloc buffer !ptr
+
+  dup 0 = if
+    drop
+    buffer @ptr PUTU_BUFFER_CAP + 1 -
+    '0' over !64
+    1 swap
+  else
+    buffer @ptr PUTU_BUFFER_CAP +
+    while over 0 > do
+      1 - dup rot
+      10 divmod
+      rot swap '0' + swap !8 swap
+    end
+
+    swap drop
+
+    dup buffer @ptr PUTU_BUFFER_CAP + swap - swap
+  end
+end
