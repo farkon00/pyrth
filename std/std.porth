@@ -862,3 +862,71 @@ in
     dup buffer @ptr PUTU_BUFFER_CAP + swap - swap
   end
 end
+
+// TODO: there is no way to unmap the file
+proc map-file
+  ptr // file-path-cstr
+  --
+  int ptr
+in
+  memory file-path-cstr sizeof(ptr) end
+  file-path-cstr !64
+
+  0                   // mode
+  O_RDONLY            // flags
+  file-path-cstr @ptr // pathname
+  // TODO: this is lame, let's just support negative numbers properly
+  0 100 - // AT_FDCWD            // dirfd
+  openat
+
+  dup 0 < if
+    "ERROR: could not open file " eputs file-path-cstr @ptr cstr-to-str eputs "\n" eputs
+    1 exit
+  end
+
+  memory fd sizeof(u64) end
+  fd !64
+
+  memory statbuf sizeof(stat) end
+  statbuf fd @64 fstat 0 < if
+    "ERROR: could not determine the size of file " eputs file-path-cstr @ptr cstr-to-str eputs "\n" eputs
+    1 exit
+  end
+
+  memory content sizeof(Str) end
+  statbuf @stat.st_size content !Str.count
+
+  0                        // offset
+  fd @64                   // fd
+  MAP_PRIVATE              // flags
+  PROT_READ                // prot
+  content @Str.count       // length
+  NULL                     // addr
+  mmap
+  cast(ptr)
+  content !Str.data
+
+  content @Str.data cast(int) 0 < if
+    "ERROR: could not memory map file " eputs file-path-cstr @ptr cstr-to-str eputs "\n" eputs
+    1 exit
+  end
+
+  content @Str
+end
+
+proc ?file-exist ptr -- bool in
+  memory statbuf sizeof(stat) end
+
+  statbuf swap stat
+
+  dup 0 = if
+    drop true
+    // TODO: introduce ENOENT when the negative number stuff is fixed
+  else dup 0 2 - = if*
+    drop false
+  else
+    drop false
+    here eputs ": ERROR: ?file-exist failed\n" eputs
+    1 exit
+  end
+end

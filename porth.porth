@@ -308,6 +308,47 @@ in
     false
   end
 end
+
+proc lex-file ptr in
+  memory file-path-cstr sizeof(ptr) end
+  file-path-cstr !64
+
+  memory lexer sizeof(Lexer) end
+  sizeof(Lexer) 0 lexer memset drop
+  file-path-cstr @ptr map-file    lexer Lexer.content   + !Str
+  file-path-cstr @ptr cstr-to-str lexer Lexer.file-path + !Str
+
+  memory token sizeof(Token) end
+
+  while token lexer lexer-next-token do
+
+    assert "Exhaustive handling of token types in lex-file" COUNT_TOKENS 5 = end
+
+    token Token.loc + // loc
+    dup Loc.file-path + @Str puts ":" puts
+    dup Loc.row + @64 putu        ":" puts
+    dup Loc.col + @64 putu        ": " puts
+    drop // loc
+
+    token Token.type + @64 // token.type
+    dup TOKEN_INT = if
+      "[INTEGER] " puts token Token.value + @int putu "\n" puts
+    else dup TOKEN_WORD = if*
+      "[WORD] " puts token Token.value + @Str puts "\n" puts
+    else dup TOKEN_STR = if*
+      "[STR] \"" puts token Token.value + @Str puts "\"\n" puts
+    else dup TOKEN_CSTR = if*
+      "[CSTR] \"" puts token Token.value + @Str puts "\"\n" puts
+    else dup TOKEN_CHAR = if*
+      "[CHAR] " puts token Token.value + @int putu "\n" puts
+    else
+      here eputs ": Unreachable. Unknown token type.\n" eputs
+      1 exit
+    end
+
+    drop // token.type
+  end
+end
 /// END Lexer //////////////////////////////
 
 /// BEGIN Intrinsics //////////////////////////////
@@ -699,6 +740,79 @@ const LOCAL_MEMORIES_CAP 1024 end
 memory local-memories-count sizeof(u64) end
 memory local-memories sizeof(Memory) LOCAL_MEMORIES_CAP * end
 memory local-memory-capacity sizeof(u64) end
+
+proc local-memories-clean in
+  0 local-memories-count !64
+  0 local-memory-capacity !64
+end
+
+proc local-memories-lookup
+  int ptr // name
+  --
+  ptr     // Memory
+in
+  memory name sizeof(Str) end
+  name !Str
+
+  0 while
+    dup local-memories-count @64 < if
+      dup sizeof(Memory) * local-memories + Memory.name + @Str
+      name @Str
+      streq
+      lnot
+    else false end
+  do 1 + end
+
+  dup local-memories-count @64 < if
+    sizeof(Memory) * local-memories +
+  else
+    drop NULL
+  end
+end
+
+proc global-memories-lookup
+  int ptr // name
+  --
+  ptr     // Memory
+in
+  memory name sizeof(Str) end
+  name !Str
+
+  0 while
+    dup global-memories-count @64 < if
+      dup sizeof(Memory) * global-memories + Memory.name + @Str
+      name @Str
+      streq
+      lnot
+    else false end
+  do 1 + end
+
+  dup global-memories-count @64 < if
+    sizeof(Memory) * global-memories +
+  else
+    drop NULL
+  end
+end
+
+proc local-memory-define
+  ptr
+in
+  sizeof(Memory) swap LOCAL_MEMORIES_CAP local-memories local-memories-count append-item lnot if
+    here eputs ": ERROR: local memory definitions capacity exceeded\n" eputs
+    1 exit
+  end
+  drop
+end
+
+proc global-memory-define
+  ptr
+in
+  sizeof(Memory) swap GLOBAL_MEMORIES_CAP global-memories global-memories-count append-item lnot if
+    here eputs ": ERROR: global memory definitions capacity exceeded\n" eputs
+    1 exit
+  end
+  drop
+end
 /// END Memory //////////////////////////////
 
 memory silent sizeof(bool) end
@@ -745,6 +859,7 @@ proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
 
 const X86_64_RET_STACK_CAP 8192 end
 
+/// BEGIN Code Generator //////////////////////////////
 proc fputdecstr
   int ptr
   int
@@ -1198,7 +1313,9 @@ proc generate-nasm-linux-x86_64 ptr in
 
   out-fd @64 close drop
 end
+/// END Code Generator //////////////////////////////
 
+/// BEGIN Interpreter //////////////////////////////
 // TODO: implement reusable stack data structure
 const SIM_STACK_CAP 1024 end
 memory sim-stack-count sizeof(u64) end
@@ -1509,7 +1626,126 @@ proc simulate-ops in
     end
   end
 end
+/// END Interpreter //////////////////////////////
 
+/// BEGIN DataType //////////////////////////////
+const DATATYPE_INT  1 offset end
+const DATATYPE_PTR  1 offset end
+const DATATYPE_BOOL 1 offset end
+const COUNT_DATATYPES  reset end
+
+const HUMAN_SINGULAR 1 offset end
+const HUMAN_PLURAL   1 offset end
+const COUNT_HUMAN       reset end
+
+proc human-token-type
+  int // token type
+  int // plurality
+  --
+  int ptr // str
+in
+  assert "Exhaustive handling of noun categories" COUNT_HUMAN 2 = end
+
+  dup HUMAN_SINGULAR = if
+    drop
+    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
+    dup TOKEN_INT = if
+      drop
+      "an integer"
+    else dup TOKEN_WORD = if*
+      drop
+      "a word"
+    else dup TOKEN_STR = if*
+      drop
+      "a string"
+    else dup TOKEN_CSTR = if*
+      drop
+      "a C-style string"
+    else dup TOKEN_CHAR = if*
+      drop
+      "a character"
+    else
+      drop
+      here eputs ": unreachable\n" eputs
+      0 NULL
+    end
+  else dup HUMAN_PLURAL = if*
+    drop
+    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
+    dup TOKEN_INT = if
+      drop
+      "integers"
+    else dup TOKEN_WORD = if*
+      drop
+      "words"
+    else dup TOKEN_STR = if*
+      drop
+      "strings"
+    else dup TOKEN_CSTR = if*
+      drop
+      "C-style strings"
+    else dup TOKEN_CHAR = if*
+      drop
+      "characters"
+    else
+      drop
+      here eputs ": unreachable\n" eputs
+      69 exit
+      0 NULL
+    end
+  else
+    2drop
+    here eputs ": unreachable\n" eputs
+    69 exit
+    0 NULL
+  end
+end
+
+proc datatype-by-name
+  int ptr // data type name
+  --
+  int // data type
+  bool // found
+in
+  memory name sizeof(Str) end
+  name !Str
+  assert "Exhaustive handling of data types in datatype-by-name" COUNT_DATATYPES 3 = end
+       name @Str "ptr"  streq if  DATATYPE_PTR  true
+  else name @Str "bool" streq if* DATATYPE_BOOL true
+  else name @Str "int"  streq if* DATATYPE_INT  true
+  else 0 false end
+end
+/// END DataType //////////////////////////////
+
+/// BEGIN File Path Buffer //////////////////////////////
+// This is a memory region where we store file paths for compile-file-into-ops operation.
+// This buffer is created to ensure that the file path string live long enough for
+// compile-file-into-ops to process the files properly.
+const FPB_CAP 8 1024 * end
+memory fpb-start FPB_CAP end
+memory fpb-size sizeof(u64) end
+
+proc fpb-end -- ptr in fpb-start fpb-size @64 + end
+proc fpb-rewind ptr in fpb-start - fpb-size !int end
+
+proc fpb-alloc
+  int
+  --
+  ptr // result
+in
+  dup fpb-size @64 + FPB_CAP > if
+    here eputs ": File Path Buffer capacity exceeded.\n" eputs
+    1 exit
+  end
+
+  dup 0 fpb-end memset
+  fpb-size @64 rot + fpb-size !64
+end
+
+proc fpb-append int ptr -- ptr in over fpb-alloc memcpy end
+/// END File Path Buffer //////////////////////////////
+
+/// BEGIN Compiler //////////////////////////////
 const PARSE_BLOCK_STACK_CAP 1024 end
 memory parse-block-stack-count sizeof(u64) end
 memory parse-block-stack sizeof(u64) PARSE_BLOCK_STACK_CAP * end
@@ -1581,79 +1817,6 @@ in
   const-stack-count @64 sizeof(ConstFrame) * const-stack +
   dup ConstFrame.type + @64
   swap ConstFrame.value + @64
-end
-
-const DATATYPE_INT  1 offset end
-const DATATYPE_PTR  1 offset end
-const DATATYPE_BOOL 1 offset end
-const COUNT_DATATYPES  reset end
-
-const HUMAN_SINGULAR 1 offset end
-const HUMAN_PLURAL   1 offset end
-const COUNT_HUMAN       reset end
-
-
-proc human-token-type
-  int // token type
-  int // plurality
-  --
-  int ptr // str
-in
-  assert "Exhaustive handling of noun categories" COUNT_HUMAN 2 = end
-
-  dup HUMAN_SINGULAR = if
-    drop
-    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
-    dup TOKEN_INT = if
-      drop
-      "an integer"
-    else dup TOKEN_WORD = if*
-      drop
-      "a word"
-    else dup TOKEN_STR = if*
-      drop
-      "a string"
-    else dup TOKEN_CSTR = if*
-      drop
-      "a C-style string"
-    else dup TOKEN_CHAR = if*
-      drop
-      "a character"
-    else
-      drop
-      here eputs ": unreachable\n" eputs
-      0 NULL
-    end
-  else dup HUMAN_PLURAL = if*
-    drop
-    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
-    dup TOKEN_INT = if
-      drop
-      "integers"
-    else dup TOKEN_WORD = if*
-      drop
-      "words"
-    else dup TOKEN_STR = if*
-      drop
-      "strings"
-    else dup TOKEN_CSTR = if*
-      drop
-      "C-style strings"
-    else dup TOKEN_CHAR = if*
-      drop
-      "characters"
-    else
-      drop
-      here eputs ": unreachable\n" eputs
-      69 exit
-      0 NULL
-    end
-  else
-    2drop
-    here eputs ": unreachable\n" eputs
-    69 exit
-    0 NULL
-  end
 end
 
 proc eval-const-value
@@ -1774,170 +1937,6 @@ in
   end
 end
 
-proc map-file
-  ptr // file-path-cstr
-  --
-  int ptr
-in
-  memory file-path-cstr sizeof(ptr) end
-  file-path-cstr !64
-
-  0                   // mode
-  O_RDONLY            // flags
-  file-path-cstr @ptr // pathname
-  // TODO: this is lame, let's just support negative numbers properly
-  0 100 - // AT_FDCWD            // dirfd
-  openat
-
-  dup 0 < if
-    "ERROR: could not open file " eputs file-path-cstr @ptr cstr-to-str eputs "\n" eputs
-    1 exit
-  end
-
-  memory fd sizeof(u64) end
-  fd !64
-
-  memory statbuf sizeof(stat) end
-  statbuf fd @64 fstat 0 < if
-    "ERROR: could not determine the size of file " eputs file-path-cstr @ptr cstr-to-str eputs "\n" eputs
-    1 exit
-  end
-
-  memory content sizeof(Str) end
-  statbuf @stat.st_size content !Str.count
-
-  0                        // offset
-  fd @64                   // fd
-  MAP_PRIVATE              // flags
-  PROT_READ                // prot
-  content @Str.count       // length
-  NULL                     // addr
-  mmap
-  cast(ptr)
-  content !Str.data
-
-  content @Str.data cast(int) 0 < if
-    "ERROR: could not memory map file " eputs file-path-cstr @ptr cstr-to-str eputs "\n" eputs
-    1 exit
-  end
-
-  content @Str
-end
-
-proc lex-file ptr in
-  memory file-path-cstr sizeof(ptr) end
-  file-path-cstr !64
-
-  memory lexer sizeof(Lexer) end
-  sizeof(Lexer) 0 lexer memset drop
-  file-path-cstr @ptr map-file    lexer Lexer.content   + !Str
-  file-path-cstr @ptr cstr-to-str lexer Lexer.file-path + !Str
-
-  memory token sizeof(Token) end
-
-  while token lexer lexer-next-token do
-
-    assert "Exhaustive handling of token types in lex-file" COUNT_TOKENS 5 = end
-
-    token Token.loc + // loc
-    dup Loc.file-path + @Str puts ":" puts
-    dup Loc.row + @64 putu        ":" puts
-    dup Loc.col + @64 putu        ": " puts
-    drop // loc
-
-    token Token.type + @64 // token.type
-    dup TOKEN_INT = if
-      "[INTEGER] " puts token Token.value + @int putu "\n" puts
-    else dup TOKEN_WORD = if*
-      "[WORD] " puts token Token.value + @Str puts "\n" puts
-    else dup TOKEN_STR = if*
-      "[STR] \"" puts token Token.value + @Str puts "\"\n" puts
-    else dup TOKEN_CSTR = if*
-      "[CSTR] \"" puts token Token.value + @Str puts "\"\n" puts
-    else dup TOKEN_CHAR = if*
-      "[CHAR] " puts token Token.value + @int putu "\n" puts
-    else
-      here eputs ": Unreachable. Unknown token type.\n" eputs
-      1 exit
-    end
-
-    drop // token.type
-  end
-end
-
-proc local-memories-clean in
-  0 local-memories-count !64
-  0 local-memory-capacity !64
-end
-
-proc local-memories-lookup
-  int ptr // name
-  --
-  ptr     // Memory
-in
-  memory name sizeof(Str) end
-  name !Str
-
-  0 while
-    dup local-memories-count @64 < if
-      dup sizeof(Memory) * local-memories + Memory.name + @Str
-      name @Str
-      streq
-      lnot
-    else false end
-  do 1 + end
-
-  dup local-memories-count @64 < if
-    sizeof(Memory) * local-memories +
-  else
-    drop NULL
-  end
-end
-
-proc global-memories-lookup
-  int ptr // name
-  --
-  ptr     // Memory
-in
-  memory name sizeof(Str) end
-  name !Str
-
-  0 while
-    dup global-memories-count @64 < if
-      dup sizeof(Memory) * global-memories + Memory.name + @Str
-      name @Str
-      streq
-      lnot
-    else false end
-  do 1 + end
-
-  dup global-memories-count @64 < if
-    sizeof(Memory) * global-memories +
-  else
-    drop NULL
-  end
-end
-
-proc local-memory-define
-  ptr
-in
-  sizeof(Memory) swap LOCAL_MEMORIES_CAP local-memories local-memories-count append-item lnot if
-    here eputs ": ERROR: local memory definitions capacity exceeded\n" eputs
-    1 exit
-  end
-  drop
-end
-
-proc global-memory-define
-  ptr
-in
-  sizeof(Memory) swap GLOBAL_MEMORIES_CAP global-memories global-memories-count append-item lnot if
-    here eputs ": ERROR: global memory definitions capacity exceeded\n" eputs
-    1 exit
-  end
-  drop
-end
-
 proc check-name-redefinition
   int ptr // name
   ptr     // loc
@@ -1972,21 +1971,6 @@ in
       1 exit
     end drop
   end
-end
-
-proc datatype-by-name
-  int ptr // data type name
-  --
-  int // data type
-  bool // found
-in
-  memory name sizeof(Str) end
-  name !Str
-  assert "Exhaustive handling of data types in datatype-by-name" COUNT_DATATYPES 3 = end
-       name @Str "ptr"  streq if  DATATYPE_PTR  true
-  else name @Str "bool" streq if* DATATYPE_BOOL true
-  else name @Str "int"  streq if* DATATYPE_INT  true
-  else 0 false end
 end
 
 proc skip-proc-contract
@@ -2093,50 +2077,6 @@ in
   0
   token
   push-op
-end
-
-// NOTE: stands for File Path Buffer
-// This is a memory region where we store file paths for compile-file-into-ops operation.
-// This buffer is created to ensure that the file path string live long enough for
-// compile-file-into-ops to process the files properly.
-const FPB_CAP 8 1024 * end
-memory fpb-start FPB_CAP end
-memory fpb-size sizeof(u64) end
-
-proc fpb-end -- ptr in fpb-start fpb-size @64 + end
-proc fpb-rewind ptr in fpb-start - fpb-size !int end
-
-proc fpb-alloc
-  int
-  --
-  ptr // result
-in
-  dup fpb-size @64 + FPB_CAP > if
-    here eputs ": File Path Buffer capacity exceeded.\n" eputs
-    1 exit
-  end
-
-  dup 0 fpb-end memset
-  fpb-size @64 rot + fpb-size !64
-end
-
-proc fpb-append int ptr -- ptr in over fpb-alloc memcpy end
-
-proc ?file-exist ptr -- bool in
-  memory statbuf sizeof(stat) end
-
-  statbuf swap stat
-
-  dup 0 = if
-    drop true
-    // TODO: introduce ENOENT when the negative number stuff is fixed
-  else dup 0 2 - = if*
-    drop false
-  else
-    drop false
-    here eputs ": ERROR: ?file-exist failed\n" eputs
-    1 exit
-  end
 end
 
 proc compile-file-into-ops ptr in
@@ -2531,6 +2471,7 @@ proc compile-file-into-ops ptr in
 
   // TODO: compile-file-into-ops does not clean up resources after itself
 end
+/// END Compiler //////////////////////////////
 
 proc summary in
   // TODO: lexer stats: tokens count, lines count, etc
