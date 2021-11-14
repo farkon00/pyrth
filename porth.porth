@@ -162,11 +162,15 @@ in
 
   memory loc sizeof(Loc) end
 
+  memory closed sizeof(bool) end
+  false closed !bool
+
   lexer @ptr Lexer.line +
     while
       dup ?str-empty lnot if
         dup @Str.data @8 '"' = if
           dup str-chop-one-left
+          true closed !bool
           false
         else dup @Str.data @8 '\\' = if*
           dup str-chop-one-left
@@ -208,8 +212,13 @@ in
     do end
   drop
 
+  closed @bool lnot if
+    loc lexer @ptr lexer-loc
+    loc eputloc ": ERROR: unclosed string literal\n" eputs
+    1 exit
+  end
+
   count @int start @ptr
-  // TODO: check if the string literal was actually closed at the end
 end
 
 proc lexer-next-token
