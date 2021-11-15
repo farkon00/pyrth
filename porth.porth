@@ -1374,33 +1374,38 @@ memory sim-local-memory-rsp sizeof(ptr) end
 
 memory sim-global-memory sizeof(ptr) end
 
+memory args sizeof(ptr) end
+argv args !ptr
+
 proc simulate-ops in
   memory sim-ip sizeof(u64) end
   memory sim-op sizeof(Op) end
 
-  0                            // off_t offset
-  0 1 -                        // int fd,
-  MAP_PRIVATE MAP_ANONYMOUS or // int flags,
-  PROT_READ PROT_WRITE or      // int prot,
-  global-memory-capacity @64   // size_t length,
-  NULL                         // void *addr,
-  mmap
-  sim-global-memory
-  !int
+  global-memory-capacity @64 0 > if
+    0                            // off_t offset
+    0 1 -                        // int fd,
+    MAP_PRIVATE MAP_ANONYMOUS or // int flags,
+    PROT_READ PROT_WRITE or      // int prot,
+    global-memory-capacity @64   // size_t length,
+    NULL                         // void *addr,
+    mmap
+    sim-global-memory
+    !int
 
-  sim-global-memory @ptr NULL < if
-    here eputs
-    ": ERROR: could not allocate " eputs
-    global-memory-capacity @64 eputu
-    " bytes of global memory for the simulation\n" eputs
-    1 exit
+    sim-global-memory @ptr NULL < if
+      here eputs
+      ": ERROR: could not allocate " eputs
+      global-memory-capacity @64 eputu
+      " bytes of global memory for the simulation\n" eputs
+      1 exit
+    end
+
+    global-memory-capacity @64
+    0
+    sim-global-memory @ptr
+    memset
+    drop
   end
-
-  global-memory-capacity @64
-  0
-  sim-global-memory @ptr
-  memset
-  drop
 
   sim-local-memory SIM_LOCAL_MEMORY_CAP +
   sim-local-memory-rsp !ptr
@@ -1419,9 +1424,12 @@ proc simulate-ops in
        sim-op Op.operand + @64 sim-stack-push
        sim-ip inc64
     else sim-op Op.type + @64 OP_PUSH_LOCAL_MEM = if*
-      here eputs ": TODO: OP_PUSH_LOCAL_MEM is not implemented yet in simulation mode\n" eputs
-      sim-op Op.token + Token.loc + located-here
-      1 exit
+      sim-local-memory-rsp @ptr
+      sim-op Op.operand + @int
+      +
+      cast(int)
+      sim-stack-push
+      sim-ip inc64
     else sim-op Op.type + @64 OP_PUSH_GLOBAL_MEM = if*
       sim-global-memory @ptr
       sim-op Op.operand + @int
@@ -1651,9 +1659,7 @@ proc simulate-ops in
         sim-op Op.token + Token.loc + located-here
         1 exit
       else sim-op Op.operand + @64 INTRINSIC_ARGV = if*
-        here eputs ": TODO: `argv` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        args @ptr cast(int) sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_ENVP = if*
         envp cast(int) sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_CAST_PTR = if*
@@ -1664,13 +1670,31 @@ proc simulate-ops in
         syscall0
         sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_SYSCALL1 = if*
-        here eputs ": TODO: `syscall1` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-count @64 2 < if
+          here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
+          1 exit
+        end
+
+        sim-stack-count @64 2 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 1 - sizeof(u64) * sim-stack + @64
+        syscall1
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_SYSCALL2 = if*
-        here eputs ": TODO: `syscall2` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-count @64 3 < if
+          here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
+          1 exit
+        end
+
+        sim-stack-count @64 3 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 2 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 1 - sizeof(u64) * sim-stack + @64
+        syscall2
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_SYSCALL3 = if*
         sim-stack-count @64 4 < if
           here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
@@ -1688,17 +1712,65 @@ proc simulate-ops in
         sim-stack-pop drop
         sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_SYSCALL4 = if*
-        here eputs ": TODO: `syscall4` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-count @64 5 < if
+          here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
+          1 exit
+        end
+
+        sim-stack-count @64 5 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 4 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 3 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 2 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 1 - sizeof(u64) * sim-stack + @64
+        syscall4
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_SYSCALL5 = if*
-        here eputs ": TODO: `syscall5` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-count @64 6 < if
+          here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
+          1 exit
+        end
+
+        sim-stack-count @64 6 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 5 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 4 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 3 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 2 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 1 - sizeof(u64) * sim-stack + @64
+        syscall5
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_SYSCALL6 = if*
-        here eputs ": TODO: `syscall6` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-count @64 7 < if
+          here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
+          1 exit
+        end
+
+        sim-stack-count @64 7 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 6 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 5 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 4 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 3 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 2 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 1 - sizeof(u64) * sim-stack + @64
+        syscall6
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-push
       else
         here eputs ": unreachable.\n" eputs
         1 exit
@@ -2591,9 +2663,6 @@ in
 end
 
 proc main in
-  memory args sizeof(ptr) end
-  argv args !ptr
-
   memory program sizeof(ptr) end
   args @@ptr program !ptr
 
