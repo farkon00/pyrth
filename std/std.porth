@@ -354,7 +354,9 @@ const CLOCK_MONOTONIC 1 end
 const TIMER_ABSTIME 1 end
 
 const MAP_PRIVATE 2 end
+const MAP_ANONYMOUS 32 end
 const PROT_READ 1 end
+const PROT_WRITE 2 end
 
 const sizeof(timespec) 16 end
 

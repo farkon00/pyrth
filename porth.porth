@@ -1372,9 +1372,35 @@ const SIM_LOCAL_MEMORY_CAP 640000 end
 memory sim-local-memory SIM_LOCAL_MEMORY_CAP end
 memory sim-local-memory-rsp sizeof(ptr) end
 
+memory sim-global-memory sizeof(ptr) end
+
 proc simulate-ops in
   memory sim-ip sizeof(u64) end
   memory sim-op sizeof(Op) end
+
+  0                            // off_t offset
+  0 1 -                        // int fd,
+  MAP_PRIVATE MAP_ANONYMOUS or // int flags,
+  PROT_READ PROT_WRITE or      // int prot,
+  global-memory-capacity @64   // size_t length,
+  NULL                         // void *addr,
+  mmap
+  sim-global-memory
+  !int
+
+  sim-global-memory @ptr NULL < if
+    here eputs
+    ": ERROR: could not allocate " eputs
+    global-memory-capacity @64 eputu
+    " bytes of global memory for the simulation\n" eputs
+    1 exit
+  end
+
+  global-memory-capacity @64
+  0
+  sim-global-memory @ptr
+  memset
+  drop
 
   sim-local-memory SIM_LOCAL_MEMORY_CAP +
   sim-local-memory-rsp !ptr
@@ -1397,9 +1423,12 @@ proc simulate-ops in
       sim-op Op.token + Token.loc + located-here
       1 exit
     else sim-op Op.type + @64 OP_PUSH_GLOBAL_MEM = if*
-      here eputs ": TODO: OP_PUSH_GLOBAL_MEM is not implemented yet in simulation mode\n" eputs
-      sim-op Op.token + Token.loc + located-here
-      1 exit
+      sim-global-memory @ptr
+      sim-op Op.operand + @int
+      +
+      cast(int)
+      sim-stack-push
+      sim-ip inc64
     else sim-op Op.type + @64 OP_PUSH_STR = if*
       sim-op Op.operand + @64
       sizeof(Str) *
@@ -1595,9 +1624,7 @@ proc simulate-ops in
         sim-stack-push
         sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_LOAD8 = if*
-        here eputs ": TODO: `@8` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-pop cast(ptr) @8 sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_STORE8 = if*
         here eputs ": TODO: `!8` is not implemented yet\n" eputs
         sim-op Op.token + Token.loc + located-here
