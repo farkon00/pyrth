@@ -148,9 +148,13 @@ end
 
 proc lexer-consume-strlit
   ptr // lexer
+  int // quote
   --
   int ptr // string literal
 in
+  memory quote sizeof(int) end
+  quote !int
+
   memory lexer sizeof(ptr) end
   lexer !ptr
 
@@ -168,7 +172,7 @@ in
   lexer @ptr Lexer.line +
     while
       dup ?str-empty lnot if
-        dup @Str.data @8 '"' = if
+        dup @Str.data @8 quote @int = if
           dup str-chop-one-left
           true closed !bool
           false
@@ -182,17 +186,22 @@ in
           end
 
           dup @Str.data @8 'n' = if
-            10 strbuf-append-char
+            '\n' strbuf-append-char
             dup str-chop-one-left
             count inc64
             true
           else dup @Str.data @8 '\\' = if*
-            92 strbuf-append-char
+            '\\' strbuf-append-char
             dup str-chop-one-left
             count inc64
             true
           else dup @Str.data @8 '\"' = if*
-            34 strbuf-append-char
+            '\"' strbuf-append-char
+            dup str-chop-one-left
+            count inc64
+            true
+          else dup @Str.data @8 '\'' = if*
+            '\'' strbuf-append-char
             dup str-chop-one-left
             count inc64
             true
@@ -254,7 +263,7 @@ in
     dup Lexer.line + @Str.data @8 '"' = if
        // String literal
        dup Lexer.line + str-chop-one-left
-       lexer-consume-strlit word !Str
+       '"' lexer-consume-strlit word !Str
        word @Str token @ptr Token.value + !Str
 
        lexer @ptr Lexer.line + ?str-empty lnot if
@@ -269,18 +278,12 @@ in
        else
          TOKEN_STR token @ptr Token.type + !64
        end
-    else dup Lexer.line + @Str.data @8 39 = if* // TODO: can't use ' directly for some reason
+    else dup Lexer.line + @Str.data @8 '\'' = if*
        // Character literal
        dup Lexer.line + str-chop-one-left
-       39 word rot Lexer.line + str-chop-by-delim
+       '\'' lexer-consume-strlit word !Str
 
-       word @Str "\\n" streq if
-         10 token @ptr Token.value + !int
-       else word @Str "\\\\" streq if*
-         92 token @ptr Token.value + !int
-       else word @Str "\\\"" streq if*
-         34 token @ptr Token.value + !int
-       else word @Str.count 1 = if*
+       word @Str.count 1 = if
          word @Str.data @8 token @ptr Token.value + !int
        else
          token @ptr Token.loc + eputloc ": only a single byte is allowed inside of a character literal\n" eputs
@@ -288,9 +291,6 @@ in
        end
 
        TOKEN_CHAR token @ptr Token.type + !64
-
-       // TODO: check if the character literal was actually closed at the end
-       // TODO: character literals don't support escaping
     else
        // Word or integer literal
 
