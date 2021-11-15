@@ -1327,6 +1327,7 @@ end
 /// BEGIN Interpreter //////////////////////////////
 // TODO: implement reusable stack data structure
 const SIM_STACK_CAP 1024 end
+
 memory sim-stack-count sizeof(u64) end
 memory sim-stack sizeof(u64) SIM_STACK_CAP * end
 
@@ -1340,15 +1341,43 @@ end
 
 proc sim-stack-pop -- int in
   sim-stack-count @64 0 = if
-    here eputs ": ERROR: data stack underflow in simulation mode\n" eputs 1 exit
+    here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
+    1 exit
   end
   sim-stack-count dec64
   sim-stack sim-stack-count @64 8 * + @64
 end
 
+const SIM_RET_STACK_CAP 1024 end
+memory sim-ret-stack sizeof(u64) SIM_RET_STACK_CAP * end
+memory sim-ret-stack-count sizeof(u64) end
+
+proc sim-ret-stack-push int in
+  sim-ret-stack-count @64 SIM_RET_STACK_CAP >= if
+    here eputs ": ERROR: return stack overflow in simulation mode\n" eputs 1 exit
+  end
+  sim-ret-stack sim-ret-stack-count @64 8 * + !64
+  sim-ret-stack-count inc64
+end
+
+proc sim-ret-stack-pop -- int in
+  sim-ret-stack-count @64 0 = if
+    here eputs ": ERROR: return stack underflow in simulation mode\n" eputs 1 exit
+  end
+  sim-ret-stack-count dec64
+  sim-ret-stack sim-ret-stack-count @64 8 * + @64
+end
+
+const SIM_LOCAL_MEMORY_CAP 640000 end
+memory sim-local-memory SIM_LOCAL_MEMORY_CAP end
+memory sim-local-memory-rsp sizeof(ptr) end
+
 proc simulate-ops in
   memory sim-ip sizeof(u64) end
   memory sim-op sizeof(Op) end
+
+  sim-local-memory SIM_LOCAL_MEMORY_CAP +
+  sim-local-memory-rsp !ptr
 
   0 sim-ip !64
   while sim-ip @64 ops-count @64 < do
@@ -1372,9 +1401,14 @@ proc simulate-ops in
       sim-op Op.token + Token.loc + located-here
       1 exit
     else sim-op Op.type + @64 OP_PUSH_STR = if*
-      here eputs ": TODO: OP_PUSH_STR is not implemented yet in simulation mode\n" eputs
-      sim-op Op.token + Token.loc + located-here
-      1 exit
+      sim-op Op.operand + @64
+      sizeof(Str) *
+      strlits +
+      @Str
+      swap
+      sim-stack-push
+      cast(int) sim-stack-push
+      sim-ip inc64
     else sim-op Op.type + @64 OP_PUSH_CSTR = if*
       here eputs ": TODO: OP_PUSH_CSTR is not implemented yet in simulation mode\n" eputs
       sim-op Op.token + Token.loc + located-here
@@ -1405,17 +1439,28 @@ proc simulate-ops in
     else sim-op Op.type + @64 OP_SKIP_PROC = if*
       sim-op Op.operand + @64 sim-ip !64
     else sim-op Op.type + @64 OP_PREP_PROC = if*
-      here eputs ": TODO: OP_PREP_PROC is not implemented yet in simulation mode\n" eputs
-      sim-op Op.token + Token.loc + located-here
-      1 exit
+      sim-local-memory-rsp @64
+      sim-op Op.operand + @64
+      -
+      sim-local-memory-rsp
+      !64
+
+      sim-local-memory-rsp @ptr sim-local-memory < if
+        here eputs ": ERROR: local memory capacity exceeded in the simulation mode\n" eputs
+        sim-op Op.token + Token.loc + eputloc ": NOTE: the error has happened here\n" eputs
+        1 exit
+      end
+
+      sim-ip inc64
     else sim-op Op.type + @64 OP_RET = if*
-      here eputs ": TODO: OP_RET is not implemented yet in simulation mode\n" eputs
-      sim-op Op.token + Token.loc + located-here
-      1 exit
+      sim-local-memory-rsp @64
+      sim-op Op.operand + @64
+      +
+      sim-local-memory-rsp !64
+      sim-ret-stack-pop sim-ip !64
     else sim-op Op.type + @64 OP_CALL = if*
-      here eputs ": TODO: OP_CALL is not implemented yet in simulation mode\n" eputs
-      sim-op Op.token + Token.loc + located-here
-      1 exit
+      sim-ip @64 1 + sim-ret-stack-push
+      sim-op Op.operand + @64 sim-ip !64
     else sim-op Op.type + @64 OP_INTRINSIC = if*
       assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
         COUNT_INTRINSICS 43 =
@@ -1609,9 +1654,21 @@ proc simulate-ops in
         sim-op Op.token + Token.loc + located-here
         1 exit
       else sim-op Op.operand + @64 INTRINSIC_SYSCALL3 = if*
-        here eputs ": TODO: `syscall3` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-count @64 4 < if
+          here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
+          1 exit
+        end
+
+        sim-stack-count @64 4 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 3 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 2 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 1 - sizeof(u64) * sim-stack + @64
+        syscall3
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-pop drop
+        sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_SYSCALL4 = if*
         here eputs ": TODO: `syscall4` is not implemented yet\n" eputs
         sim-op Op.token + Token.loc + located-here
