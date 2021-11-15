@@ -1439,19 +1439,26 @@ proc simulate-ops in
       cast(int) sim-stack-push
       sim-ip inc64
     else sim-op Op.type + @64 OP_PUSH_CSTR = if*
-      here eputs ": TODO: OP_PUSH_CSTR is not implemented yet in simulation mode\n" eputs
-      sim-op Op.token + Token.loc + located-here
-      1 exit
+      sim-op Op.operand + @64
+      sizeof(Str) *
+      strlits +
+      @Str
+      swap
+      drop
+      cast(int) sim-stack-push
+      sim-ip inc64
     else sim-op Op.type + @64 OP_IF = if*
-       sim-stack-pop cast(bool) if
-         sim-ip inc64
-       else
-         sim-op Op.operand + @64 sim-ip !64
-       end
+      sim-stack-pop cast(bool) if
+        sim-ip inc64
+      else
+        sim-op Op.operand + @64 sim-ip !64
+      end
     else sim-op Op.type + @64 OP_IFSTAR = if*
-      here eputs ": TODO: OP_IFSTAR is not implemented yet in simulation mode\n" eputs
-      sim-op Op.token + Token.loc + located-here
-      1 exit
+      sim-stack-pop cast(bool) if
+        sim-ip inc64
+      else
+        sim-op Op.operand + @64 sim-ip !64
+      end
     else sim-op Op.type + @64 OP_ELSE = if*
       sim-op Op.operand + @64 sim-ip !64
     else sim-op Op.type + @64 OP_END = if*
@@ -1626,33 +1633,19 @@ proc simulate-ops in
       else sim-op Op.operand + @64 INTRINSIC_LOAD8 = if*
         sim-stack-pop cast(ptr) @8 sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_STORE8 = if*
-        here eputs ": TODO: `!8` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-pop cast(ptr) sim-stack-pop swap !8
       else sim-op Op.operand + @64 INTRINSIC_LOAD16 = if*
-        here eputs ": TODO: `@16` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-pop cast(ptr) @16 sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_STORE16 = if*
-        here eputs ": TODO: `!16` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-pop cast(ptr) sim-stack-pop swap !16
       else sim-op Op.operand + @64 INTRINSIC_LOAD32 = if*
-        here eputs ": TODO: `@32` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-pop cast(ptr) @32 sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_STORE32 = if*
-        here eputs ": TODO: `!32` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-pop cast(ptr) sim-stack-pop swap !32
       else sim-op Op.operand + @64 INTRINSIC_LOAD64 = if*
-        here eputs ": TODO: `@64` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-pop cast(ptr) @64 sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_STORE64 = if*
-        here eputs ": TODO: `!64` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-pop cast(ptr) sim-stack-pop swap !64
       else sim-op Op.operand + @64 INTRINSIC_ARGC = if*
         here eputs ": TODO: `argc` is not implemented yet\n" eputs
         sim-op Op.token + Token.loc + located-here
@@ -1662,9 +1655,7 @@ proc simulate-ops in
         sim-op Op.token + Token.loc + located-here
         1 exit
       else sim-op Op.operand + @64 INTRINSIC_ENVP = if*
-        here eputs ": TODO: `envp` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        envp cast(int) sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_CAST_PTR = if*
       else sim-op Op.operand + @64 INTRINSIC_CAST_INT = if*
       else sim-op Op.operand + @64 INTRINSIC_CAST_BOOL = if*
