@@ -31,3 +31,4 @@ local-memory-overshadowing
 backslash-in-strlit
 memset-bug
 execvp-bug
+quote-in-charlit
