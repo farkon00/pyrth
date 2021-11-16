@@ -1325,7 +1325,6 @@ end
 /// END Code Generator //////////////////////////////
 
 /// BEGIN Interpreter //////////////////////////////
-// TODO: implement reusable stack data structure
 const SIM_STACK_CAP 1024 end
 
 memory sim-stack-count sizeof(u64) end
@@ -1535,9 +1534,10 @@ proc simulate-ops in
         sim-stack-push
         sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_MAX = if*
-        here eputs ": TODO: intrinsic `max` is not implemented in simulation mode\n" eputs
-        sim-op Op.token + Token.loc + located-here
-        1 exit
+        sim-stack-pop
+        sim-stack-pop
+        max
+        sim-stack-push
       else sim-op Op.operand + @64 INTRINSIC_SHR = if*
         sim-stack-pop
         sim-stack-pop
