@@ -2704,6 +2704,7 @@ proc main in
         true  // continue
       else
         args @@ptr file-path-cstr !ptr
+        args sizeof(ptr) inc64-by
         false // break
       end
     do end
