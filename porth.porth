@@ -843,20 +843,20 @@ proc cmd-echoed ptr in
   fork
 
   dup 0 = if
-    // argv[0] argv
     drop
     dup @ptr
     swap
     execvp
   else dup 0 > if*
     2drop
-    // TODO: handle the result of wait4
     NULL
     0
     wstatus
-    0 1 - //-1
-    wait4
-    drop
+    0 1 - // TODO: replace this with -1 when we support negative numbers
+    wait4 0 < if
+      "[ERROR] could not wait until the child process has finished executing\n" eputs
+      1 exit
+    end
   else
     2drop
     "[ERROR] could not fork a child\n" eputs
