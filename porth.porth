@@ -2737,6 +2737,10 @@ proc main in
     run @bool if
       tmp-end
       "./output"c tmp-append-ptr
+      while args @@ptr NULL != do
+        args @@ptr tmp-append-ptr
+        args sizeof(ptr) inc64-by
+      end
       NULL        tmp-append-ptr
       cmd-echoed
     end
