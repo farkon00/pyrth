@@ -2649,7 +2649,9 @@ in
   memory name sizeof(ptr) end
   name !ptr
 
-  "Usage: " eputs name @ptr cstr-to-str puts " <SUBCOMMAND>\n"                               fd @64 fputs
+  "Usage: " eputs name @ptr cstr-to-str puts " [OPTIONS] <SUBCOMMAND>\n"                     fd @64 fputs
+  "  OPTIONS:\n"                                                                             fd @64 fputs
+  "    -check                Type check the program.\n"                                      fd @64 fputs
   "  SUBCOMMANDS:\n"                                                                         fd @64 fputs
   "    sim <file>            Simulate the program.\n"                                        fd @64 fputs
   "    com [OPTIONS] <file>  Compile the program\n"                                          fd @64 fputs
@@ -2662,11 +2664,30 @@ in
   "    help                  Print this help to stdout and exit with 0 code\n"               fd @64 fputs
 end
 
+proc type-check-program in
+  here eputs ": TODO: type checking is not implemented yet\n" eputs
+  1 exit
+end
+
 proc main in
   memory program sizeof(ptr) end
   args @@ptr program !ptr
 
-  args sizeof(ptr) inc64-by
+  memory check sizeof(bool) end
+  false check !bool
+
+  while
+    args sizeof(ptr) inc64-by
+    args @@ptr NULL = if
+      false // break
+    else args @@ptr "-check"c cstreq if*
+      true check !bool
+      true  // continue
+    else
+      false // break
+    end
+  do end
+
   args @@ptr NULL = if
     program @ptr stderr usage
     "ERROR: subcommand is not provided\n" eputs
@@ -2678,8 +2699,6 @@ proc main in
   memory run sizeof(bool) end
   false run !bool
 
-  // TODO: porth.porth does not type check compiled program
-
   args @@ptr "sim"c cstreq if
     args sizeof(ptr) inc64-by
     args @@ptr NULL = if
@@ -2689,6 +2708,7 @@ proc main in
     end
 
     args @@ptr compile-file-into-ops
+    check @bool if type-check-program end
 
     simulate-ops
   else args @@ptr "com"c cstreq if*
@@ -2716,6 +2736,7 @@ proc main in
     end
 
     file-path-cstr @ptr compile-file-into-ops
+    check @bool if type-check-program end
 
     // TODO: the output file path should be based on the input file path
     "output.asm"c generate-nasm-linux-x86_64
@@ -2757,6 +2778,7 @@ proc main in
     end
 
     args @@ptr compile-file-into-ops
+    check @bool if type-check-program end
 
     dump-ops
   else args @@ptr "lex"c cstreq if*
@@ -2777,6 +2799,7 @@ proc main in
     end
 
     args @@ptr compile-file-into-ops
+    check @bool if type-check-program end
 
     summary
   else
