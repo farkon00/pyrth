@@ -575,10 +575,39 @@ in
   else false end
 end
 
+// TODO: rename isdigit to ?digit
 proc isdigit int -- bool in
-  dup  '0' >=
-  swap '9' <=
+  dup
+    '0' >=
+  swap
+    '9' <=
   and
+end
+
+// TODO: rename isalpha to ?alpha
+proc isalpha int -- bool in
+  dup
+    dup
+      'a' >=
+    swap
+      'z' <=
+    and
+  swap
+    dup
+      'A' >=
+    swap
+      'Z' <=
+    and
+  or
+end
+
+// TODO: rename isalnum to ?alnum
+proc isalnum int -- bool in
+  dup
+    isdigit
+  swap
+    isalpha
+  or
 end
 
 proc try-parse-int
@@ -930,5 +959,71 @@ proc ?file-exist ptr -- bool in
     drop false
     here eputs ": ERROR: ?file-exist failed\n" eputs
     1 exit
+  end
+end
+
+proc ?shell-safe-char
+  int
+  --
+  bool
+in
+  memory ch sizeof(int) end
+  ch !int
+  "@%+=:,./-_"
+  while
+    over 0 > if
+      dup @8 ch @int !=
+    else false end
+  do
+    swap 1 -
+    swap 1 +
+  end
+  drop 0 >
+  ch @int isalnum
+  or
+end
+
+proc ?shell-safe-str
+  int ptr
+  --
+  bool
+in
+  while
+    over 0 > if
+      dup @8 ?shell-safe-char
+    else false end
+  do
+    swap 1 -
+    swap 1 +
+  end
+  drop 0 =
+end
+
+proc shell-escape
+  int ptr
+  --
+  int ptr
+in
+  memory result sizeof(ptr) end
+  2dup ?shell-safe-str lnot if
+    tmp-end result !ptr
+    "'" tmp-append drop
+      while over 0 > do
+        dup @8
+
+        dup '\'' = if
+          drop
+          "'\"'\"'" tmp-append drop
+        else
+          1 tmp-alloc !8
+        end
+
+        swap 1 -
+        swap 1 +
+      end 2drop
+    "'" tmp-append drop
+
+    tmp-end result @ptr -
+    result @ptr
   end
 end

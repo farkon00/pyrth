@@ -32,3 +32,4 @@ backslash-in-strlit
 memset-bug
 execvp-bug
 quote-in-charlit
+shell-escape
