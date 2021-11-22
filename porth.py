@@ -2250,6 +2250,7 @@ def usage(compiler_name: str):
     print("        -o <file|dir>       Customize the output path")
     print("        -s                  Silent mode. Don't print any info about compilation phases.")
     print("        -cf                 Dump Control Flow graph of the program in a dot format.")
+    print("    check <file>          Just compile to IR and type-check without generating asm or executing.")
     print("    help                  Print this help to stdout and exit with 0 code")
 
 if __name__ == '__main__' and '__file__' in globals():
@@ -2301,6 +2302,19 @@ if __name__ == '__main__' and '__file__' in globals():
         if not unsafe:
             type_check_program(program, proc_contracts)
         simulate_little_endian_linux(program, [program_path] + argv)
+    elif subcommand == "check":
+        if len(argv) < 1:
+            usage(compiler_name)
+            print("[ERROR] no input file is provided for the checking", file=sys.stderr)
+            exit(1)
+        program_path, *argv = argv
+        include_paths.append(path.dirname(program_path))
+        parse_context = ParseContext()
+        parse_program_from_file(parse_context, program_path, include_paths);
+        program = Program(ops=parse_context.ops, memory_capacity=parse_context.memory_capacity)
+        proc_contracts = {proc.addr: proc.contract for proc in parse_context.procs.values()}
+        if not unsafe:
+            type_check_program(program, proc_contracts)
     elif subcommand == "com":
         silent = False
         control_flow = False
