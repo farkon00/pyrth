@@ -846,6 +846,7 @@ proc cmd-echoed ptr in
     dup @ptr
     swap
     execvp
+    // TODO: report that you could not execute the child
   else dup 0 > if*
     2drop
     NULL
