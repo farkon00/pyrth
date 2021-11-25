@@ -2629,6 +2629,99 @@ proc compile-file-into-ops ptr in
 end
 /// END Compiler //////////////////////////////
 
+const TypeFrame.type sizeof(int) offset end
+const TypeFrame.loc  sizeof(Loc) offset end
+const TypeFrame.prev sizeof(ptr) offset end
+const sizeof(TypeFrame)           reset end
+
+const TypeStack.top sizeof(ptr) offset end
+const sizeof(TypeStack)          reset end
+
+// TODO: Type Frame Pool does not support reference counting memory management strategy
+const TYPE_FRAME_POOL_CAP 1024 end
+memory type-frame-pool TYPE_FRAME_POOL_CAP sizeof(TypeFrame) * end
+memory type-frame-pool-count sizeof(int) end
+
+proc dump-dot-type-frame-pool
+  int // file-path
+in
+  memory fd sizeof(int) end
+  fd !int
+
+  "digraph Pool {\n" fd @64 fputs
+  0 while dup type-frame-pool-count @int < do
+    // TODOOOO: display types of the frams in dump-dot-type-frame-pool
+    dup
+    sizeof(TypeFrame) *
+    type-frame-pool +
+
+    TypeFrame.prev +
+    @ptr
+    dup NULL != if
+      "  Node_"   fd @64 fputs
+      over        fd @64 fputu
+      " -> Node_" fd @64 fputs
+      type-frame-pool -
+      sizeof(TypeFrame) /
+      fd @64 fputu
+      "\n" fd @64 fputs
+    else drop end
+
+    1 +
+  end drop
+  "}\n" fd @64 fputs
+end
+
+proc type-frame-alloc -- ptr in
+  type-frame-pool-count @int TYPE_FRAME_POOL_CAP >= if
+    here eputs ": ERROR: Type Frame Pool overflow! Time to implement proper memory management! Or you can just increase the size of the pool, that will work too. Kappa\n" eputs
+    1 exit
+  end
+
+  type-frame-pool-count @int
+  sizeof(TypeFrame) *
+  type-frame-pool +
+
+  type-frame-pool-count inc64
+end
+
+proc type-stack-push
+  int // type
+  ptr // Loc
+  ptr // stack
+in
+  memory stack sizeof(ptr) end
+  stack !ptr
+
+  memory new-top sizeof(ptr) end
+  type-frame-alloc new-top !ptr
+
+  sizeof(Loc) swap new-top @ptr TypeFrame.loc + memcpy drop
+  new-top @ptr TypeFrame.type + !int
+
+  stack   @ptr TypeStack.top  + @ptr
+  new-top @ptr TypeFrame.prev + !ptr
+
+  new-top @ptr
+  stack   @ptr TypeStack.top + !ptr
+end
+
+proc type-stack-pop
+  ptr // stack
+in
+  TypeStack.top +
+  dup @ptr NULL != if
+    dup @ptr TypeFrame.prev + @ptr
+    swap
+    !ptr
+  else drop end
+end
+
+proc type-check-program in
+  here eputs ": TODOOO: type checking is not implemented yet\n" eputs
+  1 exit
+end
+
 proc summary in
   // TODO: lexer stats: tokens count, lines count, etc
   "Ops count:                    " puts ops-count              @int putu "\n" puts
@@ -2661,12 +2754,52 @@ in
   "    dump <file>           Dump the ops of the program\n"                                  fd @64 fputs
   "    lex <file>            Produce lexical analysis of the file\n"                         fd @64 fputs
   "    summary <file>        Print the summary of the program\n"                             fd @64 fputs
+  "    test-type-check       Test type checking\n"                                           fd @64 fputs
   "    help                  Print this help to stdout and exit with 0 code\n"               fd @64 fputs
 end
 
-proc type-check-program in
-  here eputs ": TODOO: type checking is not implemented yet\n" eputs
-  1 exit
+proc test-type-check in
+  memory dummy-loc sizeof(Loc) end
+  sizeof(Loc) 0 dummy-loc memset drop
+
+  memory stack sizeof(TypeStack) end
+  sizeof(TypeStack) 0 stack memset drop
+
+  0 while dup 5 < do
+    DATATYPE_INT dummy-loc stack type-stack-push
+    1 +
+  end drop
+
+  memory file-path sizeof(ptr) end
+  "output.dot"c file-path !ptr
+
+  "[INFO] Generating " puts
+  file-path @ptr cstr-to-str puts
+  "\n" puts
+
+  420                            // mode
+  O_CREAT O_WRONLY or O_TRUNC or // flags
+  file-path @ptr                 // pathname
+  0 100 -                        // AT_FDCWD
+  openat
+    dup 0 < if
+      here eputs
+      ": ERROR: could not open file" eputs
+      file-path @ptr cstr-to-str eputs
+      "\n" eputs
+      1 exit
+    end
+    dup dump-dot-type-frame-pool
+  close drop
+
+  tmp-end
+    "dot"c         tmp-append-ptr
+    "-Tsvg"c       tmp-append-ptr
+    "-O"c          tmp-append-ptr
+    file-path @ptr tmp-append-ptr
+    NULL           tmp-append-ptr
+    dup cmd-echoed
+  tmp-rewind
 end
 
 proc main in
@@ -2802,6 +2935,8 @@ proc main in
     check @bool if type-check-program end
 
     summary
+  else args @@ptr "test-type-check"c cstreq if*
+    test-type-check
   else
     program @ptr stderr usage
     "ERROR: unknown subcommand `" eputs args @@ptr cstr-to-str eputs "`\n" eputs
