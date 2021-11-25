@@ -2744,9 +2744,150 @@ in
   else drop end
 end
 
-proc type-check-program in
+proc type-check-program-from
+  ptr // stack
+  int // ip
+  ptr // outs
+in
+  // TODOO: type-check-program does not take expected outputs (`outs`) into account
+  // We don't really know what's the format of outs yet, but it's an important part
+  // of type checking nonetheless
+  drop
+
+  memory ip sizeof(int) end
+  ip !int
+
+  memory stack sizeof(TypeStack) end
+  sizeof(TypeStack) swap stack memcpy drop
+
+  memory op sizeof(Op) end
+
+  while
+    ip @int ops-count @int < if
+      sizeof(Op)
+      ip @int sizeof(Op) * ops +
+      op
+      memcpy drop
+
+      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 16 = end
+      op Op.type + @int OP_PUSH_INT = if
+        DATATYPE_INT
+        op Op.token + Token.loc +
+        stack
+        type-stack-push
+
+        ip inc64
+
+        true // continue
+      else op Op.type + @int OP_PUSH_LOCAL_MEM = if*
+        here eputs ": TODO: type checking of OP_PUSH_LOCAL_MEM is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_PUSH_GLOBAL_MEM = if*
+        here eputs ": TODO: type checking of OP_PUSH_GLOBAL_MEM is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_PUSH_STR = if*
+        here eputs ": TODO: type checking of OP_PUSH_STR is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_PUSH_CSTR = if*
+        here eputs ": TODO: type checking of OP_PUSH_CSTR is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true  // continue
+      else op Op.type + @int OP_IF = if*
+        here eputs ": TODO: type checking of OP_IF is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_IFSTAR = if*
+        here eputs ": TODO: type checking of OP_IFSTAR is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_ELSE = if*
+        here eputs ": TODO: type checking of OP_ELSE is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_END = if*
+        here eputs ": TODO: type checking of OP_END is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_SKIP_PROC = if*
+        here eputs ": TODO: type checking of OP_SKIP_PROC is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_PREP_PROC = if*
+        here eputs ": TODO: type checking of OP_PREP_PROC is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_RET = if*
+        here eputs ": TODO: type checking of OP_RET is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_CALL = if*
+        here eputs ": TODO: type checking of OP_CALL is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_WHILE = if*
+        here eputs ": TODO: type checking of OP_WHILE is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_DO = if*
+        here eputs ": TODO: type checking of OP_DO is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else op Op.type + @int OP_INTRINSIC = if*
+        here eputs ": TODO: type checking of OP_INTRINSIC is not implemented yet\n" eputs
+        op Op.token + Token.loc + located-here
+        1 exit
+
+        true // continue
+      else
+        here eputs ": unreachable\n" eputs
+        69 exit
+
+        false // break, though it does not really matter since this is unreachable state anyway
+      end
+    else
+      false // break, we have reached the end of the program
+    end
+  do end
   here eputs ": TODOOO: type checking is not implemented yet\n" eputs
   1 exit
+end
+
+proc type-check-program in
+  // TODO: type-check-program should first check the procedures
+  memory empty-stack sizeof(TypeStack) end
+  sizeof(TypeStack) 0 empty-stack memset drop
+  empty-stack 0 NULL type-check-program-from
 end
 
 proc summary in
