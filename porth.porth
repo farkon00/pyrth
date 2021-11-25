@@ -2864,9 +2864,188 @@ in
 
         true // continue
       else op Op.type + @int OP_INTRINSIC = if*
-        here eputs ": TODO: type checking of OP_INTRINSIC is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
-        1 exit
+        assert "Exhaustive handling of Intrinsics in type-check-program-from" COUNT_INTRINSICS 43 = end
+
+        op Op.operand + @int
+          dup INTRINSIC_PLUS = if
+            here eputs ": TODO: type checking of INTRINSIC_PLUS is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_MINUS = if*
+            here eputs ": TODO: type checking of INTRINSIC_MINUS is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_MUL = if*
+            here eputs ": TODO: type checking of INTRINSIC_MUL is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_DIVMOD = if*
+            here eputs ": TODO: type checking of INTRINSIC_DIVMOD is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_MAX = if*
+            here eputs ": TODO: type checking of INTRINSIC_MAX is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_EQ = if*
+            here eputs ": TODO: type checking of INTRINSIC_EQ is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_GT = if*
+            here eputs ": TODO: type checking of INTRINSIC_GT is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_LT = if*
+            here eputs ": TODO: type checking of INTRINSIC_LT is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_GE = if*
+            here eputs ": TODO: type checking of INTRINSIC_GE is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_LE = if*
+            here eputs ": TODO: type checking of INTRINSIC_LE is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_NE = if*
+            here eputs ": TODO: type checking of INTRINSIC_NE is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_SHR = if*
+            here eputs ": TODO: type checking of INTRINSIC_SHR is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_SHL = if*
+            here eputs ": TODO: type checking of INTRINSIC_SHL is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_OR = if*
+            here eputs ": TODO: type checking of INTRINSIC_OR is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_AND = if*
+            here eputs ": TODO: type checking of INTRINSIC_AND is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_NOT = if*
+            here eputs ": TODO: type checking of INTRINSIC_NOT is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_PRINT = if*
+            here eputs ": TODO: type checking of INTRINSIC_PRINT is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_DUP = if*
+            here eputs ": TODO: type checking of INTRINSIC_DUP is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_SWAP = if*
+            here eputs ": TODO: type checking of INTRINSIC_SWAP is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_DROP = if*
+            here eputs ": TODO: type checking of INTRINSIC_DROP is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_OVER = if*
+            here eputs ": TODO: type checking of INTRINSIC_OVER is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_ROT = if*
+            here eputs ": TODO: type checking of INTRINSIC_ROT is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_LOAD8 = if*
+            here eputs ": TODO: type checking of INTRINSIC_LOAD8 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_STORE8 = if*
+            here eputs ": TODO: type checking of INTRINSIC_STORE8 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_LOAD16 = if*
+            here eputs ": TODO: type checking of INTRINSIC_LOAD16 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_STORE16 = if*
+            here eputs ": TODO: type checking of INTRINSIC_STORE16 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_LOAD32 = if*
+            here eputs ": TODO: type checking of INTRINSIC_LOAD32 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_STORE32 = if*
+            here eputs ": TODO: type checking of INTRINSIC_STORE32 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_LOAD64 = if*
+            here eputs ": TODO: type checking of INTRINSIC_LOAD64 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_STORE64 = if*
+            here eputs ": TODO: type checking of INTRINSIC_STORE64 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_CAST_PTR = if*
+            here eputs ": TODO: type checking of INTRINSIC_CAST_PTR is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_CAST_INT = if*
+            here eputs ": TODO: type checking of INTRINSIC_CAST_INT is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_CAST_BOOL = if*
+            here eputs ": TODO: type checking of INTRINSIC_CAST_BOOL is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_ARGC = if*
+            here eputs ": TODO: type checking of INTRINSIC_ARGC is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_ARGV = if*
+            here eputs ": TODO: type checking of INTRINSIC_ARGV is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_ENVP = if*
+            here eputs ": TODO: type checking of INTRINSIC_ENVP is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_SYSCALL0 = if*
+            here eputs ": TODO: type checking of INTRINSIC_SYSCALL0 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_SYSCALL1 = if*
+            here eputs ": TODO: type checking of INTRINSIC_SYSCALL1 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_SYSCALL2 = if*
+            here eputs ": TODO: type checking of INTRINSIC_SYSCALL2 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_SYSCALL3 = if*
+            here eputs ": TODO: type checking of INTRINSIC_SYSCALL3 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_SYSCALL4 = if*
+            here eputs ": TODO: type checking of INTRINSIC_SYSCALL4 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_SYSCALL5 = if*
+            here eputs ": TODO: type checking of INTRINSIC_SYSCALL5 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else dup INTRINSIC_SYSCALL6 = if*
+            here eputs ": TODO: type checking of INTRINSIC_SYSCALL6 is not implemented yet\n" eputs
+            op Op.token + Token.loc + located-here
+            1 exit
+          else
+            here eputs ": unreachable\n" eputs
+            64 exit
+          end
+        drop
+
+        ip inc64
 
         true // continue
       else
