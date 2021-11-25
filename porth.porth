@@ -1871,6 +1871,24 @@ in
   else name @Str "int"  streq if* DATATYPE_INT  true
   else 0 false end
 end
+
+proc datatype-name
+  int // data type
+  --
+  int ptr
+in
+  assert "Exhaustive handling of data types in datatype-name" COUNT_DATATYPES 3 = end
+       dup DATATYPE_INT  = if  drop "int"
+  else dup DATATYPE_BOOL = if* drop "bool"
+  else dup DATATYPE_PTR  = if* drop "ptr"
+  else
+    drop
+    0 NULL
+    here eputs ": unreachable\n" eputs
+    69 exit
+  end
+end
+
 /// END DataType //////////////////////////////
 
 /// BEGIN File Path Buffer //////////////////////////////
@@ -2650,22 +2668,31 @@ in
 
   "digraph Pool {\n" fd @64 fputs
   0 while dup type-frame-pool-count @int < do
-    // TODOOOO: display types of the frams in dump-dot-type-frame-pool
+    "  Node_"              fd @64 fputs
+    dup                    fd @64 fputu
+    " [label="             fd @64 fputs
     dup
-    sizeof(TypeFrame) *
-    type-frame-pool +
+      sizeof(TypeFrame) *
+      type-frame-pool +
+      TypeFrame.type +
+      @int
+      datatype-name        fd @64 fputs
+    "]"                    fd @64 fputs
 
-    TypeFrame.prev +
-    @ptr
-    dup NULL != if
-      "  Node_"   fd @64 fputs
-      over        fd @64 fputu
-      " -> Node_" fd @64 fputs
-      type-frame-pool -
-      sizeof(TypeFrame) /
-      fd @64 fputu
-      "\n" fd @64 fputs
-    else drop end
+    dup
+      sizeof(TypeFrame) *
+      type-frame-pool +
+      TypeFrame.prev +
+      @ptr
+      dup NULL != if
+        "  Node_"   fd @64 fputs
+        over        fd @64 fputu
+        " -> Node_" fd @64 fputs
+        type-frame-pool -
+        sizeof(TypeFrame) /
+        fd @64 fputu
+        "\n" fd @64 fputs
+      else drop end
 
     1 +
   end drop
@@ -2765,8 +2792,9 @@ proc test-type-check in
   memory stack sizeof(TypeStack) end
   sizeof(TypeStack) 0 stack memset drop
 
+  69 srand
   0 while dup 5 < do
-    DATATYPE_INT dummy-loc stack type-stack-push
+    rand 32 shr COUNT_DATATYPES mod dummy-loc stack type-stack-push
     1 +
   end drop
 
