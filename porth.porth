@@ -2789,12 +2789,36 @@ proc test-type-check in
   memory dummy-loc sizeof(Loc) end
   sizeof(Loc) 0 dummy-loc memset drop
 
-  memory stack sizeof(TypeStack) end
-  sizeof(TypeStack) 0 stack memset drop
+  memory stack1 sizeof(TypeStack) end
+  sizeof(TypeStack) 0 stack1 memset drop
 
   69 srand
-  0 while dup 5 < do
-    rand 32 shr COUNT_DATATYPES mod dummy-loc stack type-stack-push
+
+  0 while dup 3 < do
+    rand 32 shr COUNT_DATATYPES mod dummy-loc stack1 type-stack-push
+    1 +
+  end drop
+
+  memory stack2 sizeof(TypeStack) end
+  sizeof(TypeStack) stack1 stack2 memcpy drop
+
+  0 while dup 3 < do
+    rand 32 shr COUNT_DATATYPES mod dummy-loc stack2 type-stack-push
+    1 +
+  end drop
+
+  0 while dup 3 < do
+    rand 32 shr COUNT_DATATYPES mod dummy-loc stack1 type-stack-push
+    1 +
+  end drop
+
+  0 while dup 2 < do
+    stack2 type-stack-pop
+    1 +
+  end drop
+
+  0 while dup 3 < do
+    rand 32 shr COUNT_DATATYPES mod dummy-loc stack2 type-stack-push
     1 +
   end drop
 
