@@ -47,7 +47,7 @@ const sizeof(Token) reset end
 /// BEGIN Strbuf //////////////////////////////
 /// The buffer that holds the date of the string literals of
 /// the compiled program. (see Strlit)
-const STRBUF_CAP 16 1024 * end
+const STRBUF_CAP 32 1024 * end
 memory strbuf-size sizeof(int) end
 memory strbuf-start STRBUF_CAP end
 
