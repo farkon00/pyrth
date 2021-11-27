@@ -578,7 +578,7 @@ const Op.operand sizeof(u64)   offset end
 const Op.token   sizeof(Token) offset end
 const sizeof(Op) reset end
 
-const OPS_CAP 16 1024 * end
+const OPS_CAP 32 1024 * end
 memory ops-count sizeof(u64) end
 memory ops sizeof(Op) OPS_CAP * end
 
@@ -619,7 +619,7 @@ end
 /// Array of string literals of the compiled program.
 /// The operand of OP_PUSH_STR and OP_PUSH_CSTR is the
 /// index within this array
-const STRLITS_CAP 1024 end
+const STRLITS_CAP 2 1024 * end
 memory strlits-count sizeof(int) end
 memory strlits sizeof(Str) STRLITS_CAP * end
 
