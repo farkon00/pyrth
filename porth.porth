@@ -745,6 +745,7 @@ memory global-memories-count sizeof(u64) end
 memory global-memories sizeof(Memory) GLOBAL_MEMORIES_CAP * end
 memory global-memory-capacity sizeof(u64) end
 
+// TODO: check if the local memory overflows the return stack at compile time
 const LOCAL_MEMORIES_CAP 1024 end
 memory local-memories-count sizeof(u64) end
 memory local-memories sizeof(Memory) LOCAL_MEMORIES_CAP * end
