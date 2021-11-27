@@ -3072,11 +3072,14 @@ end
 
 proc summary in
   // TODO: lexer stats: tokens count, lines count, etc
-  "Ops count:                    " puts ops-count              @int putu "\n" puts
-  "Consts count:                 " puts consts-count           @int putu "\n" puts
-  "Procs count:                  " puts procs-count            @int putu "\n" puts
-  "String literals count:        " puts strlits-count          @int putu "\n" puts
-  "String literals size (bytes): " puts strbuf-size            @int putu "\n" puts
+  "Ops count:                    " puts ops-count              @int putu "/" puts OPS_CAP             putu "\n" puts
+  "Consts count:                 " puts consts-count           @int putu "/" puts CONST_CAP           putu "\n" puts
+  "Procs count:                  " puts procs-count            @int putu "/" puts PROCS_CAP           putu "\n" puts
+  "String literals count:        " puts strlits-count          @int putu "/" puts STRLITS_CAP         putu "\n" puts
+  "String literals size (bytes): " puts strbuf-size            @int putu "/" puts STRBUF_CAP          putu "\n" puts
+  "Global memories count:        " puts global-memories-count  @int putu "/" puts GLOBAL_MEMORIES_CAP putu "\n" puts
+  // NOTE: global memory size does not have an upper capacity limit since it's
+  // just a counter of how big of region to allocate in the .bss section
   "Global memory size (bytes):   " puts global-memory-capacity @int putu "\n" puts
 end
 
