@@ -618,12 +618,6 @@ class Contract:
     ins: Sequence[Tuple[Union[DataType, str], Loc]]
     outs: Sequence[Tuple[Union[DataType, str], Loc]]
 
-@dataclass
-class CompilerMessage:
-    loc: Loc
-    label: str
-    text: str
-
 def human_type_name(typ: Union[DataType, str]) -> str:
     if isinstance(typ, DataType):
         return f"type `{DATATYPE_NAMES[typ]}`"
@@ -632,77 +626,62 @@ def human_type_name(typ: Union[DataType, str]) -> str:
     else:
         assert False, "unreachable"
 
-MessageGroup=List[CompilerMessage]
-
-def type_check_contracts(intro_token: Token, ctx: Context, contracts: List[Contract]):
-    log: List[MessageGroup] = []
-    for contract in contracts:
-        ins = list(contract.ins)
-        stack = copy(ctx.stack)
-        error = False
-        generics: Dict[str, Union[DataType, str]] = {}
-        arg_count = 0
-        while len(stack) > 0 and len(ins) > 0:
-            actual, actual_loc = stack.pop()
-            expected, expected_loc = ins.pop()
-            if isinstance(expected, DataType):
-                if actual != expected:
-                    error = True
-                    log.append([CompilerMessage(loc=intro_token.loc, label="ERROR", text=f"Argument {arg_count} of `{intro_token.text}` is expected to be {human_type_name(expected)} but got {human_type_name(actual)}"),
-                                CompilerMessage(loc=actual_loc, label="NOTE", text=f"Argument {arg_count} was provided here"),
-                                CompilerMessage(loc=expected_loc, label="NOTE", text=f"Expected type was declared here")])
-                    break;
-            elif isinstance(expected, str):
-                if expected in generics:
-                    if actual != generics[expected]:
-                        error = True
-                        log.append([CompilerMessage(loc=intro_token.loc, label="ERROR", text=f"Argument {arg_count} of `{intro_token.text}` is expected to be {human_type_name(generics[expected])} but got {human_type_name(actual)}"),
-                                    CompilerMessage(loc=actual_loc, label="NOTE", text=f"Argument {arg_count} was provided here"),
-                                    CompilerMessage(loc=expected_loc, label="NOTE", text=f"Expected type was declared here")])
-                        break;
-                else:
-                    generics[expected] = actual
+def type_check_contract(intro_token: Token, ctx: Context, contract: Contract):
+    ins = list(contract.ins)
+    stack = copy(ctx.stack)
+    generics: Dict[str, Union[DataType, str]] = {}
+    arg_count = 0
+    while len(stack) > 0 and len(ins) > 0:
+        actual, actual_loc = stack.pop()
+        expected, expected_loc = ins.pop()
+        if isinstance(expected, DataType):
+            if actual != expected:
+                compiler_error(intro_token.loc, f"Argument {arg_count} of `{intro_token.text}` is expected to be {human_type_name(expected)} but got {human_type_name(actual)}")
+                compiler_note(actual_loc, f"Argument {arg_count} was provided here")
+                compiler_note(expected_loc, f"Expected type was declared here")
+                exit(1)
+        elif isinstance(expected, str):
+            if expected in generics:
+                if actual != generics[expected]:
+                    compiler_error(intro_token.loc, f"Argument {arg_count} of `{intro_token.text}` is expected to be {human_type_name(generics[expected])} but got {human_type_name(actual)}")
+                    compiler_note(actual_loc, f"Argument {arg_count} was provided here")
+                    compiler_note(expected_loc, f"Expected type was declared here")
+                    exit(1)
             else:
-                assert False, "unreachable"
-            arg_count += 1
-        if error:
-            continue
-        if len(stack) < len(ins):
-            group = []
-            group.append(CompilerMessage(loc=intro_token.loc, label="ERROR", text=f"Not enough arguments provided for `{intro_token.value}`. Expected {len(contract.ins)} but got {arg_count}."))
-            group.append(CompilerMessage(loc=intro_token.loc, label="NOTE", text=f"Not provided arguments:"))
-            while len(ins) > 0:
-                typ, loc = ins.pop()
-                if isinstance(typ, DataType):
-                    group.append(CompilerMessage(loc=loc, label="NOTE", text=f"{DATATYPE_NAMES[typ]}"))
-                elif isinstance(typ, str):
-                    if typ in generics:
-                        group.append(CompilerMessage(loc=loc, label="NOTE", text=human_type_name(generics[typ])))
-                    else:
-                        group.append(CompilerMessage(loc=loc, label="NOTE", text=human_type_name(typ)))
-                else:
-                    assert False, "unreachable"
-            log.append(group)
-            continue
-        for typ, loc in contract.outs:
+                generics[expected] = actual
+        else:
+            assert False, "unreachable"
+        arg_count += 1
+
+    if len(stack) < len(ins):
+        compiler_error(intro_token.loc, f"Not enough arguments provided for `{intro_token.value}`. Expected {len(contract.ins)} but got {arg_count}.");
+        compiler_note(intro_token.loc, f"Not provided arguments:")
+        while len(ins) > 0:
+            typ, loc = ins.pop()
             if isinstance(typ, DataType):
-                stack.append((typ, intro_token.loc))
+                compiler_note(loc, f"{DATATYPE_NAMES[typ]}")
             elif isinstance(typ, str):
                 if typ in generics:
-                    stack.append((generics[typ], intro_token.loc))
+                    compiler_note(loc, human_type_name(generics[typ]))
                 else:
-                    # log.append([CompilerMessage(loc=loc, label="ERROR", text=f"Unknown generic {repr(typ)} in output parameters. All generics should appear at least once in input parameters first.")])
-                    # continue
-                    assert False, "Unreachable. Such function won't compile in the first place since you can't produce an instance of a generic type at the moment"
+                    compiler_note(loc, human_type_name(typ))
             else:
                 assert False, "unreachable"
-        ctx.stack = stack
-        return
-    for group in log:
-        for msg in group:
-            compiler_diagnostic(msg.loc, msg.label, msg.text)
-        print(file=sys.stderr)
-    exit(1)
+        exit(1)
+
+    for typ, loc in contract.outs:
+        if isinstance(typ, DataType):
+            stack.append((typ, intro_token.loc))
+        elif isinstance(typ, str):
+            if typ in generics:
+                stack.append((generics[typ], intro_token.loc))
+            else:
+                # log.append([CompilerMessage(loc=loc, label="ERROR", text=f"Unknown generic {repr(typ)} in output parameters. All generics should appear at least once in input parameters first.")])
+                # continue
+                assert False, "Unreachable. Such function won't compile in the first place since you can't produce an instance of a generic type at the moment"
+        else:
+            assert False, "unreachable"
+    ctx.stack = stack
 
 def type_check_context_outs(ctx: Context):
     while len(ctx.stack) > 0 and len(ctx.outs) > 0:
@@ -775,7 +754,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             ctx.ip += 1
         elif op.typ == OpType.CALL:
             assert isinstance(op.operand, OpAddr)
-            type_check_contracts(op.token, ctx, [proc_contracts[op.operand]])
+            type_check_contract(op.token, ctx, proc_contracts[op.operand])
             ctx.ip += 1
         elif op.typ == OpType.RET:
             type_check_context_outs(ctx)
@@ -784,195 +763,93 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             assert len(Intrinsic) == 45, "Exhaustive intrinsic handling in type_check_program()"
             assert isinstance(op.operand, Intrinsic), "This could be a bug in compilation step"
             if op.operand == Intrinsic.PLUS:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.PTR, op.token.loc)]),
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.PTR, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.MINUS:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.PTR, op.token.loc)]),
-                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.MUL:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.DIVMOD:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.MAX:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.EQ:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                    Contract(ins=[(DataType.BOOL, op.token.loc), (DataType.BOOL, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]))
             elif op.operand == Intrinsic.GT:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]))
             elif op.operand == Intrinsic.LT:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]))
             elif op.operand == Intrinsic.GE:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]))
             elif op.operand == Intrinsic.LE:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]))
             elif op.operand == Intrinsic.NE:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                    Contract(ins=[(DataType.BOOL, op.token.loc), (DataType.BOOL, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                    Contract(ins=[(DataType.PTR, op.token.loc), (DataType.PTR, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]))
             elif op.operand == Intrinsic.SHR:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SHL:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.OR:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                    Contract(ins=[(DataType.BOOL, op.token.loc), (DataType.BOOL, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.AND:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                    Contract(ins=[(DataType.BOOL, op.token.loc), (DataType.BOOL, op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.NOT:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.PRINT:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc)], outs=[])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc)], outs=[]))
             elif op.operand == Intrinsic.DUP:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc)], outs=[("a", op.token.loc), ("a", op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc)], outs=[("a", op.token.loc), ("a", op.token.loc)]))
             elif op.operand == Intrinsic.SWAP:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), ("b", op.token.loc)], outs=[("b", op.token.loc), ("a", op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc)], outs=[("b", op.token.loc), ("a", op.token.loc)]))
             elif op.operand == Intrinsic.DROP:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc)], outs=[])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc)], outs=[]))
             elif op.operand == Intrinsic.OVER:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), ("b", op.token.loc)], outs=[("a", op.token.loc), ("b", op.token.loc), ("a", op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc)], outs=[("a", op.token.loc), ("b", op.token.loc), ("a", op.token.loc)]))
             elif op.operand == Intrinsic.ROT:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc)], outs=[("b", op.token.loc), ("c", op.token.loc), ("a", op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc)], outs=[("b", op.token.loc), ("c", op.token.loc), ("a", op.token.loc)]))
             elif op.operand == Intrinsic.LOAD8:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.STORE8:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), (DataType.PTR, op.token.loc)], outs=[]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), (DataType.PTR, op.token.loc)], outs=[]))
             elif op.operand == Intrinsic.LOAD16:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.STORE16:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), (DataType.PTR, op.token.loc)], outs=[]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), (DataType.PTR, op.token.loc)], outs=[]))
             elif op.operand == Intrinsic.LOAD32:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.STORE32:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), (DataType.PTR, op.token.loc)], outs=[]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), (DataType.PTR, op.token.loc)], outs=[]))
             elif op.operand == Intrinsic.LOAD64:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.STORE64:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), (DataType.PTR, op.token.loc)], outs=[]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), (DataType.PTR, op.token.loc)], outs=[]))
             elif op.operand == Intrinsic.CAST_PTR:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc)], outs=[(DataType.PTR, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc)], outs=[(DataType.PTR, op.token.loc)]))
             elif op.operand == Intrinsic.CAST_INT:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.CAST_BOOL:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]))
             elif op.operand == Intrinsic.ARGC:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[], outs=[(DataType.INT, op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.ARGV:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[], outs=[(DataType.PTR, op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[], outs=[(DataType.PTR, op.token.loc)]))
             elif op.operand == Intrinsic.ENVP:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[], outs=[(DataType.PTR, op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[], outs=[(DataType.PTR, op.token.loc)]))
             elif op.operand == Intrinsic.HERE:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[], outs=[(DataType.INT, op.token.loc), (DataType.PTR, op.token.loc)])
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[], outs=[(DataType.INT, op.token.loc), (DataType.PTR, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL0:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[(DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL1:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL2:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), ("b", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL3:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL4:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), ("d", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), ("d", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL5:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), ("d", op.token.loc), ("e", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), ("d", op.token.loc), ("e", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL6:
-                type_check_contracts(op.token, ctx, [
-                    Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), ("d", op.token.loc), ("e", op.token.loc), ("f", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]),
-                ])
+                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), ("d", op.token.loc), ("e", op.token.loc), ("f", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.STOP:
                 # TODO: we need some sort of a flag that would allow us to ignore all the stop requests
                 compiler_diagnostic(op.token.loc, "DEBUG", "Stopping the compilation. Current stack state:")
@@ -986,17 +863,13 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 assert False, "unreachable"
             ctx.ip += 1
         elif op.typ == OpType.IF:
-            type_check_contracts(op.token, ctx, [
-                Contract(ins=[(DataType.BOOL, op.token.loc)], outs=[])
-            ])
+            type_check_contract(op.token, ctx, Contract(ins=[(DataType.BOOL, op.token.loc)], outs=[]))
             ctx.ip += 1
             assert isinstance(op.operand, OpAddr)
             contexts.append(Context(stack=copy(ctx.stack), ip=op.operand, outs=copy(ctx.outs)))
             ctx = contexts[-1]
         elif op.typ == OpType.IFSTAR:
-            type_check_contracts(op.token, ctx, [
-                Contract(ins=[(DataType.BOOL, op.token.loc)], outs=[])
-            ])
+            type_check_contract(op.token, ctx, Contract(ins=[(DataType.BOOL, op.token.loc)], outs=[]))
             ctx.ip += 1
             assert isinstance(op.operand, OpAddr)
             contexts.append(Context(stack=copy(ctx.stack), ip=op.operand, outs=copy(ctx.outs)))
@@ -1010,9 +883,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             assert isinstance(op.operand, OpAddr)
             ctx.ip = op.operand
         elif op.typ == OpType.DO:
-            type_check_contracts(op.token, ctx, [
-                Contract(ins=[(DataType.BOOL, op.token.loc)], outs=[])
-            ])
+            type_check_contract(op.token, ctx, Contract(ins=[(DataType.BOOL, op.token.loc)], outs=[]))
             assert isinstance(op.operand, OpAddr)
             if ctx.ip in visited_dos:
                 expected_types = list(map(lambda x: x[0], visited_dos[ctx.ip]))
