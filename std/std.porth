@@ -360,21 +360,46 @@ const PROT_WRITE 2 end
 
 const sizeof(timespec) 16 end
 
+proc ptr+ ptr int -- ptr in swap cast(int) + cast(ptr) end
+proc ptr- ptr int -- ptr in
+  swap cast(int)
+  swap cast(int)
+  -
+  cast(ptr)
+end
+proc ptr!= ptr ptr -- bool in
+  swap cast(int)
+  swap cast(int)
+  !=
+end
+proc ptr= ptr ptr -- bool in
+  swap cast(int)
+  swap cast(int)
+  =
+end
+proc +ptr int ptr -- ptr in cast(int) + cast(ptr) end
+
+proc ptr-diff ptr ptr -- int in
+  swap cast(int)
+  swap cast(int)
+  -
+end
+
 const sizeof(stat) 144 end
-proc stat.st_dev     ptr -- ptr in 0 + end
-proc stat.st_ino     ptr -- ptr in 8 + end
-proc stat.st_mode    ptr -- ptr in 24 + end
-proc stat.st_nlink   ptr -- ptr in 16 + end
-proc stat.st_uid     ptr -- ptr in 28 + end
-proc stat.st_gid     ptr -- ptr in 32 + end
-proc stat.st_rdev    ptr -- ptr in 40 + end
-proc stat.st_size    ptr -- ptr in 48 + end
+proc stat.st_dev     ptr -- ptr in 0   ptr+ end
+proc stat.st_ino     ptr -- ptr in 8   ptr+ end
+proc stat.st_mode    ptr -- ptr in 24  ptr+ end
+proc stat.st_nlink   ptr -- ptr in 16  ptr+ end
+proc stat.st_uid     ptr -- ptr in 28  ptr+ end
+proc stat.st_gid     ptr -- ptr in 32  ptr+ end
+proc stat.st_rdev    ptr -- ptr in 40  ptr+ end
+proc stat.st_size    ptr -- ptr in 48  ptr+ end
 proc @stat.st_size   ptr -- int in stat.st_size @64 end
-proc stat.st_blksize ptr -- ptr in 56 + end
-proc stat.st_blocks  ptr -- ptr in 64 + end
-proc stat.st_atim    ptr -- ptr in 72 + end
-proc stat.st_mtim    ptr -- ptr in 88 + end
-proc stat.st_ctim    ptr -- ptr in 104 + end
+proc stat.st_blksize ptr -- ptr in 56  ptr+ end
+proc stat.st_blocks  ptr -- ptr in 64  ptr+ end
+proc stat.st_atim    ptr -- ptr in 72  ptr+ end
+proc stat.st_mtim    ptr -- ptr in 88  ptr+ end
+proc stat.st_ctim    ptr -- ptr in 104 ptr+ end
 const sizeof(stat.st_dev) sizeof(u64) end
 const sizeof(stat.st_ino) sizeof(u64) end
 const sizeof(stat.st_mode) sizeof(u32) end
@@ -413,7 +438,25 @@ proc mod int int -- int in % end
 proc div int int -- int in / end
 
 proc nth_argv int -- ptr in
-  8 * argv + @64 cast(ptr)
+  8 * argv +ptr @64 cast(ptr)
+end
+
+proc lnot bool -- bool in
+  cast(int) 1 - cast(bool)
+end
+
+proc land bool bool -- bool in
+  swap cast(int)
+  swap cast(int)
+  and
+  cast(bool)
+end
+
+proc lor bool bool -- bool in
+  swap cast(int)
+  swap cast(int)
+  or
+  cast(bool)
 end
 
 proc inc64-by ptr int in over @64 + swap !64 end
@@ -435,23 +478,23 @@ end
 
 proc cstrlen ptr -- int in
   dup
-  while dup @8 0 != do 1 + end
-  swap -
+  while dup @8 0 != do 1 ptr+ end
+  swap ptr-diff
 end
 
 proc cstreq ptr ptr -- bool in
   while
-    over @8 0 != over @8 0 != and if
+    over @8 0 != over @8 0 != land if
        over @8 over @8 =
     else
        false
     end
   do
-    1 + swap 1 +
+    1 ptr+ swap 1 ptr+
   end
   @8 0 =
   swap @8 0 =
-  and
+  land
 end
 
 proc cstr-to-str ptr -- int ptr in dup cstrlen swap end
@@ -465,8 +508,8 @@ const offsetof(Str.count) sizeof(u64) offset end
 const offsetof(Str.data) sizeof(ptr) offset end
 const sizeof(Str) reset end
 
-proc Str.count ptr -- ptr in offsetof(Str.count) + end
-proc Str.data ptr -- ptr in offsetof(Str.data) + end
+proc Str.count ptr -- ptr in offsetof(Str.count) ptr+ end
+proc Str.data ptr -- ptr in offsetof(Str.data) ptr+ end
 proc @Str.count ptr -- int in Str.count @64 end
 proc @Str.data ptr -- ptr in Str.data  @64 cast(ptr) end
 proc !Str.count int ptr in Str.count !64 end
@@ -538,8 +581,8 @@ in
   <= if
     0 while
       dup prefix @Str.count < if
-        dup  input  @Str.data + @8
-        over prefix @Str.data + @8
+        dup  input  @Str.data +ptr @8
+        over prefix @Str.data +ptr @8
         =
       else false end
     do 1 + end
@@ -548,7 +591,7 @@ in
 end
 
 proc ?str-empty ptr -- bool in
-  offsetof(Str.count) +
+  offsetof(Str.count) ptr+
   @64
   0 =
 end
@@ -566,8 +609,8 @@ in
   a @Str.count b @Str.count = if
     0 while
       dup a @Str.count < if
-        dup a @Str.data + @8
-        over b @Str.data + @8
+        dup a @Str.data +ptr @8
+        over b @Str.data +ptr @8
         =
       else false end
     do 1 + end
@@ -581,7 +624,7 @@ proc isdigit int -- bool in
     '0' >=
   swap
     '9' <=
-  and
+  land
 end
 
 // TODO: rename isalpha to ?alpha
@@ -591,14 +634,14 @@ proc isalpha int -- bool in
       'a' >=
     swap
       'z' <=
-    and
+    land
   swap
     dup
       'A' >=
     swap
       'Z' <=
-    and
-  or
+    land
+  lor
 end
 
 // TODO: rename isalnum to ?alnum
@@ -607,7 +650,7 @@ proc isalnum int -- bool in
     isdigit
   swap
     isalpha
-  or
+  lor
 end
 
 proc try-parse-int
@@ -630,12 +673,6 @@ in
   input @Str.count 0 <=
 end
 
-// Custom logical not, since the intrinsic `not` is the bitwise one and does not allow
-// to properly invert a boolean.
-proc lnot bool -- bool in
-  cast(int) 1 - cast(bool)
-end
-
 const PUTU_BUFFER_CAP 32 end
 // TODO: fputu should fail if write call fails
 // TODO: fputu does not print negative numbers
@@ -647,15 +684,15 @@ proc fputu int int in
   dup 0 = if
     "0" fd @64 fputs
   else
-    buffer PUTU_BUFFER_CAP +
+    buffer PUTU_BUFFER_CAP ptr+
     while over 0 > do
-      1 - dup rot
+      1 ptr- dup rot
       10 divmod
       rot swap '0' + swap !8 swap
     end
 
     dup
-    buffer PUTU_BUFFER_CAP + swap - swap fd @64 fputs
+    buffer PUTU_BUFFER_CAP ptr+ swap ptr-diff swap fd @64 fputs
   end
   drop
 end
@@ -742,14 +779,14 @@ in
 
   envp
   while
-    dup @ptr NULL != if
+    dup @ptr NULL ptr!= if
       dup @ptr cstr-to-str env-value !Str
       '=' env-name env-value str-chop-by-delim
       env-name @Str name @Str streq lnot
     else false end
-  do 8 + end
+  do 8 ptr+ end
 
-  NULL != if
+  NULL ptr!= if
     env-value @Str.data
   else
     NULL
@@ -762,8 +799,8 @@ memory tmp-start TMP_CAP end
 memory tmp-size sizeof(u64) end
 
 proc tmp-clean in 0 tmp-size !64 end
-proc tmp-end -- ptr in tmp-start tmp-size @64 + end
-proc tmp-rewind ptr in tmp-start - tmp-size !int end
+proc tmp-end -- ptr in tmp-start tmp-size @64 ptr+ end
+proc tmp-rewind ptr in tmp-start ptr-diff tmp-size !int end
 
 proc tmp-alloc
   int
@@ -808,7 +845,7 @@ in
 
   "PATH" getenv
 
-  dup NULL = if
+  dup NULL ptr= if
     "Could not find $PATH\n" eputs
     1 exit
   else
@@ -853,7 +890,7 @@ in
   count @ptr @int > if
     over
     count @ptr @int *
-    array @ptr +
+    array @ptr +ptr
     memcpy drop
 
     count @ptr @int
@@ -877,20 +914,20 @@ in
 
   dup 0 = if
     drop
-    buffer @ptr PUTU_BUFFER_CAP + 1 -
+    buffer @ptr PUTU_BUFFER_CAP ptr+ 1 ptr-
     '0' over !64
     1 swap
   else
-    buffer @ptr PUTU_BUFFER_CAP +
+    buffer @ptr PUTU_BUFFER_CAP ptr+
     while over 0 > do
-      1 - dup rot
+      1 ptr- dup rot
       10 divmod
       rot swap '0' + swap !8 swap
     end
 
     swap drop
 
-    dup buffer @ptr PUTU_BUFFER_CAP + swap - swap
+    dup buffer @ptr PUTU_BUFFER_CAP ptr+ swap ptr-diff swap
   end
 end
 
@@ -976,11 +1013,11 @@ in
     else false end
   do
     swap 1 -
-    swap 1 +
+    swap 1 ptr+
   end
   drop 0 >
   ch @int isalnum
-  or
+  lor
 end
 
 proc ?shell-safe-str
@@ -994,7 +1031,7 @@ in
     else false end
   do
     swap 1 -
-    swap 1 +
+    swap 1 ptr+
   end
   drop 0 =
 end
@@ -1019,11 +1056,11 @@ in
         end
 
         swap 1 -
-        swap 1 +
+        swap 1 ptr+
       end 2drop
     "'" tmp-append drop
 
-    tmp-end result @ptr -
+    tmp-end result @ptr ptr-diff
     result @ptr
   end
 end
