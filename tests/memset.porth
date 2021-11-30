@@ -5,7 +5,7 @@ memory xs sizeof(u64) N * end
 
 proc dump-xs in
   0 while dup N < do
-    dup sizeof(u64) * xs +
+    dup sizeof(u64) * xs +ptr
     @64
     print
     1 +
@@ -15,7 +15,7 @@ end
 
 0 while dup N < do
   dup
-  dup sizeof(u64) * xs +
+  dup sizeof(u64) * xs +ptr
   !64
   1 +
 end
