@@ -3,8 +3,8 @@ include "./std.porth"
 const offsetof(Node.value) sizeof(u64) offset end
 const offsetof(Node.prev)  sizeof(u64) offset end
 const sizeof(Node) reset end
-proc Node.value ptr -- ptr in offsetof(Node.value) + end
-proc Node.prev  ptr -- ptr in offsetof(Node.prev) + end
+proc Node.value ptr -- ptr in offsetof(Node.value) ptr+ end
+proc Node.prev  ptr -- ptr in offsetof(Node.prev) ptr+ end
 proc @Node.value ptr -- int in Node.value @64 end
 proc @Node.prev  ptr -- int in Node.prev  @64 end
 proc !Node.value int ptr in Node.value !64 end
@@ -18,7 +18,7 @@ memory nodes_count sizeof(u64) end
 memory nodes sizeof(Node) NODES_CAP * end
 
 proc alloc_node -- ptr in
-  nodes_count @64 sizeof(Node) * nodes +
+  nodes_count @64 sizeof(Node) * nodes +ptr
   nodes_count dup @64 1 + swap !64
 end
 

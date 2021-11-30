@@ -30,7 +30,7 @@ proc generate-pixels in
   69 srand
   0 while dup PIXELS_ROWS PIXELS_COLS * < do
     rand sum-bytes 255 and
-    over pixels + !8
+    over pixels +ptr !8
     1 +
   end drop
 end
@@ -73,13 +73,13 @@ proc main in
       PIXELS_COLS *
       +
 
-      pixels + @8
+      pixels +ptr @8
       dup
       dup
 
-      bytes     !8
-      bytes 1 + !8
-      bytes 2 + !8
+      bytes        !8
+      bytes 1 ptr+ !8
+      bytes 2 ptr+ !8
 
       3 bytes fd @64 fputs
 

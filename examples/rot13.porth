@@ -5,16 +5,16 @@ memory buffer BUFFER_CAP end
 
 while BUFFER_CAP buffer stdin read dup 0 > do
   0 while 2dup > do
-    dup buffer + @8
+    dup buffer +ptr @8
 
-    dup 'a' >= over 'z' <= and if
+    dup 'a' >= over 'z' <= land if
       2dup 'a' - 13 + 26 mod 'a' +
-      swap buffer + !8
+      swap buffer +ptr !8
     end
 
-    dup 'A' >= over 'Z' <= and if
+    dup 'A' >= over 'Z' <= land if
       2dup 'A' - 13 + 26 mod 'A' +
-      swap buffer + !8
+      swap buffer +ptr !8
     end
 
     drop

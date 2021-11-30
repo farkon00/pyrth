@@ -22,22 +22,22 @@ memory canvas sizeof(pixel) WIDTH * HEIGHT * end
   0 while dup WIDTH < do
     2dup CELL_WIDTH /
     swap CELL_HEIGHT /
-    + 
+    +
     2 %
     0 = if
-      2dup swap WIDTH * + sizeof(pixel) * canvas +
-      dup 255 swap !8 1 +
-      dup 0   swap !8 1 +
+      2dup swap WIDTH * + sizeof(pixel) * canvas +ptr
+      dup 255 swap !8 1 ptr+
+      dup 0   swap !8 1 ptr+
       dup 255 swap !8 drop
     else
-      2dup swap WIDTH * + sizeof(pixel) * canvas +
-      dup 0   swap !8 1 +
-      dup 0   swap !8 1 +
+      2dup swap WIDTH * + sizeof(pixel) * canvas +ptr
+      dup 0   swap !8 1 ptr+
+      dup 0   swap !8 1 ptr+
       dup 0   swap !8 drop
     end
     1 +
   end drop
-  1 + 
+  1 +
 end drop
 
 memory file_path_cstr sizeof(ptr) end
