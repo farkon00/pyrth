@@ -12,11 +12,11 @@ const sizeof(Loc) reset end
 proc fputloc ptr int in
   memory fd sizeof(u64) end
   fd !64
-  dup Loc.file-path + @Str fd @64 fputs
-  ":"                      fd @64 fputs
-  dup Loc.row + @64        fd @64 fputu
-  ":"                      fd @64 fputs
-  dup Loc.col + @64        fd @64 fputu
+  dup Loc.file-path ptr+ @Str fd @64 fputs
+  ":"                         fd @64 fputs
+  dup Loc.row ptr+ @64        fd @64 fputu
+  ":"                         fd @64 fputs
+  dup Loc.col ptr+ @64        fd @64 fputu
   drop
 end
 proc putloc ptr in stdout fputloc end
@@ -51,7 +51,7 @@ const STRBUF_CAP 32 1024 * end
 memory strbuf-size sizeof(int) end
 memory strbuf-start STRBUF_CAP end
 
-proc strbuf-end -- ptr in strbuf-start strbuf-size @int + end
+proc strbuf-end -- ptr in strbuf-start strbuf-size @int ptr+ end
 proc strbuf-append-char int in
   strbuf-size @int STRBUF_CAP >= if
     here eputs ": Assertion Failed: string literal buffer overflow\n" eputs
@@ -80,14 +80,14 @@ in
   memory start sizeof(ptr) end
   strbuf-end start !ptr
 
-  dup Loc.file-path + @Str   strbuf-append-str
-  ":"                        strbuf-append-str
-  dup Loc.row + @64 tmp-utos strbuf-append-str
-  ":"                        strbuf-append-str
-  dup Loc.col + @64 tmp-utos strbuf-append-str
+  dup Loc.file-path ptr+ @Str   strbuf-append-str
+  ":"                           strbuf-append-str
+  dup Loc.row ptr+ @64 tmp-utos strbuf-append-str
+  ":"                           strbuf-append-str
+  dup Loc.col ptr+ @64 tmp-utos strbuf-append-str
   drop
 
-  strbuf-end start @ptr -
+  strbuf-end start @ptr ptr-diff
   start @ptr
 end
 /// END Strbuf //////////////////////////////
@@ -106,15 +106,15 @@ proc lexer-next-line ptr in
   lexer !64
 
   '\n'
-  lexer @ptr Lexer.line +
-  lexer @ptr Lexer.content +
+  lexer @ptr Lexer.line ptr+
+  lexer @ptr Lexer.content ptr+
   str-chop-by-delim
 
-  lexer @ptr Lexer.line + offsetof(Str.data) + @ptr
-  lexer @ptr Lexer.line-start +
+  lexer @ptr Lexer.line ptr+ offsetof(Str.data) ptr+ @ptr
+  lexer @ptr Lexer.line-start ptr+
   !64
 
-  lexer @ptr Lexer.row + inc64
+  lexer @ptr Lexer.row ptr+ inc64
 end
 
 proc lexer-loc
@@ -128,21 +128,21 @@ in
 
   // File Path
   sizeof(Str)
-  lexer @ptr Lexer.file-path +
-  loc   @ptr Loc.file-path   +
+  lexer @ptr Lexer.file-path ptr+
+  loc   @ptr Loc.file-path   ptr+
   memcpy
   drop
 
   // Row
-  lexer @ptr Lexer.row + @int
-  loc   @ptr Loc.row   + !int
+  lexer @ptr Lexer.row ptr+ @int
+  loc   @ptr Loc.row   ptr+ !int
 
   // Column
-  lexer @ptr Lexer.line + offsetof(Str.data) + @ptr
-  lexer @ptr Lexer.line-start + @ptr
-  -
+  lexer @ptr Lexer.line ptr+ offsetof(Str.data) ptr+ @ptr
+  lexer @ptr Lexer.line-start ptr+ @ptr
+  ptr-diff
   1 +
-  loc @ptr Loc.col +
+  loc @ptr Loc.col ptr+
   !int
 end
 
@@ -169,7 +169,7 @@ in
   memory closed sizeof(bool) end
   false closed !bool
 
-  lexer @ptr Lexer.line +
+  lexer @ptr Lexer.line ptr+
     while
       dup ?str-empty lnot if
         dup @Str.data @8 quote @int = if
@@ -245,71 +245,71 @@ in
 
   lexer @ptr
   while
-    dup Lexer.line + str-trim-left
+    dup Lexer.line ptr+ str-trim-left
 
-    dup Lexer.line + ?str-empty if
-      dup Lexer.content + ?str-empty lnot
+    dup Lexer.line ptr+ ?str-empty if
+      dup Lexer.content ptr+ ?str-empty lnot
     else
-      dup Lexer.line +
+      dup Lexer.line ptr+
       "//" rot @Str str-starts-with
     end
   do dup lexer-next-line end
 
-  dup Lexer.line + ?str-empty lnot if
-    token @ptr Token.loc +
+  dup Lexer.line ptr+ ?str-empty lnot if
+    token @ptr Token.loc ptr+
     lexer @ptr
     lexer-loc
 
-    dup Lexer.line + @Str.data @8 '"' = if
+    dup Lexer.line ptr+ @Str.data @8 '"' = if
        // String literal
-       dup Lexer.line + str-chop-one-left
+       dup Lexer.line ptr+ str-chop-one-left
        '"' lexer-consume-strlit word !Str
-       word @Str token @ptr Token.value + !Str
+       word @Str token @ptr Token.value ptr+ !Str
 
-       lexer @ptr Lexer.line + ?str-empty lnot if
-         lexer @ptr Lexer.line + @Str.data @8 'c' = if
-           lexer @ptr Lexer.line + str-chop-one-left
+       lexer @ptr Lexer.line ptr+ ?str-empty lnot if
+         lexer @ptr Lexer.line ptr+ @Str.data @8 'c' = if
+           lexer @ptr Lexer.line ptr+ str-chop-one-left
            0 strbuf-append-char
-           token @ptr Token.value + offsetof(Str.count) + inc64
-           TOKEN_CSTR token @ptr Token.type + !64
+           token @ptr Token.value ptr+ offsetof(Str.count) ptr+ inc64
+           TOKEN_CSTR token @ptr Token.type ptr+ !64
          else
-           TOKEN_STR token @ptr Token.type + !64
+           TOKEN_STR token @ptr Token.type ptr+ !64
          end
        else
-         TOKEN_STR token @ptr Token.type + !64
+         TOKEN_STR token @ptr Token.type ptr+ !64
        end
-    else dup Lexer.line + @Str.data @8 '\'' = if*
+    else dup Lexer.line ptr+ @Str.data @8 '\'' = if*
        // Character literal
-       dup Lexer.line + str-chop-one-left
+       dup Lexer.line ptr+ str-chop-one-left
        '\'' lexer-consume-strlit word !Str
 
        word @Str.count 1 = if
-         word @Str.data @8 token @ptr Token.value + !int
+         word @Str.data @8 token @ptr Token.value ptr+ !int
        else
-         token @ptr Token.loc + eputloc ": only a single byte is allowed inside of a character literal\n" eputs
+         token @ptr Token.loc ptr+ eputloc ": only a single byte is allowed inside of a character literal\n" eputs
          1 exit
        end
 
-       TOKEN_CHAR token @ptr Token.type + !64
+       TOKEN_CHAR token @ptr Token.type ptr+ !64
     else
        // Word or integer literal
 
        ' '               // delim
        word              // word
-       rot Lexer.line +  // line
+       rot Lexer.line ptr+  // line
        str-chop-by-delim
 
        word @Str try-parse-int if
-          token @ptr Token.value + !64
-          TOKEN_INT token @ptr Token.type  + !64
+          token @ptr Token.value ptr+ !64
+          TOKEN_INT token @ptr Token.type  ptr+ !64
        else
           drop // number from try-parse-int
-          word @Str  token @ptr Token.value + !Str
-          TOKEN_WORD token @ptr Token.type + !64
+          word @Str  token @ptr Token.value ptr+ !Str
+          TOKEN_WORD token @ptr Token.type ptr+ !64
        end
     end
 
-    word @Str token @ptr Token.text + !Str
+    word @Str token @ptr Token.text ptr+ !Str
 
     true
   else
@@ -324,8 +324,8 @@ proc lex-file ptr in
 
   memory lexer sizeof(Lexer) end
   sizeof(Lexer) 0 lexer memset drop
-  file-path-cstr @ptr map-file    lexer Lexer.content   + !Str
-  file-path-cstr @ptr cstr-to-str lexer Lexer.file-path + !Str
+  file-path-cstr @ptr map-file    lexer Lexer.content   ptr+ !Str
+  file-path-cstr @ptr cstr-to-str lexer Lexer.file-path ptr+ !Str
 
   memory token sizeof(Token) end
 
@@ -333,23 +333,23 @@ proc lex-file ptr in
 
     assert "Exhaustive handling of token types in lex-file" COUNT_TOKENS 5 = end
 
-    token Token.loc + // loc
-    dup Loc.file-path + @Str puts ":" puts
-    dup Loc.row + @64 putu        ":" puts
-    dup Loc.col + @64 putu        ": " puts
+    token Token.loc ptr+ // loc
+    dup Loc.file-path ptr+ @Str puts ":" puts
+    dup Loc.row ptr+ @64 putu        ":" puts
+    dup Loc.col ptr+ @64 putu        ": " puts
     drop // loc
 
-    token Token.type + @64 // token.type
+    token Token.type ptr+ @64 // token.type
     dup TOKEN_INT = if
-      "[INTEGER] " puts token Token.value + @int putu "\n" puts
+      "[INTEGER] " puts token Token.value ptr+ @int putu "\n" puts
     else dup TOKEN_WORD = if*
-      "[WORD] " puts token Token.value + @Str puts "\n" puts
+      "[WORD] " puts token Token.value ptr+ @Str puts "\n" puts
     else dup TOKEN_STR = if*
-      "[STR] \"" puts token Token.value + @Str puts "\"\n" puts
+      "[STR] \"" puts token Token.value ptr+ @Str puts "\"\n" puts
     else dup TOKEN_CSTR = if*
-      "[CSTR] \"" puts token Token.value + @Str puts "\"\n" puts
+      "[CSTR] \"" puts token Token.value ptr+ @Str puts "\"\n" puts
     else dup TOKEN_CHAR = if*
-      "[CHAR] " puts token Token.value + @int putu "\n" puts
+      "[CHAR] " puts token Token.value ptr+ @int putu "\n" puts
     else
       here eputs ": Unreachable. Unknown token type.\n" eputs
       1 exit
@@ -413,7 +413,7 @@ proc intrinsic-name
   int ptr // name
 in
   assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 43 = end
-       dup INTRINSIC_PLUS      = if  drop "+"
+       dup INTRINSIC_PLUS      = if  drop "ptr+"
   else dup INTRINSIC_MINUS     = if* drop "-"
   else dup INTRINSIC_MUL       = if* drop "*"
   else dup INTRINSIC_DIVMOD    = if* drop "divmod"
@@ -588,9 +588,9 @@ proc push-op
   ptr // token
 in
   memory op sizeof(Op) end
-  sizeof(Token) swap op Op.token + memcpy drop
-  op Op.operand + !int
-  op Op.type + !int
+  sizeof(Token) swap op Op.token ptr+ memcpy drop
+  op Op.operand ptr+ !int
+  op Op.type ptr+ !int
 
   sizeof(Op) op OPS_CAP ops ops-count append-item lnot if
     here eputs ": ERROR: ops overflow\n" eputs 1 exit
@@ -600,13 +600,13 @@ end
 
 proc dump-ops in
   0 while dup ops-count @64 < do
-    dup sizeof(Op) * ops +
-    dup Op.token + Token.loc + putloc ": " puts
-    over putu ": " puts dup Op.type + @64 op-type-as-str puts " " puts
-    dup Op.type + @64 OP_INTRINSIC = if
-      Op.operand + @64 intrinsic-name puts
+    dup sizeof(Op) * ops +ptr
+    dup Op.token ptr+ Token.loc ptr+ putloc ": " puts
+    over putu ": " puts dup Op.type ptr+ @64 op-type-as-str puts " " puts
+    dup Op.type ptr+ @64 OP_INTRINSIC = if
+      Op.operand ptr+ @64 intrinsic-name puts
     else
-      Op.operand + @64 putu
+      Op.operand ptr+ @64 putu
     end
     "\n" puts
     1 +
@@ -663,7 +663,7 @@ in
 
   0 while
     dup consts-count @64 < if
-      dup sizeof(Const) * consts + Const.name + @Str
+      dup sizeof(Const) * consts +ptr Const.name ptr+ @Str
       name @Str
       streq
       lnot
@@ -671,7 +671,7 @@ in
   do 1 + end
 
   dup consts-count @64 < if
-    sizeof(Const) * consts +
+    sizeof(Const) * consts +ptr
   else
     drop NULL
   end
@@ -709,7 +709,7 @@ in
 
   0 while
     dup procs-count @64 < if
-      dup sizeof(Proc) * procs + Proc.name + @Str
+      dup sizeof(Proc) * procs +ptr Proc.name ptr+ @Str
       name @Str
       streq
       lnot
@@ -717,7 +717,7 @@ in
   do 1 + end
 
   dup procs-count @64 < if
-    sizeof(Proc) * procs +
+    sizeof(Proc) * procs +ptr
   else
     drop NULL
   end
@@ -766,7 +766,7 @@ in
 
   0 while
     dup local-memories-count @64 < if
-      dup sizeof(Memory) * local-memories + Memory.name + @Str
+      dup sizeof(Memory) * local-memories +ptr Memory.name ptr+ @Str
       name @Str
       streq
       lnot
@@ -774,7 +774,7 @@ in
   do 1 + end
 
   dup local-memories-count @64 < if
-    sizeof(Memory) * local-memories +
+    sizeof(Memory) * local-memories +ptr
   else
     drop NULL
   end
@@ -790,7 +790,7 @@ in
 
   0 while
     dup global-memories-count @64 < if
-      dup sizeof(Memory) * global-memories + Memory.name + @Str
+      dup sizeof(Memory) * global-memories +ptr Memory.name ptr+ @Str
       name @Str
       streq
       lnot
@@ -798,7 +798,7 @@ in
   do 1 + end
 
   dup global-memories-count @64 < if
-    sizeof(Memory) * global-memories +
+    sizeof(Memory) * global-memories +ptr
   else
     drop NULL
   end
@@ -833,7 +833,7 @@ proc cmd-echoed ptr in
     dup while dup @64 0 != do
       " " puts
       dup @64 cast(ptr) cstr-to-str shell-escape puts
-      8 +
+      8 ptr+
     end drop
     "\n" puts
   end
@@ -962,7 +962,7 @@ proc generate-nasm-linux-x86_64 ptr in
   "    mov [ret_stack_rsp], rax\n"         out-fd @64 fputs
 
   0 while dup ops-count @64 < do
-    dup sizeof(Op) * ops +
+    dup sizeof(Op) * ops +ptr
 
     assert "Exhaustive handling of Op types in generate-nasm-linux-x86_64" COUNT_OPS 16 = end
 
@@ -970,86 +970,86 @@ proc generate-nasm-linux-x86_64 ptr in
     over    out-fd @64 fputu
     ":\n"   out-fd @64 fputs
 
-    dup Op.type + @64 OP_PUSH_INT = if
-       "    mov rax, "        out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n"    out-fd @64 fputs
+    dup Op.type ptr+ @64 OP_PUSH_INT = if
+       "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
        "    push rax\n"       out-fd @64 fputs
-    else dup Op.type + @64 OP_PUSH_LOCAL_MEM = if*
+    else dup Op.type ptr+ @64 OP_PUSH_LOCAL_MEM = if*
        "    mov rax, [ret_stack_rsp]\n" out-fd @64 fputs
        "    add rax, "                  out-fd @64 fputs
-       dup Op.operand + @64             out-fd @64 fputu
+       dup Op.operand ptr+ @64             out-fd @64 fputu
        "\n"                             out-fd @64 fputs
        "    push rax\n"                 out-fd @64 fputs
-    else dup Op.type + @64 OP_PUSH_GLOBAL_MEM = if*
+    else dup Op.type ptr+ @64 OP_PUSH_GLOBAL_MEM = if*
        "    mov rax, mem\n" out-fd @64 fputs
-       "    add rax, "      out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n"    out-fd @64 fputs
+       "    add rax, "      out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
        "    push rax\n"     out-fd @64 fputs
-    else dup Op.type + @64 OP_PUSH_STR = if*
+    else dup Op.type ptr+ @64 OP_PUSH_STR = if*
        "    mov rax, " out-fd @64 fputs
-         dup Op.operand + @64
+         dup Op.operand ptr+ @64
          sizeof(Str) *
-         strlits +
+         strlits +ptr
          @Str.count
          out-fd @64 fputu
        "\n" out-fd @64 fputs
 
        "    push rax\n"     out-fd @64 fputs
        "    push str_"      out-fd @64 fputs
-       dup Op.operand + @64 out-fd @64 fputu
+       dup Op.operand ptr+ @64 out-fd @64 fputu
        "\n"                 out-fd @64 fputs
-    else dup Op.type + @64 OP_PUSH_CSTR = if*
+    else dup Op.type ptr+ @64 OP_PUSH_CSTR = if*
        "    push str_"      out-fd @64 fputs
-       dup Op.operand + @64 out-fd @64 fputu
+       dup Op.operand ptr+ @64 out-fd @64 fputu
        "\n"                 out-fd @64 fputs
-    else dup Op.type + @64 OP_IF = if*
+    else dup Op.type ptr+ @64 OP_IF = if*
        "    pop rax\n"       out-fd @64 fputs
        "    test rax, rax\n" out-fd @64 fputs
-       "    jz addr_"        out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
-    else dup Op.type + @64 OP_IFSTAR = if*
+       "    jz addr_"        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_IFSTAR = if*
        "    pop rax\n"       out-fd @64 fputs
        "    test rax, rax\n" out-fd @64 fputs
-       "    jz addr_"        out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
-    else dup Op.type + @64 OP_ELSE = if*
-       "    jmp addr_"       out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
-    else dup Op.type + @64 OP_END = if*
-       "    jmp addr_"       out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
-    else dup Op.type + @64 OP_WHILE = if*
+       "    jz addr_"        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_ELSE = if*
+       "    jmp addr_"       out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_END = if*
+       "    jmp addr_"       out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_WHILE = if*
        // NOTE: nothing to generate. `while` is basically a label
-    else dup Op.type + @64 OP_DO = if*
+    else dup Op.type ptr+ @64 OP_DO = if*
        "    pop rax\n"       out-fd @64 fputs
        "    test rax, rax\n" out-fd @64 fputs
-       "    jz addr_" out-fd @64 fputs dup Op.operand + @64 out-fd @64 fputu "\n" out-fd @64 fputs
-    else dup Op.type + @64 OP_SKIP_PROC = if*
+       "    jz addr_" out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_SKIP_PROC = if*
        "    jmp addr_"      out-fd @64 fputs
-       dup Op.operand + @64 out-fd @64 fputu
+       dup Op.operand ptr+ @64 out-fd @64 fputu
        "\n"                 out-fd @64 fputs
-    else dup Op.type + @64 OP_PREP_PROC = if*
+    else dup Op.type ptr+ @64 OP_PREP_PROC = if*
        "    sub rsp, "      out-fd @64 fputs
-       dup Op.operand + @64 out-fd @64 fputu
+       dup Op.operand ptr+ @64 out-fd @64 fputu
        "\n"                 out-fd @64 fputs
 
        "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
        "    mov rsp, rax\n"             out-fd @64 fputs
-    else dup Op.type + @64 OP_RET = if*
+    else dup Op.type ptr+ @64 OP_RET = if*
        "    mov rax, rsp\n"             out-fd @64 fputs
        "    mov rsp, [ret_stack_rsp]\n" out-fd @64 fputs
        "    add rsp, "                  out-fd @64 fputs
-       dup Op.operand + @64             out-fd @64 fputu
+       dup Op.operand ptr+ @64             out-fd @64 fputu
        "\n"                             out-fd @64 fputs
        "    ret\n"                      out-fd @64 fputs
-    else dup Op.type + @64 OP_CALL = if*
+    else dup Op.type ptr+ @64 OP_CALL = if*
        "    mov rax, rsp\n"             out-fd @64 fputs
        "    mov rsp, [ret_stack_rsp]\n" out-fd @64 fputs
        "    call addr_"                 out-fd @64 fputs
-       dup Op.operand + @64             out-fd @64 fputu
+       dup Op.operand ptr+ @64             out-fd @64 fputu
        "\n"                             out-fd @64 fputs
        "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
        "    mov rsp, rax\n"             out-fd @64 fputs
-    else dup Op.type + @64 OP_INTRINSIC = if*
+    else dup Op.type ptr+ @64 OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
           COUNT_INTRINSICS 43 =
         end
 
-        dup Op.operand + @64
+        dup Op.operand ptr+ @64
         dup INTRINSIC_PLUS = if
             "    pop rax\n"             out-fd @64 fputs
             "    pop rbx\n"             out-fd @64 fputs
@@ -1308,7 +1308,7 @@ proc generate-nasm-linux-x86_64 ptr in
     "str_"                           out-fd @64 fputs
     dup                              out-fd @64 fputu
     ": db "                          out-fd @64 fputs
-    dup sizeof(Str) * strlits + @Str out-fd @64 fputdecstr
+    dup sizeof(Str) * strlits +ptr @Str out-fd @64 fputdecstr
     "\n"                             out-fd @64 fputs
     1 +
   end drop
@@ -1335,7 +1335,7 @@ proc sim-stack-push int in
   sim-stack-count @64 SIM_STACK_CAP >= if
     here eputs ": ERROR: data stack overflow in simulation mode\n" eputs 1 exit
   end
-  sim-stack sim-stack-count @64 8 * + !64
+  sim-stack sim-stack-count @64 8 * ptr+ !64
   sim-stack-count inc64
 end
 
@@ -1345,7 +1345,7 @@ proc sim-stack-pop -- int in
     1 exit
   end
   sim-stack-count dec64
-  sim-stack sim-stack-count @64 8 * + @64
+  sim-stack sim-stack-count @64 8 * ptr+ @64
 end
 
 const SIM_RET_STACK_CAP 1024 end
@@ -1356,7 +1356,7 @@ proc sim-ret-stack-push int in
   sim-ret-stack-count @64 SIM_RET_STACK_CAP >= if
     here eputs ": ERROR: return stack overflow in simulation mode\n" eputs 1 exit
   end
-  sim-ret-stack sim-ret-stack-count @64 8 * + !64
+  sim-ret-stack sim-ret-stack-count @64 8 * ptr+ !64
   sim-ret-stack-count inc64
 end
 
@@ -1365,7 +1365,7 @@ proc sim-ret-stack-pop -- int in
     here eputs ": ERROR: return stack underflow in simulation mode\n" eputs 1 exit
   end
   sim-ret-stack-count dec64
-  sim-ret-stack sim-ret-stack-count @64 8 * + @64
+  sim-ret-stack sim-ret-stack-count @64 8 * ptr+ @64
 end
 
 const SIM_LOCAL_MEMORY_CAP 640000 end
@@ -1392,7 +1392,7 @@ proc simulate-ops in
     sim-global-memory
     !int
 
-    sim-global-memory @ptr NULL < if
+    sim-global-memory @ptr NULL ptr< if
       here eputs
       ": ERROR: could not allocate " eputs
       global-memory-capacity @64 eputu
@@ -1407,126 +1407,126 @@ proc simulate-ops in
     drop
   end
 
-  sim-local-memory SIM_LOCAL_MEMORY_CAP +
+  sim-local-memory SIM_LOCAL_MEMORY_CAP ptr+
   sim-local-memory-rsp !ptr
 
   0 sim-ip !64
   while sim-ip @64 ops-count @64 < do
     sizeof(Op)
-    sim-ip @64 sizeof(Op) * ops +
+    sim-ip @64 sizeof(Op) * ops +ptr
     sim-op
     memcpy
     drop
 
     assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 16 = end
 
-    sim-op Op.type + @64 OP_PUSH_INT = if
-       sim-op Op.operand + @64 sim-stack-push
+    sim-op Op.type ptr+ @64 OP_PUSH_INT = if
+       sim-op Op.operand ptr+ @64 sim-stack-push
        sim-ip inc64
-    else sim-op Op.type + @64 OP_PUSH_LOCAL_MEM = if*
+    else sim-op Op.type ptr+ @64 OP_PUSH_LOCAL_MEM = if*
       sim-local-memory-rsp @ptr
-      sim-op Op.operand + @int
-      +
+      sim-op Op.operand ptr+ @int
+      ptr+
       cast(int)
       sim-stack-push
       sim-ip inc64
-    else sim-op Op.type + @64 OP_PUSH_GLOBAL_MEM = if*
+    else sim-op Op.type ptr+ @64 OP_PUSH_GLOBAL_MEM = if*
       sim-global-memory @ptr
-      sim-op Op.operand + @int
-      +
+      sim-op Op.operand ptr+ @int
+      ptr+
       cast(int)
       sim-stack-push
       sim-ip inc64
-    else sim-op Op.type + @64 OP_PUSH_STR = if*
-      sim-op Op.operand + @64
+    else sim-op Op.type ptr+ @64 OP_PUSH_STR = if*
+      sim-op Op.operand ptr+ @64
       sizeof(Str) *
-      strlits +
+      strlits +ptr
       @Str
       swap
       sim-stack-push
       cast(int) sim-stack-push
       sim-ip inc64
-    else sim-op Op.type + @64 OP_PUSH_CSTR = if*
-      sim-op Op.operand + @64
+    else sim-op Op.type ptr+ @64 OP_PUSH_CSTR = if*
+      sim-op Op.operand ptr+ @64
       sizeof(Str) *
-      strlits +
+      strlits +ptr
       @Str
       swap
       drop
       cast(int) sim-stack-push
       sim-ip inc64
-    else sim-op Op.type + @64 OP_IF = if*
+    else sim-op Op.type ptr+ @64 OP_IF = if*
       sim-stack-pop cast(bool) if
         sim-ip inc64
       else
-        sim-op Op.operand + @64 sim-ip !64
+        sim-op Op.operand ptr+ @64 sim-ip !64
       end
-    else sim-op Op.type + @64 OP_IFSTAR = if*
+    else sim-op Op.type ptr+ @64 OP_IFSTAR = if*
       sim-stack-pop cast(bool) if
         sim-ip inc64
       else
-        sim-op Op.operand + @64 sim-ip !64
+        sim-op Op.operand ptr+ @64 sim-ip !64
       end
-    else sim-op Op.type + @64 OP_ELSE = if*
-      sim-op Op.operand + @64 sim-ip !64
-    else sim-op Op.type + @64 OP_END = if*
-      sim-op Op.operand + @64 sim-ip !64
-    else sim-op Op.type + @64 OP_WHILE = if*
+    else sim-op Op.type ptr+ @64 OP_ELSE = if*
+      sim-op Op.operand ptr+ @64 sim-ip !64
+    else sim-op Op.type ptr+ @64 OP_END = if*
+      sim-op Op.operand ptr+ @64 sim-ip !64
+    else sim-op Op.type ptr+ @64 OP_WHILE = if*
       sim-ip inc64
       // NOTE: nothing to simulate. `while` is basically a label
-    else sim-op Op.type + @64 OP_DO = if*
+    else sim-op Op.type ptr+ @64 OP_DO = if*
       sim-stack-pop cast(bool) if
         sim-ip inc64
       else
-        sim-op Op.operand + @64 sim-ip !64
+        sim-op Op.operand ptr+ @64 sim-ip !64
       end
-    else sim-op Op.type + @64 OP_SKIP_PROC = if*
-      sim-op Op.operand + @64 sim-ip !64
-    else sim-op Op.type + @64 OP_PREP_PROC = if*
+    else sim-op Op.type ptr+ @64 OP_SKIP_PROC = if*
+      sim-op Op.operand ptr+ @64 sim-ip !64
+    else sim-op Op.type ptr+ @64 OP_PREP_PROC = if*
       sim-local-memory-rsp @64
-      sim-op Op.operand + @64
+      sim-op Op.operand ptr+ @64
       -
       sim-local-memory-rsp
       !64
 
-      sim-local-memory-rsp @ptr sim-local-memory < if
+      sim-local-memory-rsp @ptr sim-local-memory ptr< if
         here eputs ": ERROR: local memory capacity exceeded in the simulation mode\n" eputs
-        sim-op Op.token + Token.loc + eputloc ": NOTE: the error has happened here\n" eputs
+        sim-op Op.token ptr+ Token.loc ptr+ eputloc ": NOTE: the error has happened here\n" eputs
         1 exit
       end
 
       sim-ip inc64
-    else sim-op Op.type + @64 OP_RET = if*
+    else sim-op Op.type ptr+ @64 OP_RET = if*
       sim-local-memory-rsp @64
-      sim-op Op.operand + @64
+      sim-op Op.operand ptr+ @64
       +
       sim-local-memory-rsp !64
       sim-ret-stack-pop sim-ip !64
-    else sim-op Op.type + @64 OP_CALL = if*
+    else sim-op Op.type ptr+ @64 OP_CALL = if*
       sim-ip @64 1 + sim-ret-stack-push
-      sim-op Op.operand + @64 sim-ip !64
-    else sim-op Op.type + @64 OP_INTRINSIC = if*
+      sim-op Op.operand ptr+ @64 sim-ip !64
+    else sim-op Op.type ptr+ @64 OP_INTRINSIC = if*
       assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
         COUNT_INTRINSICS 43 =
       end
 
-      sim-op Op.operand + @64 INTRINSIC_PLUS = if
+      sim-op Op.operand ptr+ @64 INTRINSIC_PLUS = if
         sim-stack-pop
         sim-stack-pop
         +
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_MINUS = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_MINUS = if*
         sim-stack-pop
         sim-stack-pop
         swap
         -
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_MUL = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_MUL = if*
         sim-stack-pop
         sim-stack-pop
         *
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_DIVMOD = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_DIVMOD = if*
         sim-stack-pop
         sim-stack-pop
         swap
@@ -1534,95 +1534,95 @@ proc simulate-ops in
         swap
         sim-stack-push
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_MAX = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_MAX = if*
         sim-stack-pop
         sim-stack-pop
         max
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_SHR = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_SHR = if*
         sim-stack-pop
         sim-stack-pop
         swap
         shr
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_SHL = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_SHL = if*
         sim-stack-pop
         sim-stack-pop
         swap
         shl
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_OR = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_OR = if*
         sim-stack-pop
         sim-stack-pop
         or
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_AND = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_AND = if*
         sim-stack-pop
         sim-stack-pop
         and
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_NOT = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_NOT = if*
         sim-stack-pop
         not
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_PRINT = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_PRINT = if*
         sim-stack-pop
         print
-      else sim-op Op.operand + @64 INTRINSIC_EQ = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_EQ = if*
         sim-stack-pop
         sim-stack-pop
         =
         cast(int)
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_GT = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_GT = if*
         sim-stack-pop
         sim-stack-pop
         swap
         >
         cast(int)
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_LT = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_LT = if*
         sim-stack-pop
         sim-stack-pop
         swap
         <
         cast(int)
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_GE = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_GE = if*
         sim-stack-pop
         sim-stack-pop
         swap
         >=
         cast(int)
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_LE = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_LE = if*
         sim-stack-pop
         sim-stack-pop
         swap
         <=
         cast(int)
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_NE = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_NE = if*
         sim-stack-pop
         sim-stack-pop
         !=
         cast(int)
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_DUP = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_DUP = if*
         sim-stack-pop
         dup
         sim-stack-push
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_SWAP = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_SWAP = if*
         sim-stack-pop
         sim-stack-pop
         swap
         sim-stack-push
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_DROP = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_DROP = if*
         sim-stack-pop
         drop
-      else sim-op Op.operand + @64 INTRINSIC_OVER = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_OVER = if*
         sim-stack-pop
         sim-stack-pop
         dup
@@ -1630,7 +1630,7 @@ proc simulate-ops in
         swap
         sim-stack-push
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_ROT = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_ROT = if*
         sim-stack-pop
         sim-stack-pop
         sim-stack-pop
@@ -1639,90 +1639,90 @@ proc simulate-ops in
         swap
         sim-stack-push
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_LOAD8 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_LOAD8 = if*
         sim-stack-pop cast(ptr) @8 sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_STORE8 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_STORE8 = if*
         sim-stack-pop cast(ptr) sim-stack-pop swap !8
-      else sim-op Op.operand + @64 INTRINSIC_LOAD16 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_LOAD16 = if*
         sim-stack-pop cast(ptr) @16 sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_STORE16 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_STORE16 = if*
         sim-stack-pop cast(ptr) sim-stack-pop swap !16
-      else sim-op Op.operand + @64 INTRINSIC_LOAD32 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_LOAD32 = if*
         sim-stack-pop cast(ptr) @32 sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_STORE32 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_STORE32 = if*
         sim-stack-pop cast(ptr) sim-stack-pop swap !32
-      else sim-op Op.operand + @64 INTRINSIC_LOAD64 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_LOAD64 = if*
         sim-stack-pop cast(ptr) @64 sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_STORE64 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_STORE64 = if*
         sim-stack-pop cast(ptr) sim-stack-pop swap !64
-      else sim-op Op.operand + @64 INTRINSIC_ARGC = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_ARGC = if*
         here eputs ": TODO: `argc` is not implemented yet\n" eputs
-        sim-op Op.token + Token.loc + located-here
+        sim-op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
-      else sim-op Op.operand + @64 INTRINSIC_ARGV = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_ARGV = if*
         args @ptr cast(int) sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_ENVP = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_ENVP = if*
         envp cast(int) sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_CAST_PTR = if*
-      else sim-op Op.operand + @64 INTRINSIC_CAST_INT = if*
-      else sim-op Op.operand + @64 INTRINSIC_CAST_BOOL = if*
-      else sim-op Op.operand + @64 INTRINSIC_SYSCALL0 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_CAST_PTR = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_CAST_INT = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_CAST_BOOL = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_SYSCALL0 = if*
         sim-stack-pop
         syscall0
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_SYSCALL1 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_SYSCALL1 = if*
         sim-stack-count @64 2 < if
           here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
           1 exit
         end
 
-        sim-stack-count @64 2 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 1 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 2 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 1 - sizeof(u64) * sim-stack +ptr @64
         syscall1
         sim-stack-pop drop
         sim-stack-pop drop
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_SYSCALL2 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_SYSCALL2 = if*
         sim-stack-count @64 3 < if
           here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
           1 exit
         end
 
-        sim-stack-count @64 3 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 2 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 1 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 3 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 2 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 1 - sizeof(u64) * sim-stack +ptr @64
         syscall2
         sim-stack-pop drop
         sim-stack-pop drop
         sim-stack-pop drop
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_SYSCALL3 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_SYSCALL3 = if*
         sim-stack-count @64 4 < if
           here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
           1 exit
         end
 
-        sim-stack-count @64 4 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 3 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 2 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 1 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 4 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 3 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 2 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 1 - sizeof(u64) * sim-stack +ptr @64
         syscall3
         sim-stack-pop drop
         sim-stack-pop drop
         sim-stack-pop drop
         sim-stack-pop drop
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_SYSCALL4 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_SYSCALL4 = if*
         sim-stack-count @64 5 < if
           here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
           1 exit
         end
 
-        sim-stack-count @64 5 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 4 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 3 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 2 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 1 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 5 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 4 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 3 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 2 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 1 - sizeof(u64) * sim-stack +ptr @64
         syscall4
         sim-stack-pop drop
         sim-stack-pop drop
@@ -1730,18 +1730,18 @@ proc simulate-ops in
         sim-stack-pop drop
         sim-stack-pop drop
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_SYSCALL5 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_SYSCALL5 = if*
         sim-stack-count @64 6 < if
           here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
           1 exit
         end
 
-        sim-stack-count @64 6 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 5 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 4 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 3 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 2 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 1 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 6 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 5 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 4 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 3 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 2 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 1 - sizeof(u64) * sim-stack +ptr @64
         syscall5
         sim-stack-pop drop
         sim-stack-pop drop
@@ -1750,19 +1750,19 @@ proc simulate-ops in
         sim-stack-pop drop
         sim-stack-pop drop
         sim-stack-push
-      else sim-op Op.operand + @64 INTRINSIC_SYSCALL6 = if*
+      else sim-op Op.operand ptr+ @64 INTRINSIC_SYSCALL6 = if*
         sim-stack-count @64 7 < if
           here eputs ": ERROR: data stack underflow in simulation mode\n" eputs
           1 exit
         end
 
-        sim-stack-count @64 7 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 6 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 5 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 4 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 3 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 2 - sizeof(u64) * sim-stack + @64
-        sim-stack-count @64 1 - sizeof(u64) * sim-stack + @64
+        sim-stack-count @64 7 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 6 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 5 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 4 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 3 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 2 - sizeof(u64) * sim-stack +ptr @64
+        sim-stack-count @64 1 - sizeof(u64) * sim-stack +ptr @64
         syscall6
         sim-stack-pop drop
         sim-stack-pop drop
@@ -1900,8 +1900,8 @@ const FPB_CAP 8 1024 * end
 memory fpb-start FPB_CAP end
 memory fpb-size sizeof(u64) end
 
-proc fpb-end -- ptr in fpb-start fpb-size @64 + end
-proc fpb-rewind ptr in fpb-start - fpb-size !int end
+proc fpb-end -- ptr in fpb-start fpb-size @64 ptr+ end
+proc fpb-rewind ptr in fpb-start ptr-diff fpb-size !int end
 
 proc fpb-alloc
   int
@@ -1929,7 +1929,7 @@ proc parse-block-stack-push int in
   parse-block-stack-count @64 PARSE_BLOCK_STACK_CAP >= if
     here eputs ": ERROR: parse block stack overflow\n" eputs 1 exit
   end
-  parse-block-stack parse-block-stack-count @64 sizeof(u64) * + !64
+  parse-block-stack parse-block-stack-count @64 sizeof(u64) * ptr+ !64
   parse-block-stack-count inc64
 end
 
@@ -1938,14 +1938,14 @@ proc parse-block-stack-pop -- int in
     here eputs ": ERROR: parse block stack underflow\n" eputs 1 exit
   end
   parse-block-stack-count dec64
-  parse-block-stack parse-block-stack-count @64 sizeof(u64) * + @64
+  parse-block-stack parse-block-stack-count @64 sizeof(u64) * ptr+ @64
 end
 
 proc parse-block-stack-top -- int bool in
   parse-block-stack-count @64 0 = if
     0 false
   else
-    parse-block-stack parse-block-stack-count @64 1 - sizeof(u64) * + @64
+    parse-block-stack parse-block-stack-count @64 1 - sizeof(u64) * ptr+ @64
     true
   end
 end
@@ -1968,8 +1968,8 @@ proc const-stack-push
   int // value
 in
   memory frame sizeof(ConstFrame) end
-  frame ConstFrame.value + !64
-  frame ConstFrame.type + !64
+  frame ConstFrame.value ptr+ !64
+  frame ConstFrame.type ptr+ !64
 
   sizeof(ConstFrame) frame CONST_STACK_CAP const-stack const-stack-count append-item lnot if
     here eputs ": TODO: const stack overflow\n" eputs
@@ -1989,9 +1989,9 @@ in
   end
 
   const-stack-count dec64
-  const-stack-count @64 sizeof(ConstFrame) * const-stack +
-  dup ConstFrame.type + @64
-  swap ConstFrame.value + @64
+  const-stack-count @64 sizeof(ConstFrame) * const-stack +ptr
+  dup ConstFrame.type ptr+ @64
+  swap ConstFrame.value ptr+ @64
 end
 
 proc eval-const-value
@@ -2011,10 +2011,10 @@ in
       token over lexer-next-token
     else false end
   do
-    token Token.type + @64 TOKEN_INT = if
-      DATATYPE_INT token Token.value + @64 const-stack-push
-    else token Token.type + @64 TOKEN_WORD = if*
-      token Token.value + @Str intrinsic-by-name if
+    token Token.type ptr+ @64 TOKEN_INT = if
+      DATATYPE_INT token Token.value ptr+ @64 const-stack-push
+    else token Token.type ptr+ @64 TOKEN_WORD = if*
+      token Token.value ptr+ @Str intrinsic-by-name if
         dup INTRINSIC_CAST_PTR = if
           const-stack-pop
           swap drop
@@ -2033,7 +2033,7 @@ in
           -
           DATATYPE_INT swap const-stack-push
         else dup INTRINSIC_PLUS = if*
-          // TODO: `+` intrinsic ignores the types in compile time evaluation
+          // TODO: `ptr+` intrinsic ignores the types in compile time evaluation
           const-stack-pop swap drop
           const-stack-pop swap drop
           swap
@@ -2061,37 +2061,37 @@ in
           max
           DATATYPE_INT swap const-stack-push
         else
-          token Token.loc + eputloc ": ERROR: intrinsic `" eputs token Token.value + @Str eputs "` is not supported in compile time evaluation\n" eputs
+          token Token.loc ptr+ eputloc ": ERROR: intrinsic `" eputs token Token.value ptr+ @Str eputs "` is not supported in compile time evaluation\n" eputs
           1 exit
         end
-      else token Token.value + @Str "end" streq if*
+      else token Token.value ptr+ @Str "end" streq if*
         true done !64
-      else token Token.value + @Str "offset" streq if*
+      else token Token.value ptr+ @Str "offset" streq if*
         const-stack-pop swap drop // TODO: offset ignores the type
         DATATYPE_INT iota @int const-stack-push
         iota @int + iota !int
-      else token Token.value + @Str "reset" streq if*
+      else token Token.value ptr+ @Str "reset" streq if*
         DATATYPE_INT iota @int const-stack-push
         0 iota !int
-      else token Token.value + @Str const-lookup dup NULL != if*
-        dup Const.type + @64
-        swap Const.value + @64
+      else token Token.value ptr+ @Str const-lookup dup NULL ptr!= if*
+        dup Const.type ptr+ @64
+        swap Const.value ptr+ @64
         const-stack-push
-      else token Token.value + @Str try-parse-int if*
+      else token Token.value ptr+ @Str try-parse-int if*
         DATATYPE_PTR swap const-stack-push
         drop // const
       else
         drop // try-parse-int
         drop // const
-        token Token.loc + eputloc ": ERROR: only intrinsic words are allowed in compile time evaluation\n" eputs
-        token Token.loc + eputloc ": NOTE: intrinsic `" eputs token Token.value + @Str eputs "` does not exist\n" eputs
+        token Token.loc ptr+ eputloc ": ERROR: only intrinsic words are allowed in compile time evaluation\n" eputs
+        token Token.loc ptr+ eputloc ": NOTE: intrinsic `" eputs token Token.value ptr+ @Str eputs "` does not exist\n" eputs
         1 exit
       end
       drop // intrinsic
     else
-      token Token.loc + eputloc
+      token Token.loc ptr+ eputloc
       ": ERROR: " eputs
-      token Token.type + @64 HUMAN_PLURAL human-token-type eputs
+      token Token.type ptr+ @64 HUMAN_PLURAL human-token-type eputs
       " are not supported in compile time evaluation\n" eputs
       1 exit
     end
@@ -2099,7 +2099,7 @@ in
 
   done @bool if
     const-stack-count @64 1 != if
-      token Token.loc + eputloc
+      token Token.loc ptr+ eputloc
       ": ERROR: The result of expression in compile time evaluation must be a single number\n" eputs
       1 exit
     end
@@ -2121,28 +2121,28 @@ in
   memory name sizeof(Str) end
   name !Str
 
-  name @Str const-lookup dup NULL != if
+  name @Str const-lookup dup NULL ptr!= if
     loc eputloc ": ERROR: redefinition of a constant `" eputs name @Str eputs "`\n" eputs
-    dup Const.loc + eputloc ": NOTE: the original definition is located here\n" eputs
+    dup Const.loc ptr+ eputloc ": NOTE: the original definition is located here\n" eputs
     1 exit
   end drop
 
-  name @Str proc-lookup dup NULL != if
+  name @Str proc-lookup dup NULL ptr!= if
     loc eputloc ": ERROR: redefinition of a procedure `" eputs name @Str eputs "`\n" eputs
-    dup Proc.loc + eputloc ": NOTE: the original definition is located here\n" eputs
+    dup Proc.loc ptr+ eputloc ": NOTE: the original definition is located here\n" eputs
     1 exit
   end drop
 
-  name @Str local-memories-lookup dup NULL != if
+  name @Str local-memories-lookup dup NULL ptr!= if
     loc eputloc ": ERROR: redefinition of local memory `" eputs name @Str eputs "`\n" eputs
-    dup Memory.loc + eputloc ": NOTE: the original definition is located here\n" eputs
+    dup Memory.loc ptr+ eputloc ": NOTE: the original definition is located here\n" eputs
     1 exit
   end drop
 
   inside-proc @bool lnot if
-    name @Str global-memories-lookup dup NULL != if
+    name @Str global-memories-lookup dup NULL ptr!= if
       loc eputloc ": ERROR: redefinition of global memory `" eputs name @Str eputs "`\n" eputs
-      dup Memory.loc + eputloc ": NOTE: the original definition is located here\n" eputs
+      dup Memory.loc ptr+ eputloc ": NOTE: the original definition is located here\n" eputs
       1 exit
     end drop
   end
@@ -2158,15 +2158,15 @@ in
 
   while
     token over lexer-next-token if
-      token Token.type + @64 TOKEN_WORD = if
-        token Token.value + @Str "in" streq
+      token Token.type ptr+ @64 TOKEN_WORD = if
+        token Token.value ptr+ @Str "in" streq
         ended-with-in !bool
         ended-with-in @bool lnot
-      else token Token.type + @64 TOKEN_STR = if*
+      else token Token.type ptr+ @64 TOKEN_STR = if*
         true
       else
         here eputs ": TODO: report unsupported token type in proc definition \n" eputs
-        token Token.loc + eputloc ": located in here\n" eputs
+        token Token.loc ptr+ eputloc ": located in here\n" eputs
         1 exit
         false
       end
@@ -2191,10 +2191,10 @@ in
   do-ip !int
 
   memory do-op sizeof(ptr) end
-  do-ip @int sizeof(Op) * ops + do-op !ptr
+  do-ip @int sizeof(Op) * ops +ptr do-op !ptr
 
   memory while-ip sizeof(int) end
-  do-op @ptr Op.operand + @int while-ip !int
+  do-op @ptr Op.operand ptr+ @int while-ip !int
 
   while-ip @int ops-count @int >= if
     here eputs ": Assertion Failed: out of range\n" eputs
@@ -2202,15 +2202,15 @@ in
   end
 
   memory while-op sizeof(ptr) end
-  while-ip @int sizeof(Op) * ops + while-op !ptr
+  while-ip @int sizeof(Op) * ops +ptr while-op !ptr
 
-  while-op @ptr Op.type + @int OP_WHILE != if
+  while-op @ptr Op.type ptr+ @int OP_WHILE != if
     here eputs ": Assertion Failed: `do` does not precede `while`\n" eputs
     1 exit
   end
 
   OP_END while-ip @int token push-op
-  ops-count @int do-op @ptr Op.operand + !int
+  ops-count @int do-op @ptr Op.operand ptr+ !int
 end
 
 proc chain-else-if*
@@ -2224,9 +2224,9 @@ in
   ifstar-ip !int
 
   memory ifstar-op sizeof(ptr) end
-  ifstar-ip @int sizeof(Op) * ops + ifstar-op !ptr
+  ifstar-ip @int sizeof(Op) * ops +ptr ifstar-op !ptr
 
-  ifstar-op @ptr Op.type + @int OP_IFSTAR != if
+  ifstar-op @ptr Op.type ptr+ @int OP_IFSTAR != if
     here eputs ": Assertion Failed: expected `if*`\n" eputs
     1 exit
   end
@@ -2235,14 +2235,14 @@ in
   parse-block-stack-pop else-ip !int
 
   memory else-op sizeof(ptr) end
-  else-ip @int sizeof(Op) * ops + else-op !ptr
+  else-ip @int sizeof(Op) * ops +ptr else-op !ptr
 
   ops-count @int 1 +
-  ifstar-op @ptr Op.operand +
+  ifstar-op @ptr Op.operand ptr+
   !int
 
   ops-count @int
-  else-op @ptr Op.operand +
+  else-op @ptr Op.operand ptr+
   !int
 
   ops-count @int
@@ -2260,8 +2260,8 @@ proc compile-file-into-ops ptr in
 
   memory lexer sizeof(Lexer) end
   sizeof(Lexer) 0 lexer memset drop
-  file-path-cstr @ptr map-file    lexer Lexer.content   + !Str
-  file-path-cstr @ptr cstr-to-str lexer Lexer.file-path + !Str
+  file-path-cstr @ptr map-file    lexer Lexer.content   ptr+ !Str
+  file-path-cstr @ptr cstr-to-str lexer Lexer.file-path ptr+ !Str
 
   memory token sizeof(Token) end
   memory konst sizeof(Const) end
@@ -2273,15 +2273,15 @@ proc compile-file-into-ops ptr in
   while token lexer lexer-next-token do
     assert "Exhaustive handling of Token types" COUNT_TOKENS 5 = end
 
-    token Token.type + @64 // token.type
+    token Token.type ptr+ @64 // token.type
 
     dup TOKEN_INT = if
       OP_PUSH_INT
-      token Token.value + @64
+      token Token.value ptr+ @64
       token
       push-op
     else dup TOKEN_WORD = if*
-      token Token.value + // token.value
+      token Token.value ptr+ // token.value
 
       assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 16 = end
 
@@ -2294,14 +2294,14 @@ proc compile-file-into-ops ptr in
           OP_IF 0 token push-op
         else dup @Str "if*" streq if*
           parse-block-stack-top lnot if
-            token Token.loc + eputloc ": ERROR: `if*` can only come after `else`, but found nothing\n" eputs
+            token Token.loc ptr+ eputloc ": ERROR: `if*` can only come after `else`, but found nothing\n" eputs
             1 exit
           end
 
-          sizeof(Op) * ops +
+          sizeof(Op) * ops +ptr
 
-          dup Op.type + @int OP_ELSE != if
-            token Token.loc + eputloc ": ERROR: `if*` can only come after `else`\n" eputs
+          dup Op.type ptr+ @int OP_ELSE != if
+            token Token.loc ptr+ eputloc ": ERROR: `if*` can only come after `else`\n" eputs
             1 exit
           end
 
@@ -2311,23 +2311,23 @@ proc compile-file-into-ops ptr in
           OP_IFSTAR 0 token push-op
         else dup @Str "else" streq if*
           parse-block-stack-count @64 0 <= if
-            token Token.loc + eputloc
+            token Token.loc ptr+ eputloc
             ": ERROR: `else` can only come after `if` or `if*`\n" eputs
             1 exit
           end
 
           parse-block-stack-pop   // if_ip
-          dup sizeof(Op) * ops +  // if_op
+          dup sizeof(Op) * ops +ptr  // if_op
 
-          dup Op.type + @64 OP_IF = if
-            ops-count @64 1 + over Op.operand + !64
+          dup Op.type ptr+ @64 OP_IF = if
+            ops-count @64 1 + over Op.operand ptr+ !64
 
             ops-count @64 parse-block-stack-push
             OP_ELSE 0 token push-op
-          else dup Op.type + @64 OP_IFSTAR = if*
+          else dup Op.type ptr+ @64 OP_IFSTAR = if*
             over token chain-else-if*
           else
-            token Token.loc + eputloc
+            token Token.loc ptr+ eputloc
             ": ERROR: `else` can only come after `if` or `if*`\n" eputs
             1 exit
           end
@@ -2339,16 +2339,16 @@ proc compile-file-into-ops ptr in
           OP_WHILE 0 token push-op
         else dup @Str "do" streq if*
           parse-block-stack-count @64 0 <= if
-            token Token.loc + eputloc ": ERROR: `do` is not preceded by `while`\n" eputs
+            token Token.loc ptr+ eputloc ": ERROR: `do` is not preceded by `while`\n" eputs
             1 exit
           end
 
           parse-block-stack-pop  // ip
-          dup sizeof(Op) * ops + // op
+          dup sizeof(Op) * ops +ptr // op
 
-          dup Op.type + @64 OP_WHILE != if
-            token Token.loc + eputloc ": ERROR: `do` is not preceded by `while`\n" eputs
-            dup Op.token + Token.loc + eputloc ": NOTE: preceded by `" eputs dup Op.token + Token.text + @Str eputs "` instead\n" eputs
+          dup Op.type ptr+ @64 OP_WHILE != if
+            token Token.loc ptr+ eputloc ": ERROR: `do` is not preceded by `while`\n" eputs
+            dup Op.token ptr+ Token.loc ptr+ eputloc ": NOTE: preceded by `" eputs dup Op.token ptr+ Token.text ptr+ @Str eputs "` instead\n" eputs
             1 exit
           end
 
@@ -2360,25 +2360,25 @@ proc compile-file-into-ops ptr in
           drop // op
         else dup @Str "end" streq if*
           parse-block-stack-count @64 0 <= if
-            token Token.loc + eputloc
+            token Token.loc ptr+ eputloc
             ": ERROR: `end` has nothing to close\n" eputs
             1 exit
           end
 
           parse-block-stack-pop   // ip
-          ops over sizeof(Op) * + // op
+          ops over sizeof(Op) * ptr+ // op
 
-          dup Op.type + @64 OP_IF = if
-            dup ops-count @64 swap Op.operand + !64
+          dup Op.type ptr+ @64 OP_IF = if
+            dup ops-count @64 swap Op.operand ptr+ !64
             OP_END ops-count @64 1 + token push-op
-          else dup Op.type + @64 OP_ELSE = if*
-            dup ops-count @64 swap Op.operand + !64
+          else dup Op.type ptr+ @64 OP_ELSE = if*
+            dup ops-count @64 swap Op.operand ptr+ !64
             OP_END ops-count @64 1 + token push-op
-          else dup Op.type + @64 OP_DO = if*
+          else dup Op.type ptr+ @64 OP_DO = if*
             over token enclose-while-do
-          else dup Op.type + @64 OP_PREP_PROC = if*
+          else dup Op.type ptr+ @64 OP_PREP_PROC = if*
             local-memory-capacity @64
-            over Op.operand +
+            over Op.operand ptr+
             !64
 
             inside-proc @bool lnot if
@@ -2388,9 +2388,9 @@ proc compile-file-into-ops ptr in
 
             parse-block-stack-pop
             sizeof(Op) *
-            ops +
+            ops +ptr
 
-            dup Op.type + @64 OP_SKIP_PROC != if
+            dup Op.type ptr+ @64 OP_SKIP_PROC != if
               here eputs ": Assertion failed: Expected OP_SKIP_PROC before OP_PREP_PROC\n" eputs
               1 exit
             end
@@ -2400,16 +2400,16 @@ proc compile-file-into-ops ptr in
             token
             push-op
 
-            Op.operand + ops-count @64 swap !64
+            Op.operand ptr+ ops-count @64 swap !64
 
             local-memories-clean
             false inside-proc !bool
-          else dup Op.type + @64 OP_SKIP_PROC = if*
+          else dup Op.type ptr+ @64 OP_SKIP_PROC = if*
             here eputs ": unreachable\n" eputs
             1 exit
           else
-            token Token.loc + eputloc ": ERROR: `end` can only close `if` or `else` for now\n" eputs
-            dup Op.token + Token.loc + eputloc ": NOTE: found `" eputs dup Op.token + Token.text + @Str eputs "` instead\n" eputs
+            token Token.loc ptr+ eputloc ": ERROR: `end` can only close `if` or `else` for now\n" eputs
+            dup Op.token ptr+ Token.loc ptr+ eputloc ": NOTE: found `" eputs dup Op.token ptr+ Token.text ptr+ @Str eputs "` instead\n" eputs
             1 exit
           end
 
@@ -2417,13 +2417,13 @@ proc compile-file-into-ops ptr in
           drop // ip
         else dup @Str "include" streq if*
           token lexer lexer-next-token lnot if
-            token Token.loc + eputloc
+            token Token.loc ptr+ eputloc
             ": expected path to the include file but found nothing\n" eputs
             1 exit
           end
 
-          token Token.type + @64 TOKEN_STR != if
-            token Token.loc + eputloc
+          token Token.type ptr+ @64 TOKEN_STR != if
+            token Token.loc ptr+ eputloc
             // TODO: report what was found instead of a string
             ": expected path to the include file to be a string\n" eputs
             1 exit
@@ -2432,7 +2432,7 @@ proc compile-file-into-ops ptr in
           // TODO: introduce include limit
           fpb-end
           "./"                     fpb-append drop
-          token Token.value + @Str fpb-append drop
+          token Token.value ptr+ @Str fpb-append drop
           1                        fpb-alloc drop
 
           // TODO: customizable include path list
@@ -2440,36 +2440,36 @@ proc compile-file-into-ops ptr in
             fpb-rewind
             fpb-end
             "./std/"                 fpb-append drop
-            token Token.value + @Str fpb-append drop
+            token Token.value ptr+ @Str fpb-append drop
             1                        fpb-alloc drop
           end
 
           compile-file-into-ops
         else dup @Str "const" streq if*
           token lexer lexer-next-token lnot if
-            token Token.loc + eputloc
+            token Token.loc ptr+ eputloc
             ": expected constant name but found nothing\n" eputs
             1 exit
           end
 
-          token Token.type + @64 TOKEN_WORD != if
-            token Token.loc + eputloc
+          token Token.type ptr+ @64 TOKEN_WORD != if
+            token Token.loc ptr+ eputloc
             // TODO: report what was found instead of a word
             ": expected constant name to be a word\n" eputs
             1 exit
           end
 
-          token Token.value + @Str
-          token Token.loc +
+          token Token.value ptr+ @Str
+          token Token.loc ptr+
           check-name-redefinition
 
-          token Token.value + @Str konst Const.name + !Str
-          sizeof(Loc) token Token.loc + konst Const.loc + memcpy drop
+          token Token.value ptr+ @Str konst Const.name ptr+ !Str
+          sizeof(Loc) token Token.loc ptr+ konst Const.loc ptr+ memcpy drop
 
           lexer eval-const-value
 
-          konst Const.value + !64
-          konst Const.type + !64
+          konst Const.value ptr+ !64
+          konst Const.type ptr+ !64
 
           konst const-define
         else dup @Str "proc" streq if*
@@ -2480,33 +2480,33 @@ proc compile-file-into-ops ptr in
 
           sizeof(Proc) 0 prok memset drop
 
-          sizeof(Loc) token Token.loc + prok Proc.loc + memcpy drop
+          sizeof(Loc) token Token.loc ptr+ prok Proc.loc ptr+ memcpy drop
 
           token lexer lexer-next-token lnot if
-            token Token.loc + eputloc
+            token Token.loc ptr+ eputloc
             ": expected procedure name but found nothing\n" eputs
             1 exit
           end
 
-          token Token.type + @64 TOKEN_WORD != if
-            token Token.loc + eputloc
+          token Token.type ptr+ @64 TOKEN_WORD != if
+            token Token.loc ptr+ eputloc
             ": expected procedure name to be a word but found " eputs
-            token Token.type + @64 HUMAN_SINGULAR human-token-type eputs
+            token Token.type ptr+ @64 HUMAN_SINGULAR human-token-type eputs
             " instead\n" eputs
             1 exit
           end
 
-          token Token.value + @Str
-          token Token.loc +
+          token Token.value ptr+ @Str
+          token Token.loc ptr+
           check-name-redefinition
 
-          sizeof(Str) token Token.value + prok Proc.name + memcpy drop
+          sizeof(Str) token Token.value ptr+ prok Proc.name ptr+ memcpy drop
 
           ops-count @64 parse-block-stack-push
           OP_SKIP_PROC 0 token push-op
 
           ops-count @64
-          dup prok Proc.addr + !64
+          dup prok Proc.addr ptr+ !64
               parse-block-stack-push
           OP_PREP_PROC 0 token push-op
 
@@ -2517,25 +2517,25 @@ proc compile-file-into-ops ptr in
           prok proc-define
         else dup @Str "memory" streq if*
           token lexer lexer-next-token lnot if
-            token Token.loc + eputloc
+            token Token.loc ptr+ eputloc
             ": expected memory name but found nothing\n" eputs
             1 exit
           end
 
-          token Token.type + @64 TOKEN_WORD != if
-            token Token.loc + eputloc
+          token Token.type ptr+ @64 TOKEN_WORD != if
+            token Token.loc ptr+ eputloc
             ": expected memory name to be a word but found " eputs
-            token Token.type + @64 HUMAN_SINGULAR human-token-type eputs
+            token Token.type ptr+ @64 HUMAN_SINGULAR human-token-type eputs
             " instead\n" eputs
             1 exit
           end
 
-          token Token.value + @Str
-          token Token.loc +
+          token Token.value ptr+ @Str
+          token Token.loc ptr+
           check-name-redefinition
 
-          sizeof(Str) token Token.value + memori Memory.name + memcpy drop
-          sizeof(Loc) token Token.loc   + memori Memory.loc  + memcpy drop
+          sizeof(Str) token Token.value ptr+ memori Memory.name ptr+ memcpy drop
+          sizeof(Loc) token Token.loc   ptr+ memori Memory.loc  ptr+ memcpy drop
 
           lexer eval-const-value
 
@@ -2544,23 +2544,23 @@ proc compile-file-into-ops ptr in
           end
 
           inside-proc @bool if
-            local-memory-capacity @64 memori Memory.offset + !64
+            local-memory-capacity @64 memori Memory.offset ptr+ !64
             local-memory-capacity @64 + local-memory-capacity !64
             memori local-memory-define
           else
-            global-memory-capacity @64 memori Memory.offset + !64
+            global-memory-capacity @64 memori Memory.offset ptr+ !64
             global-memory-capacity @64 + global-memory-capacity !64
             memori global-memory-define
           end
         else dup @Str "assert" streq if*
           token lexer lexer-next-token lnot if
-            token Token.loc + eputloc
+            token Token.loc ptr+ eputloc
             ": expected assert message but found nothing\n" eputs
             1 exit
           end
 
-          token Token.type + @64 TOKEN_STR != if
-            token Token.loc + eputloc
+          token Token.type ptr+ @64 TOKEN_STR != if
+            token Token.loc ptr+ eputloc
             // TODO: report what was found instead of a string
             ": expected assert message to be a string\n" eputs
             1 exit
@@ -2569,41 +2569,41 @@ proc compile-file-into-ops ptr in
           lexer eval-const-value
 
           swap DATATYPE_BOOL != if
-            token Token.loc + eputloc ": ERROR: assertion expects the expression to be of type `bool`\n" eputs
+            token Token.loc ptr+ eputloc ": ERROR: assertion expects the expression to be of type `bool`\n" eputs
             1 exit
           end
 
           cast(bool) lnot if
-            token Token.loc + eputloc ": ERROR: Static Assertion Failed: " eputs token Token.value + @Str eputs "\n" eputs
+            token Token.loc ptr+ eputloc ": ERROR: Static Assertion Failed: " eputs token Token.value ptr+ @Str eputs "\n" eputs
             1 exit
           end
         else dup @Str "here" streq if*
           OP_PUSH_STR
-          token Token.loc + strbuf-loc strlit-define
+          token Token.loc ptr+ strbuf-loc strlit-define
           token
           push-op
-        else dup @Str const-lookup dup NULL != if*
+        else dup @Str const-lookup dup NULL ptr!= if*
           OP_PUSH_INT
-          swap Const.value + @64
+          swap Const.value ptr+ @64
           token
           push-op
-        else drop dup @Str proc-lookup dup NULL != if*
+        else drop dup @Str proc-lookup dup NULL ptr!= if*
           OP_CALL
-          swap Proc.addr + @64
+          swap Proc.addr ptr+ @64
           token
           push-op
-        else drop dup @Str local-memories-lookup dup NULL != if*
+        else drop dup @Str local-memories-lookup dup NULL ptr!= if*
           OP_PUSH_LOCAL_MEM
-          swap Memory.offset + @64
+          swap Memory.offset ptr+ @64
           token
           push-op
-        else drop dup @Str global-memories-lookup dup NULL != if*
+        else drop dup @Str global-memories-lookup dup NULL ptr!= if*
           OP_PUSH_GLOBAL_MEM
-          swap Memory.offset + @64
+          swap Memory.offset ptr+ @64
           token
           push-op
         else drop
-          token Token.loc + eputloc
+          token Token.loc ptr+ eputloc
           ": ERROR: unknown word `" puts dup @Str puts "`\n" puts
           1 exit
         end
@@ -2611,17 +2611,17 @@ proc compile-file-into-ops ptr in
       drop // token.value
     else dup TOKEN_STR = if*
       OP_PUSH_STR
-      token Token.value + @Str strlit-define
+      token Token.value ptr+ @Str strlit-define
       token
       push-op
     else dup TOKEN_CSTR = if*
       OP_PUSH_CSTR
-      token Token.value + @Str strlit-define
+      token Token.value ptr+ @Str strlit-define
       token
       push-op
     else dup TOKEN_CHAR = if*
       OP_PUSH_INT
-      token Token.value + @int
+      token Token.value ptr+ @int
       token
       push-op
     else
@@ -2636,9 +2636,9 @@ proc compile-file-into-ops ptr in
   parse-block-stack-count @64 0 > if
     parse-block-stack-pop
     sizeof(Op) *
-    ops +
+    ops +ptr
 
-    dup Op.token + Token.loc + eputloc ": unclosed block\n" eputs
+    dup Op.token ptr+ Token.loc ptr+ eputloc ": unclosed block\n" eputs
 
     1 exit
     drop
@@ -2674,22 +2674,22 @@ in
     " [label="             fd @64 fputs
     dup
       sizeof(TypeFrame) *
-      type-frame-pool +
-      TypeFrame.type +
+      type-frame-pool +ptr
+      TypeFrame.type ptr+
       @int
       datatype-name        fd @64 fputs
     "]"                    fd @64 fputs
 
     dup
       sizeof(TypeFrame) *
-      type-frame-pool +
-      TypeFrame.prev +
+      type-frame-pool +ptr
+      TypeFrame.prev ptr+
       @ptr
-      dup NULL != if
+      dup NULL ptr!= if
         "  Node_"   fd @64 fputs
         over        fd @64 fputu
         " -> Node_" fd @64 fputs
-        type-frame-pool -
+        type-frame-pool ptr-diff
         sizeof(TypeFrame) /
         fd @64 fputu
         "\n" fd @64 fputs
@@ -2708,7 +2708,7 @@ proc type-frame-alloc -- ptr in
 
   type-frame-pool-count @int
   sizeof(TypeFrame) *
-  type-frame-pool +
+  type-frame-pool +ptr
 
   type-frame-pool-count inc64
 end
@@ -2724,22 +2724,22 @@ in
   memory new-top sizeof(ptr) end
   type-frame-alloc new-top !ptr
 
-  sizeof(Loc) swap new-top @ptr TypeFrame.loc + memcpy drop
-  new-top @ptr TypeFrame.type + !int
+  sizeof(Loc) swap new-top @ptr TypeFrame.loc ptr+ memcpy drop
+  new-top @ptr TypeFrame.type ptr+ !int
 
-  stack   @ptr TypeStack.top  + @ptr
-  new-top @ptr TypeFrame.prev + !ptr
+  stack   @ptr TypeStack.top  ptr+ @ptr
+  new-top @ptr TypeFrame.prev ptr+ !ptr
 
   new-top @ptr
-  stack   @ptr TypeStack.top + !ptr
+  stack   @ptr TypeStack.top ptr+ !ptr
 end
 
 proc type-stack-pop
   ptr // stack
 in
-  TypeStack.top +
-  dup @ptr NULL != if
-    dup @ptr TypeFrame.prev + @ptr
+  TypeStack.top ptr+
+  dup @ptr NULL ptr!= if
+    dup @ptr TypeFrame.prev ptr+ @ptr
     swap
     !ptr
   else drop end
@@ -2766,279 +2766,279 @@ in
   while
     ip @int ops-count @int < if
       sizeof(Op)
-      ip @int sizeof(Op) * ops +
+      ip @int sizeof(Op) * ops +ptr
       op
       memcpy drop
 
       assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 16 = end
-      op Op.type + @int OP_PUSH_INT = if
+      op Op.type ptr+ @int OP_PUSH_INT = if
         DATATYPE_INT
-        op Op.token + Token.loc +
+        op Op.token ptr+ Token.loc ptr+
         stack
         type-stack-push
 
         ip inc64
 
         true // continue
-      else op Op.type + @int OP_PUSH_LOCAL_MEM = if*
+      else op Op.type ptr+ @int OP_PUSH_LOCAL_MEM = if*
         here eputs ": TODO: type checking of OP_PUSH_LOCAL_MEM is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_PUSH_GLOBAL_MEM = if*
+      else op Op.type ptr+ @int OP_PUSH_GLOBAL_MEM = if*
         here eputs ": TODO: type checking of OP_PUSH_GLOBAL_MEM is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_PUSH_STR = if*
+      else op Op.type ptr+ @int OP_PUSH_STR = if*
         here eputs ": TODO: type checking of OP_PUSH_STR is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_PUSH_CSTR = if*
+      else op Op.type ptr+ @int OP_PUSH_CSTR = if*
         here eputs ": TODO: type checking of OP_PUSH_CSTR is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true  // continue
-      else op Op.type + @int OP_IF = if*
+      else op Op.type ptr+ @int OP_IF = if*
         here eputs ": TODO: type checking of OP_IF is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_IFSTAR = if*
+      else op Op.type ptr+ @int OP_IFSTAR = if*
         here eputs ": TODO: type checking of OP_IFSTAR is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_ELSE = if*
+      else op Op.type ptr+ @int OP_ELSE = if*
         here eputs ": TODO: type checking of OP_ELSE is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_END = if*
+      else op Op.type ptr+ @int OP_END = if*
         here eputs ": TODO: type checking of OP_END is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_SKIP_PROC = if*
+      else op Op.type ptr+ @int OP_SKIP_PROC = if*
         here eputs ": TODO: type checking of OP_SKIP_PROC is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_PREP_PROC = if*
+      else op Op.type ptr+ @int OP_PREP_PROC = if*
         here eputs ": TODO: type checking of OP_PREP_PROC is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_RET = if*
+      else op Op.type ptr+ @int OP_RET = if*
         here eputs ": TODO: type checking of OP_RET is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_CALL = if*
+      else op Op.type ptr+ @int OP_CALL = if*
         here eputs ": TODO: type checking of OP_CALL is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_WHILE = if*
+      else op Op.type ptr+ @int OP_WHILE = if*
         here eputs ": TODO: type checking of OP_WHILE is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_DO = if*
+      else op Op.type ptr+ @int OP_DO = if*
         here eputs ": TODO: type checking of OP_DO is not implemented yet\n" eputs
-        op Op.token + Token.loc + located-here
+        op Op.token ptr+ Token.loc ptr+ located-here
         1 exit
 
         true // continue
-      else op Op.type + @int OP_INTRINSIC = if*
+      else op Op.type ptr+ @int OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in type-check-program-from" COUNT_INTRINSICS 43 = end
 
-        op Op.operand + @int
+        op Op.operand ptr+ @int
           dup INTRINSIC_PLUS = if
             here eputs ": TODO: type checking of INTRINSIC_PLUS is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_MINUS = if*
             here eputs ": TODO: type checking of INTRINSIC_MINUS is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_MUL = if*
             here eputs ": TODO: type checking of INTRINSIC_MUL is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_DIVMOD = if*
             here eputs ": TODO: type checking of INTRINSIC_DIVMOD is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_MAX = if*
             here eputs ": TODO: type checking of INTRINSIC_MAX is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_EQ = if*
             here eputs ": TODO: type checking of INTRINSIC_EQ is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_GT = if*
             here eputs ": TODO: type checking of INTRINSIC_GT is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_LT = if*
             here eputs ": TODO: type checking of INTRINSIC_LT is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_GE = if*
             here eputs ": TODO: type checking of INTRINSIC_GE is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_LE = if*
             here eputs ": TODO: type checking of INTRINSIC_LE is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_NE = if*
             here eputs ": TODO: type checking of INTRINSIC_NE is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_SHR = if*
             here eputs ": TODO: type checking of INTRINSIC_SHR is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_SHL = if*
             here eputs ": TODO: type checking of INTRINSIC_SHL is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_OR = if*
             here eputs ": TODO: type checking of INTRINSIC_OR is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_AND = if*
             here eputs ": TODO: type checking of INTRINSIC_AND is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_NOT = if*
             here eputs ": TODO: type checking of INTRINSIC_NOT is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_PRINT = if*
             here eputs ": TODO: type checking of INTRINSIC_PRINT is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_DUP = if*
             here eputs ": TODO: type checking of INTRINSIC_DUP is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_SWAP = if*
             here eputs ": TODO: type checking of INTRINSIC_SWAP is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_DROP = if*
             here eputs ": TODO: type checking of INTRINSIC_DROP is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_OVER = if*
             here eputs ": TODO: type checking of INTRINSIC_OVER is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_ROT = if*
             here eputs ": TODO: type checking of INTRINSIC_ROT is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_LOAD8 = if*
             here eputs ": TODO: type checking of INTRINSIC_LOAD8 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_STORE8 = if*
             here eputs ": TODO: type checking of INTRINSIC_STORE8 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_LOAD16 = if*
             here eputs ": TODO: type checking of INTRINSIC_LOAD16 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_STORE16 = if*
             here eputs ": TODO: type checking of INTRINSIC_STORE16 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_LOAD32 = if*
             here eputs ": TODO: type checking of INTRINSIC_LOAD32 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_STORE32 = if*
             here eputs ": TODO: type checking of INTRINSIC_STORE32 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_LOAD64 = if*
             here eputs ": TODO: type checking of INTRINSIC_LOAD64 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_STORE64 = if*
             here eputs ": TODO: type checking of INTRINSIC_STORE64 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_CAST_PTR = if*
             here eputs ": TODO: type checking of INTRINSIC_CAST_PTR is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_CAST_INT = if*
             here eputs ": TODO: type checking of INTRINSIC_CAST_INT is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_CAST_BOOL = if*
             here eputs ": TODO: type checking of INTRINSIC_CAST_BOOL is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_ARGC = if*
             here eputs ": TODO: type checking of INTRINSIC_ARGC is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_ARGV = if*
             here eputs ": TODO: type checking of INTRINSIC_ARGV is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_ENVP = if*
             here eputs ": TODO: type checking of INTRINSIC_ENVP is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_SYSCALL0 = if*
             here eputs ": TODO: type checking of INTRINSIC_SYSCALL0 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_SYSCALL1 = if*
             here eputs ": TODO: type checking of INTRINSIC_SYSCALL1 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_SYSCALL2 = if*
             here eputs ": TODO: type checking of INTRINSIC_SYSCALL2 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_SYSCALL3 = if*
             here eputs ": TODO: type checking of INTRINSIC_SYSCALL3 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_SYSCALL4 = if*
             here eputs ": TODO: type checking of INTRINSIC_SYSCALL4 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_SYSCALL5 = if*
             here eputs ": TODO: type checking of INTRINSIC_SYSCALL5 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_SYSCALL6 = if*
             here eputs ": TODO: type checking of INTRINSIC_SYSCALL6 is not implemented yet\n" eputs
-            op Op.token + Token.loc + located-here
+            op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else
             here eputs ": unreachable\n" eputs
@@ -3187,7 +3187,7 @@ proc main in
 
   while
     args sizeof(ptr) inc64-by
-    args @@ptr NULL = if
+    args @@ptr NULL ptr= if
       false // break
     else args @@ptr "-check"c cstreq if*
       true check !bool
@@ -3197,7 +3197,7 @@ proc main in
     end
   do end
 
-  args @@ptr NULL = if
+  args @@ptr NULL ptr= if
     program @ptr stderr usage
     "ERROR: subcommand is not provided\n" eputs
     1 exit
@@ -3210,7 +3210,7 @@ proc main in
 
   args @@ptr "sim"c cstreq if
     args sizeof(ptr) inc64-by
-    args @@ptr NULL = if
+    args @@ptr NULL ptr= if
       program @ptr stderr usage
       "ERROR: no input file is provided for the `sim` subcommand\n" eputs
       1 exit
@@ -3223,7 +3223,7 @@ proc main in
   else args @@ptr "com"c cstreq if*
     while
       args sizeof(ptr) inc64-by
-      args @@ptr NULL = if
+      args @@ptr NULL ptr= if
         false // break
       else args @@ptr "-r"c cstreq if*
         true run !bool
@@ -3238,7 +3238,7 @@ proc main in
       end
     do end
 
-    file-path-cstr @ptr NULL = if
+    file-path-cstr @ptr NULL ptr= if
       program @ptr stderr usage
       "[ERROR] no input file is provided for the compilation\n" eputs
       1 exit
@@ -3268,7 +3268,7 @@ proc main in
     run @bool if
       tmp-end
       "./output"c tmp-append-ptr
-      while args @@ptr NULL != do
+      while args @@ptr NULL ptr!= do
         args @@ptr tmp-append-ptr
         args sizeof(ptr) inc64-by
       end
@@ -3280,7 +3280,7 @@ proc main in
     0 exit
   else args @@ptr "dump"c cstreq if*
     args sizeof(ptr) inc64-by
-    args @@ptr NULL = if
+    args @@ptr NULL ptr= if
       program @ptr stderr usage
       "ERROR: no input file is provided for the `dump` subcommand\n" eputs
       1 exit
@@ -3292,7 +3292,7 @@ proc main in
     dump-ops
   else args @@ptr "lex"c cstreq if*
     args sizeof(ptr) inc64-by
-    args @@ptr NULL = if
+    args @@ptr NULL ptr= if
       program @ptr stderr usage
       "ERROR: no input file is provided for the `lex` subcommand\n" eputs
       1 exit
@@ -3301,7 +3301,7 @@ proc main in
     args @@ptr lex-file
   else args @@ptr "summary"c cstreq if*
     args sizeof(ptr) inc64-by
-    args @@ptr NULL = if
+    args @@ptr NULL ptr= if
       program @ptr stderr usage
       "ERROR: no input file is provided for the `dump` subcommand\n" eputs
       1 exit

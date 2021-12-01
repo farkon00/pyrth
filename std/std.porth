@@ -360,7 +360,12 @@ const PROT_WRITE 2 end
 
 const sizeof(timespec) 16 end
 
-proc ptr+ ptr int -- ptr in swap cast(int) + cast(ptr) end
+proc ptr+ ptr int -- ptr in
+  swap cast(int)
+  swap cast(int)
+  +
+  cast(ptr)
+end
 proc ptr- ptr int -- ptr in
   swap cast(int)
   swap cast(int)
@@ -377,7 +382,14 @@ proc ptr= ptr ptr -- bool in
   swap cast(int)
   =
 end
-proc +ptr int ptr -- ptr in cast(int) + cast(ptr) end
+proc ptr< ptr ptr -- bool in
+  swap cast(int)
+  swap cast(int)
+  <
+end
+proc +ptr int ptr -- ptr in
+  cast(int) + cast(ptr)
+end
 
 proc ptr-diff ptr ptr -- int in
   swap cast(int)
