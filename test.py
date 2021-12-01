@@ -6,7 +6,7 @@ from os import path
 import subprocess
 import shlex
 from typing import List, BinaryIO, Tuple, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 PORTH_EXT = '.porth'
 
@@ -81,6 +81,7 @@ class RunStats:
     sim_failed: int = 0
     com_failed: int = 0
     ignored: int = 0
+    failed_files: List[str] = field(default_factory=list)
 
 def run_test_for_file(file_path: str, stats: RunStats = RunStats()):
     assert path.isfile(file_path)
@@ -90,6 +91,8 @@ def run_test_for_file(file_path: str, stats: RunStats = RunStats()):
 
     tc_path = file_path[:-len(PORTH_EXT)] + ".txt"
     tc = load_test_case(tc_path)
+
+    error = False
 
     if tc is not None:
         sim = cmd_run_echoed([sys.executable, "./porth.py", "sim", file_path, *tc.argv], input=tc.stdin, capture_output=True)
@@ -103,6 +106,7 @@ def run_test_for_file(file_path: str, stats: RunStats = RunStats()):
             print("    return code: %s" % sim.returncode)
             print("    stdout: \n%s" % sim.stdout.decode("utf-8"))
             print("    stderr: \n%s" % sim.stderr.decode("utf-8"))
+            error = True
             stats.sim_failed += 1
 
         com = cmd_run_echoed([sys.executable, "./porth.py", "com", "-r", "-s", file_path, *tc.argv], input=tc.stdin, capture_output=True)
@@ -116,13 +120,18 @@ def run_test_for_file(file_path: str, stats: RunStats = RunStats()):
             print("    return code: %s" % com.returncode)
             print("    stdout: \n%s" % com.stdout.decode("utf-8"))
             print("    stderr: \n%s" % com.stderr.decode("utf-8"))
+            error = True
             stats.com_failed += 1
     else:
         print('[WARNING] Could not find any input/output data for %s. Ignoring testing. Only checking if it compiles.' % file_path)
         com = cmd_run_echoed([sys.executable, "./porth.py", "com", file_path])
         if com.returncode != 0:
+            error = True
             stats.com_failed += 1
         stats.ignored += 1
+
+    if error:
+        stats.failed_files.append(file_path)
 
 def run_test_for_folder(folder: str):
     stats = RunStats()
@@ -131,6 +140,10 @@ def run_test_for_folder(folder: str):
             run_test_for_file(entry.path, stats)
     print()
     print("Simulation failed: %d, Compilation failed: %d, Ignored: %d" % (stats.sim_failed, stats.com_failed, stats.ignored))
+    print()
+    print("Failed files:")
+    for failed_file in stats.failed_files:
+        print(f"    {failed_file}")
     if stats.sim_failed != 0 or stats.com_failed != 0:
         exit(1)
 

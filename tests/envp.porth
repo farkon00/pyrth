@@ -3,8 +3,8 @@ include "std.porth"
 // TODO: envp is not tested because test.py does not support environment variable in the test case files
 
 envp
-while dup @ptr NULL != do
+while dup @ptr NULL ptr!= do
   dup @ptr cstr-to-str puts "\n" puts
-  8 +
+  8 ptr+
 end
 drop

@@ -4,7 +4,7 @@ const N 32 end
 memory xs N end
 
 0 while dup N < do
-  'a' over xs + !8
+  'a' over xs +ptr !8
   1 +
 end drop
 

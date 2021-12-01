@@ -11,7 +11,7 @@ dup 0 <= if
   1 exit
 end
 
-name over + 1 - @8 '\n' = if
+name over ptr+ 1 ptr- @8 '\n' = if
   1 -
 end
 
