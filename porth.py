@@ -605,20 +605,20 @@ def not_enough_arguments(op: Op):
     else:
         assert False, "unsupported type of operation"
 
-DataStack=List[Tuple[Union[DataType, str], Loc]]
+DataStack=List[Tuple[DataType, Loc]]
 
 @dataclass
 class Context:
     stack: DataStack
     ip: OpAddr
-    outs: List[Tuple[Union[DataType, str], Loc]]
+    outs: List[Tuple[DataType, Loc]]
 
 @dataclass
 class Contract:
-    ins: Sequence[Tuple[Union[DataType, str], Loc]]
-    outs: Sequence[Tuple[Union[DataType, str], Loc]]
+    ins: Sequence[Tuple[DataType, Loc]]
+    outs: Sequence[Tuple[DataType, Loc]]
 
-def human_type_name(typ: Union[DataType, str]) -> str:
+def human_type_name(typ: DataType) -> str:
     if isinstance(typ, DataType):
         return f"type `{DATATYPE_NAMES[typ]}`"
     elif isinstance(typ, str):
@@ -629,28 +629,15 @@ def human_type_name(typ: Union[DataType, str]) -> str:
 def type_check_contract(intro_token: Token, ctx: Context, contract: Contract):
     ins = list(contract.ins)
     stack = copy(ctx.stack)
-    generics: Dict[str, Union[DataType, str]] = {}
     arg_count = 0
     while len(stack) > 0 and len(ins) > 0:
         actual, actual_loc = stack.pop()
         expected, expected_loc = ins.pop()
-        if isinstance(expected, DataType):
-            if actual != expected:
-                compiler_error(intro_token.loc, f"Argument {arg_count} of `{intro_token.text}` is expected to be {human_type_name(expected)} but got {human_type_name(actual)}")
-                compiler_note(actual_loc, f"Argument {arg_count} was provided here")
-                compiler_note(expected_loc, f"Expected type was declared here")
-                exit(1)
-        elif isinstance(expected, str):
-            if expected in generics:
-                if actual != generics[expected]:
-                    compiler_error(intro_token.loc, f"Argument {arg_count} of `{intro_token.text}` is expected to be {human_type_name(generics[expected])} but got {human_type_name(actual)}")
-                    compiler_note(actual_loc, f"Argument {arg_count} was provided here")
-                    compiler_note(expected_loc, f"Expected type was declared here")
-                    exit(1)
-            else:
-                generics[expected] = actual
-        else:
-            assert False, "unreachable"
+        if actual != expected:
+            compiler_error(intro_token.loc, f"Argument {arg_count} of `{intro_token.text}` is expected to be {human_type_name(expected)} but got {human_type_name(actual)}")
+            compiler_note(actual_loc, f"Argument {arg_count} was provided here")
+            compiler_note(expected_loc, f"Expected type was declared here")
+            exit(1)
         arg_count += 1
 
     if len(stack) < len(ins):
@@ -658,29 +645,11 @@ def type_check_contract(intro_token: Token, ctx: Context, contract: Contract):
         compiler_note(intro_token.loc, f"Not provided arguments:")
         while len(ins) > 0:
             typ, loc = ins.pop()
-            if isinstance(typ, DataType):
-                compiler_note(loc, f"{DATATYPE_NAMES[typ]}")
-            elif isinstance(typ, str):
-                if typ in generics:
-                    compiler_note(loc, human_type_name(generics[typ]))
-                else:
-                    compiler_note(loc, human_type_name(typ))
-            else:
-                assert False, "unreachable"
+            compiler_note(loc, f"{DATATYPE_NAMES[typ]}")
         exit(1)
 
     for typ, loc in contract.outs:
-        if isinstance(typ, DataType):
-            stack.append((typ, intro_token.loc))
-        elif isinstance(typ, str):
-            if typ in generics:
-                stack.append((generics[typ], intro_token.loc))
-            else:
-                # log.append([CompilerMessage(loc=loc, label="ERROR", text=f"Unknown generic {repr(typ)} in output parameters. All generics should appear at least once in input parameters first.")])
-                # continue
-                assert False, "Unreachable. Such function won't compile in the first place since you can't produce an instance of a generic type at the moment"
-        else:
-            assert False, "unreachable"
+        stack.append((typ, intro_token.loc))
     ctx.stack = stack
 
 def type_check_context_outs(ctx: Context):
@@ -707,6 +676,12 @@ def type_check_context_outs(ctx: Context):
             typ, loc = ctx.outs.pop()
             compiler_note(loc, f"and {human_type_name(typ)}")
         exit(1)
+
+def expect_arity(ctx: Context, op: Op, n: int) -> List[Tuple[DataType, Loc]]:
+    if len(ctx.stack) < n:
+        compiler_error(op.token.loc, f"Not enough arguments provided for `{op.token.value}`. Expected {n} but got {len(ctx.stack)}.");
+        exit(1)
+    return ctx.stack[-n:]
 
 def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract]):
     visited_dos: Dict[OpAddr, DataStack] = {}
@@ -795,39 +770,52 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             elif op.operand == Intrinsic.NOT:
                 type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.PRINT:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc)], outs=[]))
+                [a] = expect_arity(ctx, op, 1)
+                type_check_contract(op.token, ctx, Contract(ins=[a], outs=[]))
             elif op.operand == Intrinsic.DUP:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc)], outs=[("a", op.token.loc), ("a", op.token.loc)]))
+                [a] = expect_arity(ctx, op, 1)
+                type_check_contract(op.token, ctx, Contract(ins=[a], outs=[a, a]))
             elif op.operand == Intrinsic.SWAP:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc)], outs=[("b", op.token.loc), ("a", op.token.loc)]))
+                [a, b] = expect_arity(ctx, op, 2)
+                type_check_contract(op.token, ctx, Contract(ins=[a, b], outs=[b, a]))
             elif op.operand == Intrinsic.DROP:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc)], outs=[]))
+                [a] = expect_arity(ctx, op, 1)
+                type_check_contract(op.token, ctx, Contract(ins=[a], outs=[]))
             elif op.operand == Intrinsic.OVER:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc)], outs=[("a", op.token.loc), ("b", op.token.loc), ("a", op.token.loc)]))
+                [a, b] = expect_arity(ctx, op, 2)
+                type_check_contract(op.token, ctx, Contract(ins=[a, b], outs=[a, b, a]))
             elif op.operand == Intrinsic.ROT:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc)], outs=[("b", op.token.loc), ("c", op.token.loc), ("a", op.token.loc)]))
+                [a, b, c] = expect_arity(ctx, op, 3)
+                type_check_contract(op.token, ctx, Contract(ins=[a, b, c], outs=[b, c, a]))
             elif op.operand == Intrinsic.LOAD8:
                 type_check_contract(op.token, ctx, Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.STORE8:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), (DataType.PTR, op.token.loc)], outs=[]))
+                [a, b] = expect_arity(ctx, op, 2)
+                type_check_contract(op.token, ctx, Contract(ins=[a, (DataType.PTR, b[1])], outs=[]))
             elif op.operand == Intrinsic.LOAD16:
                 type_check_contract(op.token, ctx, Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.STORE16:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), (DataType.PTR, op.token.loc)], outs=[]))
+                [a, b] = expect_arity(ctx, op, 2)
+                type_check_contract(op.token, ctx, Contract(ins=[a, (DataType.PTR, b[1])], outs=[]))
             elif op.operand == Intrinsic.LOAD32:
                 type_check_contract(op.token, ctx, Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.STORE32:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), (DataType.PTR, op.token.loc)], outs=[]))
+                [a, b] = expect_arity(ctx, op, 2)
+                type_check_contract(op.token, ctx, Contract(ins=[a, (DataType.PTR, b[1])], outs=[]))
             elif op.operand == Intrinsic.LOAD64:
                 type_check_contract(op.token, ctx, Contract(ins=[(DataType.PTR, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.STORE64:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), (DataType.PTR, op.token.loc)], outs=[]))
+                [a, b] = expect_arity(ctx, op, 2)
+                type_check_contract(op.token, ctx, Contract(ins=[a, (DataType.PTR, b[1])], outs=[]))
             elif op.operand == Intrinsic.CAST_PTR:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc)], outs=[(DataType.PTR, op.token.loc)]))
+                [a] = expect_arity(ctx, op, 1)
+                type_check_contract(op.token, ctx, Contract(ins=[a], outs=[(DataType.PTR, op.token.loc)]))
             elif op.operand == Intrinsic.CAST_INT:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
+                [a] = expect_arity(ctx, op, 1)
+                type_check_contract(op.token, ctx, Contract(ins=[a], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.CAST_BOOL:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc)], outs=[(DataType.BOOL, op.token.loc)]))
+                [a] = expect_arity(ctx, op, 1)
+                type_check_contract(op.token, ctx, Contract(ins=[a], outs=[(DataType.BOOL, op.token.loc)]))
             elif op.operand == Intrinsic.ARGC:
                 type_check_contract(op.token, ctx, Contract(ins=[], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.ARGV:
@@ -839,17 +827,23 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             elif op.operand == Intrinsic.SYSCALL0:
                 type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL1:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
+                [a, number] = expect_arity(ctx, op, 2)
+                type_check_contract(op.token, ctx, Contract(ins=[a, (DataType.INT, number[1])], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL2:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
+                [a, b, number] = expect_arity(ctx, op, 3)
+                type_check_contract(op.token, ctx, Contract(ins=[a, b, (DataType.INT, number[1])], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL3:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
+                [a, b, c, number] = expect_arity(ctx, op, 4)
+                type_check_contract(op.token, ctx, Contract(ins=[a, b, c, (DataType.INT, number[1])], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL4:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), ("d", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
+                [a, b, c, d, number] = expect_arity(ctx, op, 5)
+                type_check_contract(op.token, ctx, Contract(ins=[a, b, c, d, (DataType.INT, number[1])], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL5:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), ("d", op.token.loc), ("e", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
+                [a, b, c, d, e, number] = expect_arity(ctx, op, 6)
+                type_check_contract(op.token, ctx, Contract(ins=[a, b, c, d, e, (DataType.INT, number[1])], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL6:
-                type_check_contract(op.token, ctx, Contract(ins=[("a", op.token.loc), ("b", op.token.loc), ("c", op.token.loc), ("d", op.token.loc), ("e", op.token.loc), ("f", op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
+                [a, b, c, d, e, f, number] = expect_arity(ctx, op, 7)
+                type_check_contract(op.token, ctx, Contract(ins=[a, b, c, d, e, f, (DataType.INT, number[1])], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.STOP:
                 # TODO: we need some sort of a flag that would allow us to ignore all the stop requests
                 compiler_diagnostic(op.token.loc, "DEBUG", "Stopping the compilation. Current stack state:")
@@ -1614,8 +1608,8 @@ def eval_const_value(ctx: ParseContext, rtokens: List[Token]) -> Tuple[int, Data
         exit(1)
     return stack.pop()
 
-def parse_contract_list(rtokens: List[Token], stoppers: List[Keyword]) -> Tuple[List[Tuple[Union[DataType, str], Loc]], Keyword]:
-    args: List[Tuple[Union[DataType, str], Loc]] = []
+def parse_contract_list(rtokens: List[Token], stoppers: List[Keyword]) -> Tuple[List[Tuple[DataType, Loc]], Keyword]:
+    args: List[Tuple[DataType, Loc]] = []
     while len(rtokens) > 0:
         token = rtokens.pop()
         if token.typ == TokenType.WORD:
@@ -1632,9 +1626,6 @@ def parse_contract_list(rtokens: List[Token], stoppers: List[Keyword]) -> Tuple[
             else:
                 compiler_error(token.loc, f"Unexpected keyword {KEYWORD_NAMES[token.value]}")
                 exit(1)
-        elif token.typ == TokenType.STR:
-            assert isinstance(token.value, str)
-            args.append((token.value, token.loc))
         else:
             compiler_error(token.loc, f"{human(token.typ, HumanNumber.Plural)} are not allowed in procedure definition.")
             exit(1)

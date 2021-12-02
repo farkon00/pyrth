@@ -14,7 +14,7 @@ memory ans sizeof(u64) end
   1 acc !64
 
   0 while dup N < do
-    2dup + str @Str.data cast(ptr) +ptr @8 '0' -
+    over over + str @Str.data cast(ptr) +ptr @8 '0' -
     acc @64 * acc !64
     1 +
   end drop

@@ -8,5 +8,5 @@ memory acc sizeof(u64) end
   end
 
   swap over +
-end 2drop
+end drop drop
 acc @64 print

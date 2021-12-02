@@ -849,7 +849,7 @@ proc cmd-echoed ptr in
     execvp
     // TODO: report that you could not execute the child
   else dup 0 > if*
-    2drop
+    drop drop
     NULL
     0
     wstatus
@@ -859,7 +859,7 @@ proc cmd-echoed ptr in
       1 exit
     end
   else
-    2drop
+    drop drop
     "[ERROR] could not fork a child\n" eputs
     1 exit
   end
@@ -1851,7 +1851,7 @@ in
       0 NULL
     end
   else
-    2drop
+    drop drop
     here eputs ": unreachable\n" eputs
     69 exit
     0 NULL

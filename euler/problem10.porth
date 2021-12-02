@@ -17,8 +17,8 @@ end
 
 proc is-prime int -- bool in // [value: int] -> [ret: bool]
   0 while
-    2dup sizeof(u32) * primes +ptr @32 dup * >= if
-      2dup sizeof(u32) * primes +ptr @32 mod 0 !=
+    over over sizeof(u32) * primes +ptr @32 dup * >= if
+      over over sizeof(u32) * primes +ptr @32 mod 0 !=
     else false end
   do 1 + end
   sizeof(u32) * primes +ptr @32 dup * <

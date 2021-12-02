@@ -33,7 +33,7 @@ include "./std/std.porth"
 "------------------------------\n" puts
 
 // 2dup
-69 420 2dup print print print print
+69 420 over over print print print print
 
 "------------------------------\n" puts
 
@@ -48,7 +48,7 @@ include "./std/std.porth"
 "------------------------------\n" puts
 
 // over
-69 420 over print 2drop
+69 420 over print drop drop
 
 "------------------------------\n" puts
 

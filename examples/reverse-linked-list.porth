@@ -23,7 +23,7 @@ proc alloc_node -- ptr in
 end
 
 proc push_node ptr int in
-  over alloc_node 2dup swap @64 cast(ptr) swap !Node.prev swap !64
+  over alloc_node over over swap @64 cast(ptr) swap !Node.prev swap !64
   swap @64 cast(ptr) !Node.value
 end
 

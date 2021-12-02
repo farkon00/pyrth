@@ -29,12 +29,12 @@ display N ptr+ 10 swap !8
    1 while dup N 2 - < do
       swap 1 shl 7 and
       over row +ptr 1 ptr+ @8 or
-      2dup 110 swap shr 1 and
+      over over 110 swap shr 1 and
       swap row +ptr !8
       swap
 
       1 +
-   end 2drop
+   end drop drop
 
    1 +
 end drop

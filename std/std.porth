@@ -441,9 +441,6 @@ proc getpid -- int in SYS_getpid syscall0 end
 proc execve ptr ptr ptr -- int in SYS_execve syscall3 end
 proc wait4 ptr int ptr int -- int in SYS_wait4 syscall4 end
 
-proc 2dup "a" "b" -- "a" "b" "a" "b" in over over end
-proc 2drop "a" "b" in drop drop end
-
 proc /   int int -- int in divmod drop end
 proc %   int int -- int in divmod swap drop end
 proc mod int int -- int in % end
@@ -561,7 +558,7 @@ proc str-chop-by-delim
 in
   memory delim sizeof(u64) end
   rot delim !64
-  2dup @Str.data swap !Str.data
+  over over @Str.data swap !Str.data
   over 0 swap !Str.count
   while
     dup @Str.count 0 > if
@@ -574,7 +571,7 @@ in
   dup @Str.count 0 > if
     dup str-chop-one-left
   end
-  2drop
+  drop drop
 end
 
 proc str-starts-with
@@ -910,7 +907,7 @@ in
 
     true
   else
-    2drop
+    drop drop
     0 false
   end
 end
@@ -1054,7 +1051,7 @@ proc shell-escape
   int ptr
 in
   memory result sizeof(ptr) end
-  2dup ?shell-safe-str lnot if
+  over over ?shell-safe-str lnot if
     tmp-end result !ptr
     "'" tmp-append drop
       while over 0 > do
@@ -1069,7 +1066,7 @@ in
 
         swap 1 -
         swap 1 ptr+
-      end 2drop
+      end drop drop
     "'" tmp-append drop
 
     tmp-end result @ptr ptr-diff

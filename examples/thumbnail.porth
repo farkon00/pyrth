@@ -20,7 +20,7 @@ proc sum-bytes int -- int in
     swap 8 shr swap
 
     1 +
-  end 2drop
+  end drop drop
   result @int
 end
 
@@ -67,7 +67,7 @@ proc main in
 
   0 while dup HEIGHT < do
     0 while dup WIDTH < do
-      2dup
+      over over
       PIXEL_SIZE /
       swap PIXEL_SIZE /
       PIXELS_COLS *

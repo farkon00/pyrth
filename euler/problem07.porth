@@ -8,8 +8,8 @@ memory primes sizeof(u64) N * 10 + end
 proc is-prime int -- bool in
   0
   while
-    2dup 8 * primes +ptr @64 dup * >= if
-       2dup 8 * primes +ptr @64 mod 0 !=
+    over over 8 * primes +ptr @64 dup * >= if
+       over over 8 * primes +ptr @64 mod 0 !=
     else
        false
     end

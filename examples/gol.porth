@@ -27,7 +27,7 @@ end
 
 proc display_row ptr in
   0 while dup COLS < do
-    2dup ptr+ @8 0 = if
+    over over ptr+ @8 0 = if
       display over ptr+ '.' swap !8
     else
       display over ptr+ '#' swap !8
@@ -41,7 +41,7 @@ end
 
 proc display_board ptr in
   0 while dup ROWS < do
-    2dup COLS * ptr+ display_row
+    over over COLS * ptr+ display_row
     1 +
   end drop
   drop
@@ -72,57 +72,57 @@ end
 proc count_current_nbors int int -- int in
   0 nbors !64
 
-  2dup 1 - swap 1 - swap 2dup in_bounds
+  over over 1 - swap 1 - swap over over in_bounds
   rot rot swap COLS * + board_current +ptr @8 1 =
   land if nbors inc64 end
 
-  2dup 1 - 2dup in_bounds
+  over over 1 - over over in_bounds
   rot rot swap COLS * + board_current +ptr @8 1 =
   land if nbors inc64 end
 
-  2dup 1 - swap 1 + swap 2dup in_bounds
+  over over 1 - swap 1 + swap over over in_bounds
   rot rot swap COLS * + board_current +ptr @8 1 =
   land if nbors inc64 end
 
-  2dup swap 1 - swap 2dup in_bounds
+  over over swap 1 - swap over over in_bounds
   rot rot swap COLS * + board_current +ptr @8 1 =
   land if nbors inc64 end
 
-  2dup swap 1 + swap 2dup in_bounds
+  over over swap 1 + swap over over in_bounds
   rot rot swap COLS * + board_current +ptr @8 1 =
   land if nbors inc64 end
 
-  2dup 1 + swap 1 - swap 2dup in_bounds
+  over over 1 + swap 1 - swap over over in_bounds
   rot rot swap COLS * + board_current +ptr @8 1 =
   land if nbors inc64 end
 
-  2dup 1 + 2dup in_bounds
+  over over 1 + over over in_bounds
   rot rot swap COLS * + board_current +ptr @8 1 =
   land if nbors inc64 end
 
-  2dup 1 + swap 1 + swap 2dup in_bounds
+  over over 1 + swap 1 + swap over over in_bounds
   rot rot swap COLS * + board_current +ptr @8 1 =
   land if nbors inc64 end
 
-  2drop
+  drop drop
   nbors @64
 end
 
 proc compute_next_board in
   0 while dup ROWS < do
     0 while dup COLS < do
-      2dup get_current_cell 1 = if
-        2dup count_current_nbors
+      over over get_current_cell 1 = if
+        over over count_current_nbors
         dup 2 = swap 3 = lor if
-          2dup 1 set_next_cell
+          over over 1 set_next_cell
         else
-          2dup 0 set_next_cell
+          over over 0 set_next_cell
         end
       else
-        2dup count_current_nbors 3 = if
-          2dup 1 set_next_cell
+        over over count_current_nbors 3 = if
+          over over 1 set_next_cell
         else
-          2dup 0 set_next_cell
+          over over 0 set_next_cell
         end
       end
 
