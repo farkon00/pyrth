@@ -618,14 +618,6 @@ class Contract:
     ins: Sequence[Tuple[DataType, Loc]]
     outs: Sequence[Tuple[DataType, Loc]]
 
-def human_type_name(typ: DataType) -> str:
-    if isinstance(typ, DataType):
-        return f"type `{DATATYPE_NAMES[typ]}`"
-    elif isinstance(typ, str):
-        return f"generic type {repr(typ)}"
-    else:
-        assert False, "unreachable"
-
 def type_check_contract(intro_token: Token, ctx: Context, contract: Contract):
     ins = list(contract.ins)
     stack = copy(ctx.stack)
@@ -634,7 +626,7 @@ def type_check_contract(intro_token: Token, ctx: Context, contract: Contract):
         actual, actual_loc = stack.pop()
         expected, expected_loc = ins.pop()
         if actual != expected:
-            compiler_error(intro_token.loc, f"Argument {arg_count} of `{intro_token.text}` is expected to be {human_type_name(expected)} but got {human_type_name(actual)}")
+            compiler_error(intro_token.loc, f"Argument {arg_count} of `{intro_token.text}` is expected to be type `{DATATYPE_NAMES[expected]}` but got type `{DATATYPE_NAMES[actual]}`")
             compiler_note(actual_loc, f"Argument {arg_count} was provided here")
             compiler_note(expected_loc, f"Expected type was declared here")
             exit(1)
@@ -645,7 +637,7 @@ def type_check_contract(intro_token: Token, ctx: Context, contract: Contract):
         compiler_note(intro_token.loc, f"Not provided arguments:")
         while len(ins) > 0:
             typ, loc = ins.pop()
-            compiler_note(loc, f"{DATATYPE_NAMES[typ]}")
+            compiler_note(loc, f"`{DATATYPE_NAMES[typ]}`")
         exit(1)
 
     for typ, loc in contract.outs:
@@ -657,24 +649,24 @@ def type_check_context_outs(ctx: Context):
         actual_typ, actual_loc = ctx.stack.pop()
         expected_typ, expected_loc = ctx.outs.pop()
         if expected_typ != actual_typ:
-            compiler_error(actual_loc, f"Unexpected {human_type_name(actual_typ)} on the stack")
-            compiler_note(expected_loc, f"Expected {human_type_name(expected_typ)}")
+            compiler_error(actual_loc, f"Unexpected type `{DATATYPE_NAMES[actual_typ]}` on the stack")
+            compiler_note(expected_loc, f"Expected type `{DATATYPE_NAMES[expected_typ]}`")
             exit(1)
     if len(ctx.stack) > len(ctx.outs):
         top_typ, top_loc = ctx.stack.pop()
         compiler_error(top_loc, f"Unhandled data on the stack:")
-        compiler_note(top_loc, f"{human_type_name(top_typ)}")
+        compiler_note(top_loc, f"type `{DATATYPE_NAMES[top_typ]}`")
         while len(ctx.stack) > 0:
             typ, loc = ctx.stack.pop()
-            compiler_note(loc, f"{human_type_name(typ)}")
+            compiler_note(loc, f"type `{DATATYPE_NAMES[typ]}`")
         exit(1)
     elif len(ctx.stack) < len(ctx.outs):
         top_typ, top_loc = ctx.outs.pop()
         compiler_error(top_loc, f"Insufficient data on the stack. Expected:")
-        compiler_note(top_loc, f"{human_type_name(top_typ)}")
+        compiler_note(top_loc, f"type `{DATATYPE_NAMES[top_typ]}`")
         while len(ctx.outs) > 0:
             typ, loc = ctx.outs.pop()
-            compiler_note(loc, f"and {human_type_name(typ)}")
+            compiler_note(loc, f"and type `{DATATYPE_NAMES[typ]}`")
         exit(1)
 
 def expect_arity(ctx: Context, op: Op, n: int) -> List[Tuple[DataType, Loc]]:
@@ -849,7 +841,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                 compiler_diagnostic(op.token.loc, "DEBUG", "Stopping the compilation. Current stack state:")
                 if len(ctx.stack) > 0:
                     for typ, loc in reversed(ctx.stack):
-                        compiler_diagnostic(loc, "ITEM", human_type_name(typ))
+                        compiler_diagnostic(loc, "ITEM", f"type `{DATATYPE_NAMES[typ]}`")
                 else:
                     compiler_diagnostic(op.token.loc, "DEBUG", "<EMPTY>")
                 exit(1)
@@ -889,13 +881,13 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
                         compiler_note(op.token.loc, '<empty>')
                     else:
                         for typ, loc in visited_dos[ctx.ip]:
-                            compiler_note(loc, human_type_name(typ))
+                            compiler_note(loc, f"type `{DATATYPE_NAMES[typ]}`")
                     compiler_note(op.token.loc, '-- Stack AFTER a single iteration --')
                     if len(ctx.stack) == 0:
                         compiler_note(op.token.loc, '<empty>')
                     else:
                         for typ, loc in ctx.stack:
-                            compiler_note(loc, human_type_name(typ))
+                            compiler_note(loc, f"type `{DATATYPE_NAMES[typ]}`")
                     exit(1)
                 contexts.pop()
             else:
