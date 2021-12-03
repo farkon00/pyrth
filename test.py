@@ -140,11 +140,11 @@ def run_test_for_folder(folder: str):
             run_test_for_file(entry.path, stats)
     print()
     print("Simulation failed: %d, Compilation failed: %d, Ignored: %d" % (stats.sim_failed, stats.com_failed, stats.ignored))
-    print()
-    print("Failed files:")
-    for failed_file in stats.failed_files:
-        print(f"    {failed_file}")
     if stats.sim_failed != 0 or stats.com_failed != 0:
+        print("Failed files:")
+        print()
+        for failed_file in stats.failed_files:
+            print(f"{failed_file}")
         exit(1)
 
 def update_input_for_file(file_path: str, argv: List[str]):
