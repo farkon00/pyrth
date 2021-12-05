@@ -2745,6 +2745,93 @@ in
   else drop end
 end
 
+proc ?type-stack-empty ptr -- bool in TypeStack.top ptr+ @ptr NULL ptr= end
+
+proc type-check-frames
+  int // args count
+  ptr // actual frame
+  ptr // expected frame
+  ptr // token
+in
+  memory token sizeof(ptr) end
+  token !ptr
+  memory expected sizeof(ptr) end
+  expected !ptr
+  memory actual sizeof(ptr) end
+  actual !ptr
+  memory args-count sizeof(int) end
+  args-count !int
+
+  expected @ptr TypeFrame.type ptr+ @int
+  actual   @ptr TypeFrame.type ptr+ @int
+  != if
+    token @ptr Token.loc ptr+                            eputloc
+    ": ERROR: Argument "                                 eputs
+    args-count @int                                      eputu
+    " of `"                                              eputs
+    token @ptr Token.text ptr+ @Str                      eputs
+    "` is expected to be type `"                         eputs
+    expected @ptr TypeFrame.type ptr+ @int datatype-name eputs
+    "` but got type `"                                   eputs
+    actual @ptr TypeFrame.type ptr+ @int datatype-name   eputs
+    "`\n"                                                eputs
+
+    actual @ptr TypeFrame.loc ptr+                       eputloc
+    ": NOTE: Argument "                                  eputs
+    args-count @int                                      eputu
+    " was provided here\n"                               eputs
+
+    expected @ptr TypeFrame.loc ptr+                     eputloc
+    ": NOTE: Expected type was declared here\n"          eputs
+
+    1 exit
+  end
+end
+
+proc type-check-stack
+  ptr // token
+  ptr // stack
+  ptr // ins
+  ptr // outs
+in
+  memory outs sizeof(TypeStack) end
+  sizeof(TypeStack) swap outs memcpy drop
+  memory ins sizeof(TypeStack) end
+  sizeof(TypeStack) swap ins memcpy drop
+  memory stack sizeof(ptr) end
+  stack !ptr
+  memory token sizeof(ptr) end
+  token !ptr
+
+  0 // args count
+    while
+      stack @ptr ?type-stack-empty
+      ins        ?type-stack-empty
+      lor
+      lnot
+    do
+      dup
+      stack @ptr TypeStack.top ptr+ @ptr
+      ins        TypeStack.top ptr+ @ptr
+      token @ptr
+      type-check-frames
+
+      stack @ptr type-stack-pop
+      ins        type-stack-pop
+      1 +
+    end
+
+    ins ?type-stack-empty lnot if
+      here eputs ": TODO: not enough arguments error reporting is not implemented yet\n" eputs
+      // TODO: we need a way to quickly get the size of the stack to properly report this error
+      1 exit
+    end
+  drop // args count
+
+  here eputs ": TODO: appending the outs to the stack is not implemented yet\n" eputs
+  1 exit
+end
+
 proc type-check-program-from
   ptr // stack
   int // ip
@@ -2869,6 +2956,23 @@ in
 
         op Op.operand ptr+ @int
           dup INTRINSIC_PLUS = if
+            tmp-end
+              op Op.token ptr+
+              stack
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
+
             here eputs ": TODO: type checking of INTRINSIC_PLUS is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
@@ -3005,9 +3109,10 @@ in
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_ARGV = if*
-            here eputs ": TODO: type checking of INTRINSIC_ARGV is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            DATATYPE_PTR
+            op Op.token ptr+ Token.loc ptr+
+            stack
+            type-stack-push
           else dup INTRINSIC_ENVP = if*
             here eputs ": TODO: type checking of INTRINSIC_ENVP is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
