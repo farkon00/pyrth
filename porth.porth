@@ -2792,6 +2792,68 @@ in
   end
 end
 
+proc expect-arity
+  ptr // token
+  ptr // stack
+  int // arity
+  --
+  ptr // dst
+in
+  memory arity sizeof(int) end
+  arity !int
+  memory stack sizeof(ptr) end
+  stack !ptr
+  memory token sizeof(ptr) end
+  token !ptr
+  memory dst sizeof(ptr) end
+  sizeof(TypeStack) tmp-alloc dst !ptr
+  memory tmp sizeof(TypeStack) end
+  sizeof(TypeStack) 0 tmp memset drop
+
+  stack @ptr TypeStack.count ptr+ @int
+  arity @int
+  < if
+    token @ptr Token.loc ptr+                      eputloc
+    ": ERROR: Not enough arguments provided for `" eputs
+    token @ptr Token.text ptr+ @Str                eputs
+    "`. Expected "                                 eputs
+    arity @int                                     eputu
+    " but got "                                    eputs
+    stack @ptr TypeStack.count ptr+ @int           eputu
+    ".\n"                                          eputs
+    1 exit
+  end
+
+  stack @ptr TypeStack.top ptr+ @ptr
+    0
+      while dup arity @int < do
+        swap
+          dup TypeFrame.type ptr+ @int
+          over TypeFrame.loc ptr+
+          tmp
+          type-stack-push
+
+          TypeFrame.prev ptr+ @ptr
+        swap
+        1 +
+      end
+    drop
+  drop
+
+  0 while dup arity @int < do
+    tmp TypeStack.top ptr+ @ptr
+      dup  TypeFrame.type ptr+ @int
+      over TypeFrame.loc ptr+
+      dst @ptr
+      type-stack-push
+    drop
+    tmp type-stack-pop
+    1 +
+  end drop
+
+  dst @ptr
+end
+
 proc type-check-stack
   ptr // token
   ptr // stack
@@ -3054,9 +3116,13 @@ in
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_PRINT = if*
-            here eputs ": TODO: type checking of INTRINSIC_PRINT is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              op Op.token ptr+
+              stack
+              over over 1 expect-arity
+              sizeof(TypeStack) tmp-alloc
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_DUP = if*
             here eputs ": TODO: type checking of INTRINSIC_DUP is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
@@ -3203,6 +3269,7 @@ proc summary in
   // NOTE: global memory size does not have an upper capacity limit since it's
   // just a counter of how big of region to allocate in the .bss section
   "Global memory size (bytes):   " puts global-memory-capacity @int putu "\n" puts
+  "Type Frames leaked:           " puts type-frame-pool-count  @int putu "/" puts TYPE_FRAME_POOL_CAP putu "\n" puts
 end
 
 proc usage
