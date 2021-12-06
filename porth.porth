@@ -2904,12 +2904,10 @@ in
   while
     outs ?type-stack-empty lnot
   do
-    outs TypeStack.top ptr+ @ptr
-      dup  TypeFrame.type ptr+ @int
-      over TypeFrame.loc ptr+
-      stack @ptr
-      type-stack-push
-    drop
+    outs TypeStack.top ptr+ @ptr TypeFrame.type ptr+ @int
+    token @ptr Token.loc ptr+
+    stack @ptr
+    type-stack-push
 
     outs type-stack-pop
   end
