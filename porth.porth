@@ -2653,8 +2653,9 @@ const TypeFrame.loc  sizeof(Loc) offset end
 const TypeFrame.prev sizeof(ptr) offset end
 const sizeof(TypeFrame)           reset end
 
-const TypeStack.top sizeof(ptr) offset end
-const sizeof(TypeStack)          reset end
+const TypeStack.top   sizeof(ptr) offset end
+const TypeStack.count sizeof(int) offset end
+const sizeof(TypeStack)            reset end
 
 // TODO: Type Frame Pool does not support reference counting memory management strategy
 const TYPE_FRAME_POOL_CAP 1024 end
@@ -2732,11 +2733,14 @@ in
 
   new-top @ptr
   stack   @ptr TypeStack.top ptr+ !ptr
+
+  stack   @ptr TypeStack.count ptr+ inc64
 end
 
 proc type-stack-pop
   ptr // stack
 in
+  dup TypeStack.count ptr+ dec64
   TypeStack.top ptr+
   dup @ptr NULL ptr!= if
     dup @ptr TypeFrame.prev ptr+ @ptr
@@ -2822,8 +2826,15 @@ in
     end
 
     ins ?type-stack-empty lnot if
-      here eputs ": TODO: not enough arguments error reporting is not implemented yet\n" eputs
-      // TODO: we need a way to quickly get the size of the stack to properly report this error
+      token @ptr Token.loc ptr+                       eputloc
+      ": ERROR: Not enough arguments provided for `"  eputs
+      token @ptr Token.text ptr+ @Str                 eputs
+      "`. Expected "                                  eputs
+      dup ins TypeStack.count ptr+ @int +             eputu
+      " but got "                                     eputs
+      dup                                             eputu
+      ".\n"                                           eputs
+      here eputs ": TODO: reporting not provided arguments is not implemented\n" eputs
       1 exit
     end
   drop // args count
