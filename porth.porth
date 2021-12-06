@@ -2839,8 +2839,18 @@ in
     end
   drop // args count
 
-  here eputs ": TODO: appending the outs to the stack is not implemented yet\n" eputs
-  1 exit
+  while
+    outs ?type-stack-empty lnot
+  do
+    outs TypeStack.top ptr+ @ptr
+      dup  TypeFrame.type ptr+ @int
+      over TypeFrame.loc ptr+
+      stack @ptr
+      type-stack-push
+    drop
+
+    outs type-stack-pop
+  end
 end
 
 proc type-check-program-from
@@ -2983,10 +2993,6 @@ in
                 swap type-stack-push
               type-check-stack
             tmp-rewind
-
-            here eputs ": TODO: type checking of INTRINSIC_PLUS is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
           else dup INTRINSIC_MINUS = if*
             here eputs ": TODO: type checking of INTRINSIC_MINUS is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
