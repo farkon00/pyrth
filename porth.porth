@@ -2033,7 +2033,7 @@ in
           -
           DATATYPE_INT swap const-stack-push
         else dup INTRINSIC_PLUS = if*
-          // TODO: `ptr+` intrinsic ignores the types in compile time evaluation
+          // TODO: `+` intrinsic ignores the types in compile time evaluation
           const-stack-pop swap drop
           const-stack-pop swap drop
           swap
@@ -3180,7 +3180,7 @@ in
 end
 
 proc type-check-program in
-  // TODO: type-check-program should first check the procedures
+  // TODO: Type checking procedures is not implemented yet
   memory empty-stack sizeof(TypeStack) end
   sizeof(TypeStack) 0 empty-stack memset drop
   empty-stack 0 NULL type-check-program-from
