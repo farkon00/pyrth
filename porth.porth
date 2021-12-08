@@ -688,12 +688,225 @@ in
 end
 /// END Const //////////////////////////////
 
+/// BEGIN DataType //////////////////////////////
+const DATATYPE_INT  1 offset end
+const DATATYPE_PTR  1 offset end
+const DATATYPE_BOOL 1 offset end
+const COUNT_DATATYPES  reset end
+
+const HUMAN_SINGULAR 1 offset end
+const HUMAN_PLURAL   1 offset end
+const COUNT_HUMAN       reset end
+
+proc human-token-type
+  int // token type
+  int // plurality
+  --
+  int ptr // str
+in
+  assert "Exhaustive handling of noun categories" COUNT_HUMAN 2 = end
+
+  dup HUMAN_SINGULAR = if
+    drop
+    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
+    dup TOKEN_INT = if
+      drop
+      "an integer"
+    else dup TOKEN_WORD = if*
+      drop
+      "a word"
+    else dup TOKEN_STR = if*
+      drop
+      "a string"
+    else dup TOKEN_CSTR = if*
+      drop
+      "a C-style string"
+    else dup TOKEN_CHAR = if*
+      drop
+      "a character"
+    else
+      drop
+      here eputs ": unreachable\n" eputs
+      0 NULL
+    end
+  else dup HUMAN_PLURAL = if*
+    drop
+    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
+    dup TOKEN_INT = if
+      drop
+      "integers"
+    else dup TOKEN_WORD = if*
+      drop
+      "words"
+    else dup TOKEN_STR = if*
+      drop
+      "strings"
+    else dup TOKEN_CSTR = if*
+      drop
+      "C-style strings"
+    else dup TOKEN_CHAR = if*
+      drop
+      "characters"
+    else
+      drop
+      here eputs ": unreachable\n" eputs
+      69 exit
+      0 NULL
+    end
+  else
+    drop drop
+    here eputs ": unreachable\n" eputs
+    69 exit
+    0 NULL
+  end
+end
+
+proc datatype-by-name
+  int ptr // data type name
+  --
+  int // data type
+  bool // found
+in
+  memory name sizeof(Str) end
+  name !Str
+  assert "Exhaustive handling of data types in datatype-by-name" COUNT_DATATYPES 3 = end
+       name @Str "ptr"  streq if  DATATYPE_PTR  true
+  else name @Str "bool" streq if* DATATYPE_BOOL true
+  else name @Str "int"  streq if* DATATYPE_INT  true
+  else 0 false end
+end
+
+proc datatype-name
+  int // data type
+  --
+  int ptr
+in
+  assert "Exhaustive handling of data types in datatype-name" COUNT_DATATYPES 3 = end
+       dup DATATYPE_INT  = if  drop "int"
+  else dup DATATYPE_BOOL = if* drop "bool"
+  else dup DATATYPE_PTR  = if* drop "ptr"
+  else
+    drop
+    0 NULL
+    here eputs ": unreachable\n" eputs
+    69 exit
+  end
+end
+/// END DataType //////////////////////////////
+
+/// BEGIN TypeStack //////////////////////////////
+const TypeFrame.type sizeof(int) offset end
+const TypeFrame.loc  sizeof(Loc) offset end
+const TypeFrame.prev sizeof(ptr) offset end
+const sizeof(TypeFrame)           reset end
+
+const TypeStack.top   sizeof(ptr) offset end
+const TypeStack.count sizeof(int) offset end
+const sizeof(TypeStack)            reset end
+
+// TODO: Type Frame Pool does not support reference counting memory management strategy
+const TYPE_FRAME_POOL_CAP 1024 end
+memory type-frame-pool TYPE_FRAME_POOL_CAP sizeof(TypeFrame) * end
+memory type-frame-pool-count sizeof(int) end
+
+proc dump-dot-type-frame-pool
+  int // file-path
+in
+  memory fd sizeof(int) end
+  fd !int
+
+  "digraph Pool {\n" fd @64 fputs
+  0 while dup type-frame-pool-count @int < do
+    "  Node_"              fd @64 fputs
+    dup                    fd @64 fputu
+    " [label="             fd @64 fputs
+    dup
+      sizeof(TypeFrame) *
+      type-frame-pool +ptr
+      TypeFrame.type ptr+
+      @int
+      datatype-name        fd @64 fputs
+    "]"                    fd @64 fputs
+
+    dup
+      sizeof(TypeFrame) *
+      type-frame-pool +ptr
+      TypeFrame.prev ptr+
+      @ptr
+      dup NULL ptr!= if
+        "  Node_"   fd @64 fputs
+        over        fd @64 fputu
+        " -> Node_" fd @64 fputs
+        type-frame-pool ptr-diff
+        sizeof(TypeFrame) /
+        fd @64 fputu
+        "\n" fd @64 fputs
+      else drop end
+
+    1 +
+  end drop
+  "}\n" fd @64 fputs
+end
+
+proc type-frame-alloc -- ptr in
+  type-frame-pool-count @int TYPE_FRAME_POOL_CAP >= if
+    here eputs ": ERROR: Type Frame Pool overflow! Time to implement proper memory management! Or you can just increase the size of the pool, that will work too. Kappa\n" eputs
+    1 exit
+  end
+
+  type-frame-pool-count @int
+  sizeof(TypeFrame) *
+  type-frame-pool +ptr
+
+  type-frame-pool-count inc64
+end
+
+proc type-stack-push
+  int // type
+  ptr // Loc
+  ptr // stack
+in
+  memory stack sizeof(ptr) end
+  stack !ptr
+
+  memory new-top sizeof(ptr) end
+  type-frame-alloc new-top !ptr
+
+  sizeof(Loc) swap new-top @ptr TypeFrame.loc ptr+ memcpy drop
+  new-top @ptr TypeFrame.type ptr+ !int
+
+  stack   @ptr TypeStack.top  ptr+ @ptr
+  new-top @ptr TypeFrame.prev ptr+ !ptr
+
+  new-top @ptr
+  stack   @ptr TypeStack.top ptr+ !ptr
+
+  stack   @ptr TypeStack.count ptr+ inc64
+end
+
+proc type-stack-pop
+  ptr // stack
+in
+  dup TypeStack.count ptr+ dec64
+  TypeStack.top ptr+
+  dup @ptr NULL ptr!= if
+    dup @ptr TypeFrame.prev ptr+ @ptr
+    swap
+    !ptr
+  else drop end
+end
+
+proc ?type-stack-empty ptr -- bool in TypeStack.top ptr+ @ptr NULL ptr= end
+/// END TypeStack //////////////////////////////
+
 /// BEGIN Proc //////////////////////////////
 /// Array of procedures of the compiled program
-const Proc.name sizeof(Str) offset end
-const Proc.addr sizeof(u64) offset end
-const Proc.loc sizeof(Loc) offset end
-const sizeof(Proc) reset end
+const Proc.name sizeof(Str)       offset end
+const Proc.addr sizeof(u64)       offset end
+const Proc.loc  sizeof(Loc)       offset end
+const Proc.ins  sizeof(TypeStack) offset end
+const Proc.outs sizeof(TypeStack) offset end
+const sizeof(Proc)                 reset end
 const PROCS_CAP 1024 end
 memory procs-count sizeof(u64) end
 memory procs sizeof(Proc) PROCS_CAP * end
@@ -1785,113 +1998,6 @@ proc simulate-ops in
 end
 /// END Interpreter //////////////////////////////
 
-/// BEGIN DataType //////////////////////////////
-const DATATYPE_INT  1 offset end
-const DATATYPE_PTR  1 offset end
-const DATATYPE_BOOL 1 offset end
-const COUNT_DATATYPES  reset end
-
-const HUMAN_SINGULAR 1 offset end
-const HUMAN_PLURAL   1 offset end
-const COUNT_HUMAN       reset end
-
-proc human-token-type
-  int // token type
-  int // plurality
-  --
-  int ptr // str
-in
-  assert "Exhaustive handling of noun categories" COUNT_HUMAN 2 = end
-
-  dup HUMAN_SINGULAR = if
-    drop
-    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
-    dup TOKEN_INT = if
-      drop
-      "an integer"
-    else dup TOKEN_WORD = if*
-      drop
-      "a word"
-    else dup TOKEN_STR = if*
-      drop
-      "a string"
-    else dup TOKEN_CSTR = if*
-      drop
-      "a C-style string"
-    else dup TOKEN_CHAR = if*
-      drop
-      "a character"
-    else
-      drop
-      here eputs ": unreachable\n" eputs
-      0 NULL
-    end
-  else dup HUMAN_PLURAL = if*
-    drop
-    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
-    dup TOKEN_INT = if
-      drop
-      "integers"
-    else dup TOKEN_WORD = if*
-      drop
-      "words"
-    else dup TOKEN_STR = if*
-      drop
-      "strings"
-    else dup TOKEN_CSTR = if*
-      drop
-      "C-style strings"
-    else dup TOKEN_CHAR = if*
-      drop
-      "characters"
-    else
-      drop
-      here eputs ": unreachable\n" eputs
-      69 exit
-      0 NULL
-    end
-  else
-    drop drop
-    here eputs ": unreachable\n" eputs
-    69 exit
-    0 NULL
-  end
-end
-
-proc datatype-by-name
-  int ptr // data type name
-  --
-  int // data type
-  bool // found
-in
-  memory name sizeof(Str) end
-  name !Str
-  assert "Exhaustive handling of data types in datatype-by-name" COUNT_DATATYPES 3 = end
-       name @Str "ptr"  streq if  DATATYPE_PTR  true
-  else name @Str "bool" streq if* DATATYPE_BOOL true
-  else name @Str "int"  streq if* DATATYPE_INT  true
-  else 0 false end
-end
-
-proc datatype-name
-  int // data type
-  --
-  int ptr
-in
-  assert "Exhaustive handling of data types in datatype-name" COUNT_DATATYPES 3 = end
-       dup DATATYPE_INT  = if  drop "int"
-  else dup DATATYPE_BOOL = if* drop "bool"
-  else dup DATATYPE_PTR  = if* drop "ptr"
-  else
-    drop
-    0 NULL
-    here eputs ": unreachable\n" eputs
-    69 exit
-  end
-end
-
-/// END DataType //////////////////////////////
-
 /// BEGIN File Path Buffer //////////////////////////////
 // This is a memory region where we store file paths for compile-file-into-ops operation.
 // This buffer is created to ensure that the file path string live long enough for
@@ -2647,109 +2753,6 @@ proc compile-file-into-ops ptr in
   // TODO: compile-file-into-ops does not clean up resources after itself
 end
 /// END Compiler //////////////////////////////
-
-const TypeFrame.type sizeof(int) offset end
-const TypeFrame.loc  sizeof(Loc) offset end
-const TypeFrame.prev sizeof(ptr) offset end
-const sizeof(TypeFrame)           reset end
-
-const TypeStack.top   sizeof(ptr) offset end
-const TypeStack.count sizeof(int) offset end
-const sizeof(TypeStack)            reset end
-
-// TODO: Type Frame Pool does not support reference counting memory management strategy
-const TYPE_FRAME_POOL_CAP 1024 end
-memory type-frame-pool TYPE_FRAME_POOL_CAP sizeof(TypeFrame) * end
-memory type-frame-pool-count sizeof(int) end
-
-proc dump-dot-type-frame-pool
-  int // file-path
-in
-  memory fd sizeof(int) end
-  fd !int
-
-  "digraph Pool {\n" fd @64 fputs
-  0 while dup type-frame-pool-count @int < do
-    "  Node_"              fd @64 fputs
-    dup                    fd @64 fputu
-    " [label="             fd @64 fputs
-    dup
-      sizeof(TypeFrame) *
-      type-frame-pool +ptr
-      TypeFrame.type ptr+
-      @int
-      datatype-name        fd @64 fputs
-    "]"                    fd @64 fputs
-
-    dup
-      sizeof(TypeFrame) *
-      type-frame-pool +ptr
-      TypeFrame.prev ptr+
-      @ptr
-      dup NULL ptr!= if
-        "  Node_"   fd @64 fputs
-        over        fd @64 fputu
-        " -> Node_" fd @64 fputs
-        type-frame-pool ptr-diff
-        sizeof(TypeFrame) /
-        fd @64 fputu
-        "\n" fd @64 fputs
-      else drop end
-
-    1 +
-  end drop
-  "}\n" fd @64 fputs
-end
-
-proc type-frame-alloc -- ptr in
-  type-frame-pool-count @int TYPE_FRAME_POOL_CAP >= if
-    here eputs ": ERROR: Type Frame Pool overflow! Time to implement proper memory management! Or you can just increase the size of the pool, that will work too. Kappa\n" eputs
-    1 exit
-  end
-
-  type-frame-pool-count @int
-  sizeof(TypeFrame) *
-  type-frame-pool +ptr
-
-  type-frame-pool-count inc64
-end
-
-proc type-stack-push
-  int // type
-  ptr // Loc
-  ptr // stack
-in
-  memory stack sizeof(ptr) end
-  stack !ptr
-
-  memory new-top sizeof(ptr) end
-  type-frame-alloc new-top !ptr
-
-  sizeof(Loc) swap new-top @ptr TypeFrame.loc ptr+ memcpy drop
-  new-top @ptr TypeFrame.type ptr+ !int
-
-  stack   @ptr TypeStack.top  ptr+ @ptr
-  new-top @ptr TypeFrame.prev ptr+ !ptr
-
-  new-top @ptr
-  stack   @ptr TypeStack.top ptr+ !ptr
-
-  stack   @ptr TypeStack.count ptr+ inc64
-end
-
-proc type-stack-pop
-  ptr // stack
-in
-  dup TypeStack.count ptr+ dec64
-  TypeStack.top ptr+
-  dup @ptr NULL ptr!= if
-    dup @ptr TypeFrame.prev ptr+ @ptr
-    swap
-    !ptr
-  else drop end
-end
-
-proc ?type-stack-empty ptr -- bool in TypeStack.top ptr+ @ptr NULL ptr= end
 
 proc type-check-frames
   int // args count
