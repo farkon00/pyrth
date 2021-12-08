@@ -2918,10 +2918,8 @@ proc type-check-program-from
   int // ip
   ptr // outs
 in
-  // TODOO: type-check-program does not take expected outputs (`outs`) into account
-  // We don't really know what's the format of outs yet, but it's an important part
-  // of type checking nonetheless
-  drop
+  memory outs sizeof(TypeStack) end
+  sizeof(TypeStack) swap outs memcpy drop
 
   memory ip sizeof(int) end
   ip !int
@@ -3245,15 +3243,48 @@ in
       false // break, we have reached the end of the program
     end
   do end
-  here eputs ": TODOOO: type checking is not implemented yet\n" eputs
-  1 exit
+
+  while
+    stack ?type-stack-empty
+    outs  ?type-stack-empty
+    lor
+    lnot
+  do
+    stack TypeStack.top ptr+ @ptr
+    outs  TypeStack.top ptr+ @ptr
+      over TypeFrame.type ptr+ @int
+      over TypeFrame.type ptr+ @int
+      != if
+        here eputs ": TODO: reporting unexpected type on the stack is not implemented\n" eputs
+        over TypeFrame.loc ptr+ located-here
+        1 exit
+      end
+    drop
+    drop
+  end
+
+  stack TypeStack.count ptr+ @int
+  outs  TypeStack.count ptr+ @int
+    over over > if
+      here eputs ": TODO: reporting unhandled data on the stack is not implemented\n" eputs
+      1 exit
+    end
+
+    over over < if
+      here eputs ": TODO: reporting insufficient data on the stack is not implemented\n" eputs
+      1 exit
+    end
+  drop
+  drop
 end
 
 proc type-check-program in
-  // TODO: Type checking procedures is not implemented yet
   memory empty-stack sizeof(TypeStack) end
   sizeof(TypeStack) 0 empty-stack memset drop
-  empty-stack 0 NULL type-check-program-from
+  empty-stack 0 empty-stack type-check-program-from
+
+  here eputs ": TODO: Type checking procedures is not implemented yet\n" eputs
+  1 exit
 end
 
 proc summary in
