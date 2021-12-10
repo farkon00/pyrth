@@ -3155,9 +3155,13 @@ in
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_DROP = if*
-            here eputs ": TODO: type checking of INTRINSIC_DROP is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              op Op.token ptr+
+              stack
+              over over 1 expect-arity
+              sizeof(TypeStack) tmp-alloc
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_OVER = if*
             here eputs ": TODO: type checking of INTRINSIC_OVER is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
@@ -3191,17 +3195,36 @@ in
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_LOAD64 = if*
-            here eputs ": TODO: type checking of INTRINSIC_LOAD64 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              op Op.token ptr+
+              stack
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_PTR
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_STORE64 = if*
             here eputs ": TODO: type checking of INTRINSIC_STORE64 is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_CAST_PTR = if*
-            here eputs ": TODO: type checking of INTRINSIC_CAST_PTR is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              op Op.token ptr+
+              stack
+              over
+              over
+              1 expect-arity
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_PTR
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_CAST_INT = if*
             here eputs ": TODO: type checking of INTRINSIC_CAST_INT is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
