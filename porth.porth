@@ -3238,9 +3238,24 @@ in
               type-check-stack
             tmp-rewind
           else dup INTRINSIC_STORE64 = if*
-            here eputs ": TODO: type checking of INTRINSIC_STORE64 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              // token
+              op Op.token ptr+
+              // stack
+              stack
+              // ins
+              over
+              over
+              2 expect-arity
+                DATATYPE_PTR
+                over
+                TypeStack.top ptr+ @ptr
+                TypeFrame.type ptr+
+                !int
+              // outs
+              sizeof(TypeStack) tmp-alloc
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_CAST_PTR = if*
             tmp-end
               op Op.token ptr+
