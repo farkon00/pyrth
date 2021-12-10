@@ -805,7 +805,7 @@ const TypeStack.count sizeof(int) offset end
 const sizeof(TypeStack)            reset end
 
 // TODO: Type Frame Pool does not support reference counting memory management strategy
-const TYPE_FRAME_POOL_CAP 1024 end
+const TYPE_FRAME_POOL_CAP 2 1024 * end
 memory type-frame-pool TYPE_FRAME_POOL_CAP sizeof(TypeFrame) * end
 memory type-frame-pool-count sizeof(int) end
 
@@ -919,7 +919,7 @@ memory inside-proc sizeof(bool) end
 // You know, the usual thing that a modern compiled language should just support
 // out of the box
 
-proc proc-lookup
+proc proc-lookup-by-name
   int ptr // proc name
   --
   ptr     // proc
@@ -942,6 +942,30 @@ in
     drop NULL
   end
 end
+
+proc proc-lookup-by-addr
+  int // proc addr
+  --
+  ptr // proc
+in
+  memory addr sizeof(int) end
+  addr !int
+
+  0 while
+    dup procs-count @64 < if
+      dup sizeof(Proc) * procs +ptr Proc.addr ptr+ @int
+      addr @int
+      !=
+    else false end
+  do 1 + end
+
+  dup procs-count @64 < if
+    sizeof(Proc) * procs +ptr
+  else
+    drop NULL
+  end
+end
+
 
 proc proc-define
   ptr // proc
@@ -2240,7 +2264,7 @@ in
     1 exit
   end drop
 
-  name @Str proc-lookup dup NULL ptr!= if
+  name @Str proc-lookup-by-name dup NULL ptr!= if
     loc eputloc ": ERROR: redefinition of a procedure `" eputs name @Str eputs "`\n" eputs
     dup Proc.loc ptr+ eputloc ": NOTE: the original definition is located here\n" eputs
     1 exit
@@ -2723,7 +2747,7 @@ proc compile-file-into-ops ptr in
           swap Const.value ptr+ @64
           token
           push-op
-        else drop dup @Str proc-lookup dup NULL ptr!= if*
+        else drop dup @Str proc-lookup-by-name dup NULL ptr!= if*
           OP_CALL
           swap Proc.addr ptr+ @64
           token
@@ -3036,9 +3060,18 @@ in
       else op Op.type ptr+ @int OP_RET = if*
         false // break, end of the procedure
       else op Op.type ptr+ @int OP_CALL = if*
-        here eputs ": TODO: type checking of OP_CALL is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
+        op Op.token ptr+
+        stack
+        op Op.operand ptr+ @int proc-lookup-by-addr
+          dup NULL ptr= if
+            here eputs ": Assertion Failed: expect proc always exist with this specific address. Something went wrong during the compilation process\n" eputs
+            1 exit
+          end
+          dup  Proc.ins  ptr+
+          swap Proc.outs ptr+
+        type-check-stack
+
+        ip inc64
 
         true // continue
       else op Op.type ptr+ @int OP_WHILE = if*
@@ -3226,9 +3259,18 @@ in
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_CAST_BOOL = if*
-            here eputs ": TODO: type checking of INTRINSIC_CAST_BOOL is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              op Op.token ptr+
+              stack
+              over
+              over
+              1 expect-arity
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_BOOL
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_ARGC = if*
             here eputs ": TODO: type checking of INTRINSIC_ARGC is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
