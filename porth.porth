@@ -3028,10 +3028,7 @@ in
 
         true // continue
       else op Op.type ptr+ @int OP_SKIP_PROC = if*
-        here eputs ": TODO: type checking of OP_SKIP_PROC is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
-
+        op Op.operand ptr+ @int ip !int
         true // continue
       else op Op.type ptr+ @int OP_PREP_PROC = if*
         here eputs ": TODO: type checking of OP_PREP_PROC is not implemented yet\n" eputs
@@ -3312,12 +3309,12 @@ in
 end
 
 proc type-check-program in
+  here eputs ": TODO: Type checking procedures is not implemented yet\n" eputs
+  1 exit
+
   memory empty-stack sizeof(TypeStack) end
   sizeof(TypeStack) 0 empty-stack memset drop
   empty-stack 0 empty-stack type-check-program-from
-
-  here eputs ": TODO: Type checking procedures is not implemented yet\n" eputs
-  1 exit
 end
 
 proc summary in
