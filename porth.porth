@@ -912,6 +912,13 @@ memory procs-count sizeof(u64) end
 memory procs sizeof(Proc) PROCS_CAP * end
 memory inside-proc sizeof(bool) end
 
+// TODO: Two phase compilation for the procedures
+// Phase 1: figure out all of the addresses of the procs
+// Phase 2: do the usual compilation knowing the address of the procs up front
+// This enables the user to define procs in whatever order the want.
+// You know, the usual thing that a modern compiled language should just support
+// out of the box
+
 proc proc-lookup
   int ptr // proc name
   --
@@ -2254,36 +2261,55 @@ in
   end
 end
 
-proc skip-proc-contract
-  ptr // lexer
+proc parse-proc-contract-list
+  ptr  // lexer
+  ptr  // type stack
+  --
+  bool // encountered `--`
 in
+  memory stack sizeof(ptr) end
+  stack !ptr
+  memory lexer sizeof(ptr) end
+  lexer !ptr
   memory token sizeof(Token) end
-  memory ended-with-in sizeof(bool) end
-
-  false ended-with-in !bool
+  memory bikeshedder sizeof(bool) end
+  false bikeshedder !bool
 
   while
-    token over lexer-next-token if
-      token Token.type ptr+ @64 TOKEN_WORD = if
-        token Token.value ptr+ @Str "in" streq
-        ended-with-in !bool
-        ended-with-in @bool lnot
-      else token Token.type ptr+ @64 TOKEN_STR = if*
-        true
+    token lexer @ptr lexer-next-token if
+      token Token.type ptr+ @int TOKEN_WORD = if
+        token Token.value ptr+
+          dup @Str "in" streq if
+            false // break, reached the end of list
+          else dup @Str "--" streq if*
+            true bikeshedder !bool
+            false // break, reached the end of list
+          else dup @Str datatype-by-name if*
+            token Token.loc ptr+
+            stack @ptr
+            type-stack-push
+
+            true // continue
+          else
+            here eputs ": TODO: report unknown type in the proc contract\n" eputs
+            1 exit
+            drop
+            false // break, compile error
+          end
+          swap
+        drop
       else
         here eputs ": TODO: report unsupported token type in proc definition \n" eputs
         token Token.loc ptr+ eputloc ": located in here\n" eputs
         1 exit
-        false
+        false // break, compile error
       end
-    else false end
+    else
+      false // break, ran out of tokens
+    end
   do end
-  drop
 
-  ended-with-in @bool lnot if
-    here eputs ": TODO: report tokens ended before `in` \n" eputs
-    1 exit
-  end
+  bikeshedder @bool
 end
 
 proc enclose-while-do
@@ -2616,7 +2642,11 @@ proc compile-file-into-ops ptr in
               parse-block-stack-push
           OP_PREP_PROC 0 token push-op
 
-          lexer skip-proc-contract
+          prok
+            lexer over Proc.ins ptr+ parse-proc-contract-list if
+              lexer over Proc.outs ptr+ parse-proc-contract-list drop
+            end
+          drop
 
           true inside-proc !bool
 
@@ -3302,6 +3332,41 @@ proc summary in
   // just a counter of how big of region to allocate in the .bss section
   "Global memory size (bytes):   " puts global-memory-capacity @int putu "\n" puts
   "Type Frames leaked:           " puts type-frame-pool-count  @int putu "/" puts TYPE_FRAME_POOL_CAP putu "\n" puts
+  "------------------------------\n" puts
+  0 while dup procs-count @int < do
+    dup sizeof(Proc) * procs +ptr
+      dup Proc.loc ptr+       putloc
+      ": "                    puts
+      dup Proc.name ptr+ @Str puts
+      "\n"                    puts
+
+      dup Proc.ins ptr+ TypeStack.top ptr+ @ptr
+        while dup NULL ptr!= do
+          dup TypeFrame.loc ptr+                     putloc
+          ": IN: "                                   puts
+          dup TypeFrame.type ptr+ @int datatype-name puts
+          "\n"                                       puts
+
+          TypeFrame.prev ptr+ @ptr
+        end
+      drop
+
+      dup Proc.outs ptr+ TypeStack.top ptr+ @ptr
+        while dup NULL ptr!= do
+          dup TypeFrame.loc ptr+                     putloc
+          ": OUT: "                                  puts
+          dup TypeFrame.type ptr+ @int datatype-name puts
+          "\n"                                       puts
+
+          TypeFrame.prev ptr+ @ptr
+        end
+      drop
+
+      "------------------------------\n" puts
+    drop
+
+    1 +
+  end drop
 end
 
 proc usage
