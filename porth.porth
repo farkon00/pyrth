@@ -3034,11 +3034,7 @@ in
         ip inc64
         true // continue
       else op Op.type ptr+ @int OP_RET = if*
-        here eputs ": TODO: type checking of OP_RET is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
-
-        true // continue
+        false // break, end of the procedure
       else op Op.type ptr+ @int OP_CALL = if*
         here eputs ": TODO: type checking of OP_CALL is not implemented yet\n" eputs
         op Op.token ptr+ Token.loc ptr+ located-here
@@ -3311,6 +3307,8 @@ in
       end
     drop
     drop
+    stack type-stack-pop
+    outs  type-stack-pop
   end
 
   stack TypeStack.count ptr+ @int
