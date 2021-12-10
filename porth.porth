@@ -3031,10 +3031,7 @@ in
         op Op.operand ptr+ @int ip !int
         true // continue
       else op Op.type ptr+ @int OP_PREP_PROC = if*
-        here eputs ": TODO: type checking of OP_PREP_PROC is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
-
+        ip inc64
         true // continue
       else op Op.type ptr+ @int OP_RET = if*
         here eputs ": TODO: type checking of OP_RET is not implemented yet\n" eputs
@@ -3309,8 +3306,16 @@ in
 end
 
 proc type-check-program in
-  here eputs ": TODO: Type checking procedures is not implemented yet\n" eputs
-  1 exit
+  0 while dup procs-count @int < do
+    dup sizeof(Proc) * procs +ptr
+
+    dup  Proc.ins  ptr+
+    over Proc.addr ptr+ @int
+    rot  Proc.outs ptr+
+    type-check-program-from
+
+    1 +
+  end drop
 
   memory empty-stack sizeof(TypeStack) end
   sizeof(TypeStack) 0 empty-stack memset drop
