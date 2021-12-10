@@ -3412,41 +3412,6 @@ proc summary in
   // just a counter of how big of region to allocate in the .bss section
   "Global memory size (bytes):   " puts global-memory-capacity @int putu "\n" puts
   "Type Frames leaked:           " puts type-frame-pool-count  @int putu "/" puts TYPE_FRAME_POOL_CAP putu "\n" puts
-  "------------------------------\n" puts
-  0 while dup procs-count @int < do
-    dup sizeof(Proc) * procs +ptr
-      dup Proc.loc ptr+       putloc
-      ": "                    puts
-      dup Proc.name ptr+ @Str puts
-      "\n"                    puts
-
-      dup Proc.ins ptr+ TypeStack.top ptr+ @ptr
-        while dup NULL ptr!= do
-          dup TypeFrame.loc ptr+                     putloc
-          ": IN: "                                   puts
-          dup TypeFrame.type ptr+ @int datatype-name puts
-          "\n"                                       puts
-
-          TypeFrame.prev ptr+ @ptr
-        end
-      drop
-
-      dup Proc.outs ptr+ TypeStack.top ptr+ @ptr
-        while dup NULL ptr!= do
-          dup TypeFrame.loc ptr+                     putloc
-          ": OUT: "                                  puts
-          dup TypeFrame.type ptr+ @int datatype-name puts
-          "\n"                                       puts
-
-          TypeFrame.prev ptr+ @ptr
-        end
-      drop
-
-      "------------------------------\n" puts
-    drop
-
-    1 +
-  end drop
 end
 
 proc usage
