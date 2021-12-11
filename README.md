@@ -412,8 +412,8 @@ const WEEK_DAYS reset end
 ```porth
 include "std.porth"
 
-const offsetof(Str.count) sizeof(u64) offset end
-const offsetof(Str.data) sizeof(ptr) offset end
+const Str.count sizeof(int) offset end
+const Str.data  sizeof(ptr) offset end
 const sizeof(Str) reset end
 ```
 
