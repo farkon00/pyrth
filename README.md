@@ -404,7 +404,7 @@ const SAT 1 offset end
 const SUN 1 offset end
 const WEEK_DAYS reset end
 
-"There is " puts WEEK_DAYS putd " days in a week\n" puts
+"There is " puts WEEK_DAYS putu " days in a week\n" puts
 ```
 
 #### Structs
