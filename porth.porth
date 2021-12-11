@@ -3160,13 +3160,42 @@ in
               type-check-stack
             tmp-rewind
           else dup INTRINSIC_MUL = if*
-            here eputs ": TODO: type checking of INTRINSIC_MUL is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              op Op.token ptr+
+              stack
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_DIVMOD = if*
-            here eputs ": TODO: type checking of INTRINSIC_DIVMOD is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              op Op.token ptr+
+              stack
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_MAX = if*
             here eputs ": TODO: type checking of INTRINSIC_MAX is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
@@ -3243,13 +3272,39 @@ in
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_OR = if*
-            here eputs ": TODO: type checking of INTRINSIC_OR is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              op Op.token ptr+
+              stack
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_AND = if*
-            here eputs ": TODO: type checking of INTRINSIC_AND is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              op Op.token ptr+
+              stack
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_NOT = if*
             here eputs ": TODO: type checking of INTRINSIC_NOT is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
@@ -3404,33 +3459,141 @@ in
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_SYSCALL0 = if*
-            here eputs ": TODO: type checking of INTRINSIC_SYSCALL0 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              // token
+              op Op.token ptr+
+              // stack
+              stack
+              // ins
+              over
+              over
+              1 expect-arity // TODO: replace it with a hardcoded stack (I just copy pasted this from other syscall implementations)
+                DATATYPE_INT
+                over
+                TypeStack.top ptr+ @ptr
+                TypeFrame.type ptr+
+                !int
+              // outs
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_SYSCALL1 = if*
-            here eputs ": TODO: type checking of INTRINSIC_SYSCALL1 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              // token
+              op Op.token ptr+
+              // stack
+              stack
+              // ins
+              over
+              over
+              2 expect-arity
+                DATATYPE_INT
+                over
+                TypeStack.top ptr+ @ptr
+                TypeFrame.type ptr+
+                !int
+              // outs
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_SYSCALL2 = if*
-            here eputs ": TODO: type checking of INTRINSIC_SYSCALL2 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              // token
+              op Op.token ptr+
+              // stack
+              stack
+              // ins
+              over
+              over
+              3 expect-arity
+                DATATYPE_INT
+                over
+                TypeStack.top ptr+ @ptr
+                TypeFrame.type ptr+
+                !int
+              // outs
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_SYSCALL3 = if*
-            here eputs ": TODO: type checking of INTRINSIC_SYSCALL3 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              // token
+              op Op.token ptr+
+              // stack
+              stack
+              // ins
+              over
+              over
+              4 expect-arity
+                DATATYPE_INT
+                over
+                TypeStack.top ptr+ @ptr
+                TypeFrame.type ptr+
+                !int
+              // outs
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_SYSCALL4 = if*
-            here eputs ": TODO: type checking of INTRINSIC_SYSCALL4 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              // token
+              op Op.token ptr+
+              // stack
+              stack
+              // ins
+              over
+              over
+              5 expect-arity
+                DATATYPE_INT
+                over
+                TypeStack.top ptr+ @ptr
+                TypeFrame.type ptr+
+                !int
+              // outs
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else dup INTRINSIC_SYSCALL5 = if*
             here eputs ": TODO: type checking of INTRINSIC_SYSCALL5 is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_SYSCALL6 = if*
-            here eputs ": TODO: type checking of INTRINSIC_SYSCALL6 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            tmp-end
+              // token
+              op Op.token ptr+
+              // stack
+              stack
+              // ins
+              over
+              over
+              7 expect-arity
+                DATATYPE_INT
+                over
+                TypeStack.top ptr+ @ptr
+                TypeFrame.type ptr+
+                !int
+              // outs
+              sizeof(TypeStack) tmp-alloc
+                dup  DATATYPE_INT
+                swap op Op.token ptr+ Token.loc ptr+
+                swap type-stack-push
+              type-check-stack
+            tmp-rewind
           else
             here eputs ": unreachable\n" eputs
             64 exit
