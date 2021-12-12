@@ -809,6 +809,8 @@ memory tmp-size sizeof(u64) end
 
 proc tmp-clean in 0 tmp-size !64 end
 proc tmp-end -- ptr in tmp-start tmp-size @64 ptr+ end
+// TODO: make tmp-rewind to fill up the "freed" memory with some recognizable pattern like 0xcccccccc
+// It should be probably enabled in some special debug mode, cause it's a runtime cost
 proc tmp-rewind ptr in tmp-start ptr-diff tmp-size !int end
 
 proc tmp-alloc
