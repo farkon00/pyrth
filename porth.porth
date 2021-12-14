@@ -3005,6 +3005,35 @@ in
   end drop
 end
 
+proc type-check-int-operator
+  ptr // token
+  ptr // stack
+in
+  memory ins sizeof(TypeStack) end
+  sizeof(TypeStack) 0 ins memset drop
+  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  memory outs sizeof(TypeStack) end
+  sizeof(TypeStack) 0 outs memset drop
+  DATATYPE_INT over Token.loc ptr+ outs type-stack-push
+  ins outs type-check-stack
+end
+
+proc type-check-divmod-operator
+  ptr // token
+  ptr // stack
+in
+  memory ins sizeof(TypeStack) end
+  sizeof(TypeStack) 0 ins memset drop
+  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  memory outs sizeof(TypeStack) end
+  sizeof(TypeStack) 0 outs memset drop
+  DATATYPE_INT over Token.loc ptr+ outs type-stack-push
+  DATATYPE_INT over Token.loc ptr+ outs type-stack-push
+  ins outs type-check-stack
+end
+
 proc type-check-program-from
   ptr // stack
   int // ip
@@ -3127,72 +3156,16 @@ in
 
         op Op.operand ptr+ @int
           dup INTRINSIC_PLUS = if
-            op Op.token ptr+
-            stack
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            type-check-stack
+            op Op.token ptr+ stack type-check-int-operator
           else dup INTRINSIC_MINUS = if*
-            op Op.token ptr+
-            stack
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            type-check-stack
+            op Op.token ptr+ stack type-check-int-operator
           else dup INTRINSIC_MUL = if*
-            op Op.token ptr+
-            stack
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            type-check-stack
+            op Op.token ptr+ stack type-check-int-operator
           else dup INTRINSIC_DIVMOD = if*
-            op Op.token ptr+
-            stack
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            type-check-stack
+            // TODO: this weird thing should go away when we separate divmod into div and mod
+            op Op.token ptr+ stack type-check-divmod-operator
           else dup INTRINSIC_MAX = if*
-            here eputs ": TODO: type checking of INTRINSIC_MAX is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-int-operator
           else dup INTRINSIC_EQ = if*
             op Op.token ptr+
             stack
@@ -3251,43 +3224,13 @@ in
               swap type-stack-push
             type-check-stack
           else dup INTRINSIC_SHR = if*
-            here eputs ": TODO: type checking of INTRINSIC_SHR is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-int-operator
           else dup INTRINSIC_SHL = if*
-            here eputs ": TODO: type checking of INTRINSIC_SHL is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-int-operator
           else dup INTRINSIC_OR = if*
-            op Op.token ptr+
-            stack
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            type-check-stack
+            op Op.token ptr+ stack type-check-int-operator
           else dup INTRINSIC_AND = if*
-            op Op.token ptr+
-            stack
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            type-check-stack
+            op Op.token ptr+ stack type-check-int-operator
           else dup INTRINSIC_NOT = if*
             here eputs ": TODO: type checking of INTRINSIC_NOT is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
