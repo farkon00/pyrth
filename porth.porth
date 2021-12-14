@@ -3130,6 +3130,21 @@ in
   ins outs type-check-stack
 end
 
+proc type-check-store-operator
+  ptr // token
+  ptr // stack
+in
+  memory ins sizeof(TypeStack) end
+  sizeof(TypeStack) 0 ins memset drop
+  over over 2 ins expect-arity-2
+  DATATYPE_PTR ins TypeStack.top ptr+ @ptr TypeFrame.type ptr+ !int
+
+  memory outs sizeof(TypeStack) end
+  sizeof(TypeStack) 0 outs memset drop
+
+  ins outs type-check-stack
+end
+
 proc type-check-load-operator
   ptr // token
   ptr // stack
@@ -3388,40 +3403,19 @@ in
           else dup INTRINSIC_LOAD8 = if*
             op Op.token ptr+ stack type-check-load-operator
           else dup INTRINSIC_STORE8 = if*
-            here eputs ": TODO: type checking of INTRINSIC_STORE8 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-store-operator
           else dup INTRINSIC_LOAD16 = if*
             op Op.token ptr+ stack type-check-load-operator
           else dup INTRINSIC_STORE16 = if*
-            here eputs ": TODO: type checking of INTRINSIC_STORE16 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-store-operator
           else dup INTRINSIC_LOAD32 = if*
             op Op.token ptr+ stack type-check-load-operator
           else dup INTRINSIC_STORE32 = if*
-            here eputs ": TODO: type checking of INTRINSIC_STORE32 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-store-operator
           else dup INTRINSIC_LOAD64 = if*
             op Op.token ptr+ stack type-check-load-operator
           else dup INTRINSIC_STORE64 = if*
-            // token
-            op Op.token ptr+
-            // stack
-            stack
-            // ins
-            over
-            over
-            2 expect-arity
-              DATATYPE_PTR
-              over
-              TypeStack.top ptr+ @ptr
-              TypeFrame.type ptr+
-              !int
-            // outs
-            sizeof(TypeStack) tmp-alloc
-            type-check-stack
+            op Op.token ptr+ stack type-check-store-operator
           else dup INTRINSIC_CAST_PTR = if*
             op Op.token ptr+
             stack
