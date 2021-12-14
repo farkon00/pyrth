@@ -3251,9 +3251,12 @@ in
 
         true // continue
       else op Op.type ptr+ @int OP_PUSH_LOCAL_MEM = if*
-        here eputs ": TODO: type checking of OP_PUSH_LOCAL_MEM is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
+        DATATYPE_PTR
+        op Op.token ptr+ Token.loc ptr+
+        stack
+        type-stack-push
+
+        ip inc64
 
         true // continue
       else op Op.type ptr+ @int OP_PUSH_GLOBAL_MEM = if*
