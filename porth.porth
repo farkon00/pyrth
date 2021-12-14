@@ -3019,6 +3019,19 @@ in
   ins outs type-check-stack
 end
 
+proc type-check-unary-int-operator
+  ptr // token
+  ptr // stack
+in
+  memory ins sizeof(TypeStack) end
+  sizeof(TypeStack) 0 ins memset drop
+  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  memory outs sizeof(TypeStack) end
+  sizeof(TypeStack) 0 outs memset drop
+  DATATYPE_INT over Token.loc ptr+ outs type-stack-push
+  ins outs type-check-stack
+end
+
 proc type-check-divmod-operator
   ptr // token
   ptr // stack
@@ -3232,9 +3245,7 @@ in
           else dup INTRINSIC_AND = if*
             op Op.token ptr+ stack type-check-binary-int-operator
           else dup INTRINSIC_NOT = if*
-            here eputs ": TODO: type checking of INTRINSIC_NOT is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-unary-int-operator
           else dup INTRINSIC_PRINT = if*
             op Op.token ptr+
             stack
