@@ -884,6 +884,17 @@ in
   stack   @ptr TypeStack.count ptr+ inc64
 end
 
+proc type-stack-push-frame
+  ptr // frame
+  ptr // stack
+in
+  swap
+  dup  TypeFrame.type ptr+ @int
+  swap TypeFrame.loc ptr+
+  rot
+  type-stack-push
+end
+
 proc type-stack-pop
   ptr // stack
 in
@@ -2947,6 +2958,68 @@ in
   dst @ptr
 end
 
+// TODO: rename expect-arity-2 to expect-arity when there are no use cases for the original expect-arity anymore
+// the main difference between them is that expect-arity-2 does not allocate dst in tmp region, but rather accepts it
+// via the arguments
+proc expect-arity-2
+  ptr // token
+  ptr // stack
+  int // arity
+  ptr // dst
+in
+  memory dst sizeof(ptr) end
+  dst !ptr
+  memory arity sizeof(int) end
+  arity !int
+  memory stack sizeof(ptr) end
+  stack !ptr
+  memory token sizeof(ptr) end
+  token !ptr
+  memory tmp sizeof(TypeStack) end
+  sizeof(TypeStack) 0 tmp memset drop
+
+  stack @ptr TypeStack.count ptr+ @int
+  arity @int
+  < if
+    token @ptr Token.loc ptr+                      eputloc
+    ": ERROR: Not enough arguments provided for `" eputs
+    token @ptr Token.text ptr+ @Str                eputs
+    "`. Expected "                                 eputs
+    arity @int                                     eputu
+    " but got "                                    eputs
+    stack @ptr TypeStack.count ptr+ @int           eputu
+    ".\n"                                          eputs
+    1 exit
+  end
+
+  stack @ptr TypeStack.top ptr+ @ptr
+    0
+      while dup arity @int < do
+        swap
+          dup TypeFrame.type ptr+ @int
+          over TypeFrame.loc ptr+
+          tmp
+          type-stack-push
+
+          TypeFrame.prev ptr+ @ptr
+        swap
+        1 +
+      end
+    drop
+  drop
+
+  0 while dup arity @int < do
+    tmp TypeStack.top ptr+ @ptr
+      dup  TypeFrame.type ptr+ @int
+      over TypeFrame.loc ptr+
+      dst @ptr
+      type-stack-push
+    drop
+    tmp type-stack-pop
+    1 +
+  end drop
+end
+
 proc type-check-stack
   ptr // token
   ptr // stack
@@ -3005,17 +3078,72 @@ in
   end drop
 end
 
+proc type-check-over
+  ptr // token
+  ptr // stack
+in
+  memory ins sizeof(TypeStack) end
+  sizeof(TypeStack) 0 ins memset drop
+  over over 2 ins expect-arity-2
+
+  memory outs sizeof(TypeStack) end
+  sizeof(TypeStack) ins outs memcpy drop
+  ins TypeStack.top ptr+ @ptr TypeFrame.prev ptr+ @ptr
+  outs
+  type-stack-push-frame
+
+  ins outs type-check-stack
+end
+
+proc type-check-dup
+  ptr // token
+  ptr // stack
+in
+  memory ins sizeof(TypeStack) end
+  sizeof(TypeStack) 0 ins memset drop
+  over over 1 ins expect-arity-2
+
+  memory outs sizeof(TypeStack) end
+  sizeof(TypeStack) ins outs memcpy drop
+  ins TypeStack.top ptr+ @ptr
+  outs
+  type-stack-push-frame
+
+  ins outs type-check-stack
+end
+
 proc type-check-binary-int-operator
   ptr // token
   ptr // stack
 in
   memory ins sizeof(TypeStack) end
   sizeof(TypeStack) 0 ins memset drop
-  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
-  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  over
+    DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+    DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  drop
   memory outs sizeof(TypeStack) end
   sizeof(TypeStack) 0 outs memset drop
-  DATATYPE_INT over Token.loc ptr+ outs type-stack-push
+  over
+    DATATYPE_INT over Token.loc ptr+ outs type-stack-push
+  drop
+  ins outs type-check-stack
+end
+
+proc type-check-load-operator
+  ptr // token
+  ptr // stack
+in
+  memory ins sizeof(TypeStack) end
+  sizeof(TypeStack) 0 ins memset drop
+  over
+    DATATYPE_PTR over Token.loc ptr+ ins type-stack-push
+  drop
+  memory outs sizeof(TypeStack) end
+  sizeof(TypeStack) 0 outs memset drop
+  over
+    DATATYPE_INT over Token.loc ptr+ outs type-stack-push
+  drop
   ins outs type-check-stack
 end
 
@@ -3025,10 +3153,14 @@ proc type-check-unary-int-operator
 in
   memory ins sizeof(TypeStack) end
   sizeof(TypeStack) 0 ins memset drop
-  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  over
+    DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  drop
   memory outs sizeof(TypeStack) end
   sizeof(TypeStack) 0 outs memset drop
-  DATATYPE_INT over Token.loc ptr+ outs type-stack-push
+  over
+    DATATYPE_INT over Token.loc ptr+ outs type-stack-push
+  drop
   ins outs type-check-stack
 end
 
@@ -3038,11 +3170,15 @@ proc type-check-cmp-int-operator
 in
   memory ins sizeof(TypeStack) end
   sizeof(TypeStack) 0 ins memset drop
-  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
-  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  over
+    DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+    DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  drop
   memory outs sizeof(TypeStack) end
   sizeof(TypeStack) 0 outs memset drop
-  DATATYPE_BOOL over Token.loc ptr+ outs type-stack-push
+  over
+    DATATYPE_BOOL over Token.loc ptr+ outs type-stack-push
+  drop
   ins outs type-check-stack
 end
 
@@ -3052,12 +3188,16 @@ proc type-check-divmod-operator
 in
   memory ins sizeof(TypeStack) end
   sizeof(TypeStack) 0 ins memset drop
-  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
-  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  over
+    DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+    DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  drop
   memory outs sizeof(TypeStack) end
   sizeof(TypeStack) 0 outs memset drop
-  DATATYPE_INT over Token.loc ptr+ outs type-stack-push
-  DATATYPE_INT over Token.loc ptr+ outs type-stack-push
+  over
+    DATATYPE_INT over Token.loc ptr+ outs type-stack-push
+    DATATYPE_INT over Token.loc ptr+ outs type-stack-push
+  drop
   ins outs type-check-stack
 end
 
@@ -3222,9 +3362,7 @@ in
             sizeof(TypeStack) tmp-alloc
             type-check-stack
           else dup INTRINSIC_DUP = if*
-            here eputs ": TODO: type checking of INTRINSIC_DUP is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-dup
           else dup INTRINSIC_SWAP = if*
             // token
             op Op.token ptr+
@@ -3242,49 +3380,31 @@ in
             sizeof(TypeStack) tmp-alloc
             type-check-stack
           else dup INTRINSIC_OVER = if*
-            here eputs ": TODO: type checking of INTRINSIC_OVER is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-over
           else dup INTRINSIC_ROT = if*
             here eputs ": TODO: type checking of INTRINSIC_ROT is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_LOAD8 = if*
-            here eputs ": TODO: type checking of INTRINSIC_LOAD8 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-load-operator
           else dup INTRINSIC_STORE8 = if*
             here eputs ": TODO: type checking of INTRINSIC_STORE8 is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_LOAD16 = if*
-            here eputs ": TODO: type checking of INTRINSIC_LOAD16 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-load-operator
           else dup INTRINSIC_STORE16 = if*
             here eputs ": TODO: type checking of INTRINSIC_STORE16 is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_LOAD32 = if*
-            here eputs ": TODO: type checking of INTRINSIC_LOAD32 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-load-operator
           else dup INTRINSIC_STORE32 = if*
             here eputs ": TODO: type checking of INTRINSIC_STORE32 is not implemented yet\n" eputs
             op Op.token ptr+ Token.loc ptr+ located-here
             1 exit
           else dup INTRINSIC_LOAD64 = if*
-            op Op.token ptr+
-            stack
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_PTR
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            type-check-stack
+            op Op.token ptr+ stack type-check-load-operator
           else dup INTRINSIC_STORE64 = if*
             // token
             op Op.token ptr+
