@@ -3325,9 +3325,7 @@ in
 
         true // continue
       else op Op.type ptr+ @int OP_WHILE = if*
-        here eputs ": TODO: type checking of OP_WHILE is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
+        ip inc64
 
         true // continue
       else op Op.type ptr+ @int OP_DO = if*
