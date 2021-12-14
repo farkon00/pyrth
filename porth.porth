@@ -3032,6 +3032,20 @@ in
   ins outs type-check-stack
 end
 
+proc type-check-cmp-int-operator
+  ptr // token
+  ptr // stack
+in
+  memory ins sizeof(TypeStack) end
+  sizeof(TypeStack) 0 ins memset drop
+  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  DATATYPE_INT over Token.loc ptr+ ins type-stack-push
+  memory outs sizeof(TypeStack) end
+  sizeof(TypeStack) 0 outs memset drop
+  DATATYPE_BOOL over Token.loc ptr+ outs type-stack-push
+  ins outs type-check-stack
+end
+
 proc type-check-divmod-operator
   ptr // token
   ptr // stack
@@ -3180,62 +3194,17 @@ in
           else dup INTRINSIC_MAX = if*
             op Op.token ptr+ stack type-check-binary-int-operator
           else dup INTRINSIC_EQ = if*
-            op Op.token ptr+
-            stack
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_BOOL
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            type-check-stack
+            op Op.token ptr+ stack type-check-cmp-int-operator
           else dup INTRINSIC_GT = if*
-            here eputs ": TODO: type checking of INTRINSIC_GT is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-cmp-int-operator
           else dup INTRINSIC_LT = if*
-            op Op.token ptr+
-            stack
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_BOOL
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            type-check-stack
+            op Op.token ptr+ stack type-check-cmp-int-operator
           else dup INTRINSIC_GE = if*
-            here eputs ": TODO: type checking of INTRINSIC_GE is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-cmp-int-operator
           else dup INTRINSIC_LE = if*
-            here eputs ": TODO: type checking of INTRINSIC_LE is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-cmp-int-operator
           else dup INTRINSIC_NE = if*
-            op Op.token ptr+
-            stack
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-              dup  DATATYPE_INT
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            sizeof(TypeStack) tmp-alloc
-              dup  DATATYPE_BOOL
-              swap op Op.token ptr+ Token.loc ptr+
-              swap type-stack-push
-            type-check-stack
+            op Op.token ptr+ stack type-check-cmp-int-operator
           else dup INTRINSIC_SHR = if*
             op Op.token ptr+ stack type-check-binary-int-operator
           else dup INTRINSIC_SHL = if*
