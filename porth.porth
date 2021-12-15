@@ -3234,7 +3234,7 @@ proc type-check-program-from
   ptr // stack
   int // ip
   ptr // outs
-  int // start
+  int // start of the loop
 in
   memory start-ip sizeof(int) end
   start-ip !int
@@ -3296,10 +3296,17 @@ in
 
         true  // continue
       else op Op.type ptr+ @int OP_IF = if*
-        here eputs ": TODO: type checking of OP_IF is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
+        op Op.token ptr+ stack type-check-if-op
 
+        // then branch
+        stack
+        ip @int 1 +
+        outs
+        start-ip @int
+        type-check-program-from
+
+        // else branch
+        op Op.operand ptr+ @int ip !int
         true // continue
       else op Op.type ptr+ @int OP_IFSTAR = if*
         here eputs ": TODO: type checking of OP_IFSTAR is not implemented yet\n" eputs
@@ -3308,14 +3315,10 @@ in
 
         true // continue
       else op Op.type ptr+ @int OP_ELSE = if*
-        here eputs ": TODO: type checking of OP_ELSE is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
-
+        op Op.operand ptr+ @int ip !int
         true // continue
       else op Op.type ptr+ @int OP_END = if*
         op Op.operand ptr+ @int ip !int
-
         true // continue
       else op Op.type ptr+ @int OP_SKIP_PROC = if*
         op Op.operand ptr+ @int ip !int
