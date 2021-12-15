@@ -808,7 +808,7 @@ const TypeStack.top   sizeof(ptr) offset end
 const TypeStack.count sizeof(int) offset end
 const sizeof(TypeStack)            reset end
 
-// TODO: Type Frame Pool does not support reference counting memory management strategy
+// TODO: Rewinding for TypeFrame Pool
 const TYPE_FRAME_POOL_CAP 512 1024 * end
 memory type-frame-pool TYPE_FRAME_POOL_CAP sizeof(TypeFrame) * end
 memory type-frame-pool-count sizeof(int) end
