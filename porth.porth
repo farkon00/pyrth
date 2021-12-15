@@ -3234,12 +3234,13 @@ proc type-check-program-from
   ptr // stack
   int // ip
   ptr // outs
+  int // start
 in
+  memory start-ip sizeof(int) end
+  start-ip !int
+
   memory outs sizeof(TypeStack) end
   sizeof(TypeStack) swap outs memcpy drop
-
-  memory start-ip sizeof(int) end
-  dup start-ip !int
 
   memory ip sizeof(int) end
   ip !int
@@ -3346,10 +3347,11 @@ in
       else op Op.type ptr+ @int OP_DO = if*
         op Op.token ptr+ stack type-check-if-op
 
-        ip @int 1 + start-ip @int != if
+        ip @int start-ip @int != if
           stack
           ip @int 1 +
           stack
+          ip @int
           type-check-program-from
 
           op Op.operand ptr+ @int ip !int
@@ -3668,12 +3670,16 @@ in
 end
 
 proc type-check-program in
+  memory prok sizeof(ptr) end
+
   0 while dup procs-count @int < do
     dup sizeof(Proc) * procs +ptr
+    prok !ptr
 
-    dup  Proc.ins  ptr+
-    over Proc.addr ptr+ @int
-    rot  Proc.outs ptr+
+    prok @ptr Proc.ins  ptr+
+    prok @ptr Proc.addr ptr+ @int
+    prok @ptr Proc.outs ptr+
+    over
     type-check-program-from
 
     1 +
@@ -3681,7 +3687,7 @@ proc type-check-program in
 
   memory empty-stack sizeof(TypeStack) end
   sizeof(TypeStack) 0 empty-stack memset drop
-  empty-stack 0 empty-stack type-check-program-from
+  empty-stack 0 empty-stack 0 type-check-program-from
 end
 
 proc summary in
