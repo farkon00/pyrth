@@ -809,7 +809,7 @@ const TypeStack.count sizeof(int) offset end
 const sizeof(TypeStack)            reset end
 
 // TODO: Type Frame Pool does not support reference counting memory management strategy
-const TYPE_FRAME_POOL_CAP 2 1024 * end
+const TYPE_FRAME_POOL_CAP 4 1024 * end
 memory type-frame-pool TYPE_FRAME_POOL_CAP sizeof(TypeFrame) * end
 memory type-frame-pool-count sizeof(int) end
 
@@ -3123,6 +3123,32 @@ in
   ins outs type-check-stack
 end
 
+proc type-check-rot
+  ptr // token
+  ptr // stack
+in
+  memory ins sizeof(TypeStack) end
+  sizeof(TypeStack) 0 ins memset drop
+  over over 3 ins expect-arity-2
+
+  memory outs sizeof(TypeStack) end
+  sizeof(TypeStack) 0 outs memset drop
+
+  ins TypeStack.top ptr+ @ptr
+  TypeFrame.prev ptr+ @ptr
+  outs type-stack-push-frame
+
+  ins TypeStack.top ptr+ @ptr
+  outs type-stack-push-frame
+
+  ins TypeStack.top ptr+ @ptr
+  TypeFrame.prev ptr+ @ptr
+  TypeFrame.prev ptr+ @ptr
+  outs type-stack-push-frame
+
+  ins outs type-check-stack
+end
+
 proc type-check-dup
   ptr // token
   ptr // stack
@@ -3472,9 +3498,7 @@ in
           else dup INTRINSIC_OVER = if*
             op Op.token ptr+ stack type-check-over
           else dup INTRINSIC_ROT = if*
-            here eputs ": TODO: type checking of INTRINSIC_ROT is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            op Op.token ptr+ stack type-check-rot
           else dup INTRINSIC_LOAD8 = if*
             op Op.token ptr+ stack type-check-load-operator
           else dup INTRINSIC_STORE8 = if*
