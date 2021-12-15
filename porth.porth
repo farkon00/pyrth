@@ -3130,6 +3130,20 @@ in
   ins outs type-check-stack
 end
 
+proc type-check-if-op
+  ptr // token
+  ptr // stack
+in
+  memory ins sizeof(TypeStack) end
+  sizeof(TypeStack) 0 ins memset drop
+  over
+    DATATYPE_BOOL over Token.loc ptr+ ins type-stack-push
+  drop
+  memory outs sizeof(TypeStack) end
+  sizeof(TypeStack) 0 outs memset drop
+  ins outs type-check-stack
+end
+
 proc type-check-store-operator
   ptr // token
   ptr // stack
@@ -3224,6 +3238,9 @@ in
   memory outs sizeof(TypeStack) end
   sizeof(TypeStack) swap outs memcpy drop
 
+  memory start-ip sizeof(int) end
+  dup start-ip !int
+
   memory ip sizeof(int) end
   ip !int
 
@@ -3296,9 +3313,7 @@ in
 
         true // continue
       else op Op.type ptr+ @int OP_END = if*
-        here eputs ": TODO: type checking of OP_END is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
+        op Op.operand ptr+ @int ip !int
 
         true // continue
       else op Op.type ptr+ @int OP_SKIP_PROC = if*
@@ -3329,11 +3344,19 @@ in
 
         true // continue
       else op Op.type ptr+ @int OP_DO = if*
-        here eputs ": TODO: type checking of OP_DO is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
+        op Op.token ptr+ stack type-check-if-op
 
-        true // continue
+        ip @int 1 + start-ip @int != if
+          stack
+          ip @int 1 +
+          stack
+          type-check-program-from
+
+          op Op.operand ptr+ @int ip !int
+          true // continue
+        else
+          false // break, we repeated the loop
+        end
       else op Op.type ptr+ @int OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in type-check-program-from" COUNT_INTRINSICS 43 = end
 
