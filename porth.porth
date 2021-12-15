@@ -523,10 +523,119 @@ in
 end
 /// END Intrinsics //////////////////////////////
 
+/// BEGIN DataType //////////////////////////////
+const DATATYPE_INT  1 offset end
+const DATATYPE_PTR  1 offset end
+const DATATYPE_BOOL 1 offset end
+const COUNT_DATATYPES  reset end
+
+const HUMAN_SINGULAR 1 offset end
+const HUMAN_PLURAL   1 offset end
+const COUNT_HUMAN       reset end
+
+proc human-token-type
+  int // token type
+  int // plurality
+  --
+  int ptr // str
+in
+  assert "Exhaustive handling of noun categories" COUNT_HUMAN 2 = end
+
+  dup HUMAN_SINGULAR = if
+    drop
+    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
+    dup TOKEN_INT = if
+      drop
+      "an integer"
+    else dup TOKEN_WORD = if*
+      drop
+      "a word"
+    else dup TOKEN_STR = if*
+      drop
+      "a string"
+    else dup TOKEN_CSTR = if*
+      drop
+      "a C-style string"
+    else dup TOKEN_CHAR = if*
+      drop
+      "a character"
+    else
+      drop
+      here eputs ": unreachable\n" eputs
+      0 NULL
+    end
+  else dup HUMAN_PLURAL = if*
+    drop
+    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
+    dup TOKEN_INT = if
+      drop
+      "integers"
+    else dup TOKEN_WORD = if*
+      drop
+      "words"
+    else dup TOKEN_STR = if*
+      drop
+      "strings"
+    else dup TOKEN_CSTR = if*
+      drop
+      "C-style strings"
+    else dup TOKEN_CHAR = if*
+      drop
+      "characters"
+    else
+      drop
+      here eputs ": unreachable\n" eputs
+      69 exit
+      0 NULL
+    end
+  else
+    drop drop
+    here eputs ": unreachable\n" eputs
+    69 exit
+    0 NULL
+  end
+end
+
+proc datatype-by-name
+  int ptr // data type name
+  --
+  int // data type
+  bool // found
+in
+  memory name sizeof(Str) end
+  name !Str
+  assert "Exhaustive handling of data types in datatype-by-name" COUNT_DATATYPES 3 = end
+       name @Str "ptr"  streq if  DATATYPE_PTR  true
+  else name @Str "bool" streq if* DATATYPE_BOOL true
+  else name @Str "int"  streq if* DATATYPE_INT  true
+  else 0 false end
+end
+
+proc datatype-name
+  int // data type
+  --
+  int ptr
+in
+  assert "Exhaustive handling of data types in datatype-name" COUNT_DATATYPES 3 = end
+       dup DATATYPE_INT  = if  drop "int"
+  else dup DATATYPE_BOOL = if* drop "bool"
+  else dup DATATYPE_PTR  = if* drop "ptr"
+  else
+    drop
+    0 NULL
+    here eputs ": unreachable\n" eputs
+    69 exit
+  end
+end
+/// END DataType //////////////////////////////
+
 /// BEGIN Op //////////////////////////////
 /// "Op" is a single operation within the Porth's Intermediate Representation (IR):
 /// https://en.wikipedia.org/wiki/Intermediate_representation
+assert "Exhaustive push IR instructions definition for data types" COUNT_DATATYPES 3 = end
 const OP_PUSH_INT        1 offset end
+const OP_PUSH_BOOL       1 offset end
+const OP_PUSH_PTR        1 offset end
 const OP_PUSH_LOCAL_MEM  1 offset end
 const OP_PUSH_GLOBAL_MEM 1 offset end
 const OP_PUSH_STR        1 offset end
@@ -549,9 +658,10 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 16 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 18 = end
        dup OP_PUSH_INT        =  if  "OP_PUSH_INT"
-  else dup OP_PUSH_LOCAL_MEM  =  if* "OP_PUSH_LOCAL_MEM"
+  else dup OP_PUSH_BOOL       =  if* "OP_PUSH_BOOL"
+  else dup OP_PUSH_PTR        =  if* "OP_PUSH_PTR"
   else dup OP_PUSH_GLOBAL_MEM =  if* "OP_PUSH_GLOBAL_MEM"
   else dup OP_PUSH_STR        =  if* "OP_PUSH_STR"
   else dup OP_PUSH_CSTR       =  if* "OP_PUSH_CSTR"
@@ -687,112 +797,6 @@ in
   drop
 end
 /// END Const //////////////////////////////
-
-/// BEGIN DataType //////////////////////////////
-const DATATYPE_INT  1 offset end
-const DATATYPE_PTR  1 offset end
-const DATATYPE_BOOL 1 offset end
-const COUNT_DATATYPES  reset end
-
-const HUMAN_SINGULAR 1 offset end
-const HUMAN_PLURAL   1 offset end
-const COUNT_HUMAN       reset end
-
-proc human-token-type
-  int // token type
-  int // plurality
-  --
-  int ptr // str
-in
-  assert "Exhaustive handling of noun categories" COUNT_HUMAN 2 = end
-
-  dup HUMAN_SINGULAR = if
-    drop
-    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
-    dup TOKEN_INT = if
-      drop
-      "an integer"
-    else dup TOKEN_WORD = if*
-      drop
-      "a word"
-    else dup TOKEN_STR = if*
-      drop
-      "a string"
-    else dup TOKEN_CSTR = if*
-      drop
-      "a C-style string"
-    else dup TOKEN_CHAR = if*
-      drop
-      "a character"
-    else
-      drop
-      here eputs ": unreachable\n" eputs
-      0 NULL
-    end
-  else dup HUMAN_PLURAL = if*
-    drop
-    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
-    dup TOKEN_INT = if
-      drop
-      "integers"
-    else dup TOKEN_WORD = if*
-      drop
-      "words"
-    else dup TOKEN_STR = if*
-      drop
-      "strings"
-    else dup TOKEN_CSTR = if*
-      drop
-      "C-style strings"
-    else dup TOKEN_CHAR = if*
-      drop
-      "characters"
-    else
-      drop
-      here eputs ": unreachable\n" eputs
-      69 exit
-      0 NULL
-    end
-  else
-    drop drop
-    here eputs ": unreachable\n" eputs
-    69 exit
-    0 NULL
-  end
-end
-
-proc datatype-by-name
-  int ptr // data type name
-  --
-  int // data type
-  bool // found
-in
-  memory name sizeof(Str) end
-  name !Str
-  assert "Exhaustive handling of data types in datatype-by-name" COUNT_DATATYPES 3 = end
-       name @Str "ptr"  streq if  DATATYPE_PTR  true
-  else name @Str "bool" streq if* DATATYPE_BOOL true
-  else name @Str "int"  streq if* DATATYPE_INT  true
-  else 0 false end
-end
-
-proc datatype-name
-  int // data type
-  --
-  int ptr
-in
-  assert "Exhaustive handling of data types in datatype-name" COUNT_DATATYPES 3 = end
-       dup DATATYPE_INT  = if  drop "int"
-  else dup DATATYPE_BOOL = if* drop "bool"
-  else dup DATATYPE_PTR  = if* drop "ptr"
-  else
-    drop
-    0 NULL
-    here eputs ": unreachable\n" eputs
-    69 exit
-  end
-end
-/// END DataType //////////////////////////////
 
 /// BEGIN TypeStack //////////////////////////////
 const TypeFrame.type sizeof(int) offset end
@@ -1255,13 +1259,19 @@ proc generate-nasm-linux-x86_64 ptr in
   0 while dup ops-count @64 < do
     dup sizeof(Op) * ops +ptr
 
-    assert "Exhaustive handling of Op types in generate-nasm-linux-x86_64" COUNT_OPS 16 = end
+    assert "Exhaustive handling of Op types in generate-nasm-linux-x86_64" COUNT_OPS 18 = end
 
     "addr_" out-fd @64 fputs
     over    out-fd @64 fputu
     ":\n"   out-fd @64 fputs
 
     dup Op.type ptr+ @64 OP_PUSH_INT = if
+       "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
+       "    push rax\n"       out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_PUSH_BOOL = if*
+       "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
+       "    push rax\n"       out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_PUSH_PTR = if*
        "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
        "    push rax\n"       out-fd @64 fputs
     else dup Op.type ptr+ @64 OP_PUSH_LOCAL_MEM = if*
@@ -1709,9 +1719,15 @@ proc simulate-ops in
     memcpy
     drop
 
-    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 16 = end
+    assert "Exhaustive handling of Op types in simulate-ops" COUNT_OPS 18 = end
 
     sim-op Op.type ptr+ @64 OP_PUSH_INT = if
+       sim-op Op.operand ptr+ @64 sim-stack-push
+       sim-ip inc64
+    else sim-op Op.type ptr+ @64 OP_PUSH_BOOL = if*
+       sim-op Op.operand ptr+ @64 sim-stack-push
+       sim-ip inc64
+    else sim-op Op.type ptr+ @64 OP_PUSH_PTR = if*
        sim-op Op.operand ptr+ @64 sim-stack-push
        sim-ip inc64
     else sim-op Op.type ptr+ @64 OP_PUSH_LOCAL_MEM = if*
@@ -2486,7 +2502,7 @@ proc compile-file-into-ops ptr in
     else dup TOKEN_WORD = if*
       token Token.value ptr+ // token.value
 
-      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 16 = end
+      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 18 = end
 
       dup @Str intrinsic-by-name if
         OP_INTRINSIC swap token push-op
@@ -2790,7 +2806,19 @@ proc compile-file-into-ops ptr in
           token
           push-op
         else dup @Str const-lookup dup NULL ptr!= if*
-          OP_PUSH_INT
+          dup Const.type ptr+ @int
+          assert "Exhaustive handling of data types in Const compilation\n" COUNT_DATATYPES 3 = end
+          dup DATATYPE_INT = if
+            drop OP_PUSH_INT
+          else dup DATATYPE_BOOL = if*
+            drop OP_PUSH_BOOL
+          else dup DATATYPE_PTR = if*
+            drop OP_PUSH_PTR
+          else
+            drop 0
+            here eputs ": unreachable\n" eputs
+            69 exit
+          end
           swap Const.value ptr+ @64
           token
           push-op
@@ -3258,9 +3286,27 @@ in
       op
       memcpy drop
 
-      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 16 = end
+      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 18 = end
       op Op.type ptr+ @int OP_PUSH_INT = if
         DATATYPE_INT
+        op Op.token ptr+ Token.loc ptr+
+        stack
+        type-stack-push
+
+        ip inc64
+
+        true // continue
+      else op Op.type ptr+ @int OP_PUSH_BOOL = if*
+        DATATYPE_BOOL
+        op Op.token ptr+ Token.loc ptr+
+        stack
+        type-stack-push
+
+        ip inc64
+
+        true // continue
+      else op Op.type ptr+ @int OP_PUSH_PTR = if*
+        DATATYPE_PTR
         op Op.token ptr+ Token.loc ptr+
         stack
         type-stack-push
