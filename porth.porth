@@ -809,7 +809,7 @@ const TypeStack.count sizeof(int) offset end
 const sizeof(TypeStack)            reset end
 
 // TODO: Type Frame Pool does not support reference counting memory management strategy
-const TYPE_FRAME_POOL_CAP 4 1024 * end
+const TYPE_FRAME_POOL_CAP 512 1024 * end
 memory type-frame-pool TYPE_FRAME_POOL_CAP sizeof(TypeFrame) * end
 memory type-frame-pool-count sizeof(int) end
 
@@ -3350,21 +3350,29 @@ in
 
         true // continue
       else op Op.type ptr+ @int OP_PUSH_GLOBAL_MEM = if*
-        here eputs ": TODO: type checking of OP_PUSH_GLOBAL_MEM is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
+        DATATYPE_PTR
+        op Op.token ptr+ Token.loc ptr+
+        stack
+        type-stack-push
+
+        ip inc64
 
         true // continue
       else op Op.type ptr+ @int OP_PUSH_STR = if*
-        here eputs ": TODO: type checking of OP_PUSH_STR is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
+        op Op.token ptr+ Token.loc ptr+
+          DATATYPE_INT over stack type-stack-push
+          DATATYPE_PTR over stack type-stack-push
+        drop
+
+        ip inc64
 
         true // continue
       else op Op.type ptr+ @int OP_PUSH_CSTR = if*
-        here eputs ": TODO: type checking of OP_PUSH_CSTR is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
+        op Op.token ptr+ Token.loc ptr+
+          DATATYPE_PTR over stack type-stack-push
+        drop
+
+        ip inc64
 
         true  // continue
       else op Op.type ptr+ @int OP_IF = if*
@@ -3381,10 +3389,17 @@ in
         op Op.operand ptr+ @int ip !int
         true // continue
       else op Op.type ptr+ @int OP_IFSTAR = if*
-        here eputs ": TODO: type checking of OP_IFSTAR is not implemented yet\n" eputs
-        op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
+        op Op.token ptr+ stack type-check-if-op
 
+        // then branch
+        stack
+        ip @int 1 +
+        outs
+        start-ip @int
+        type-check-program-from
+
+        // else branch
+        op Op.operand ptr+ @int ip !int
         true // continue
       else op Op.type ptr+ @int OP_ELSE = if*
         op Op.operand ptr+ @int ip !int
@@ -3558,9 +3573,10 @@ in
             stack
             type-stack-push
           else dup INTRINSIC_ENVP = if*
-            here eputs ": TODO: type checking of INTRINSIC_ENVP is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            DATATYPE_PTR
+            op Op.token ptr+ Token.loc ptr+
+            stack
+            type-stack-push
           else dup INTRINSIC_SYSCALL0 = if*
             // token
             op Op.token ptr+
@@ -3662,9 +3678,25 @@ in
               swap type-stack-push
             type-check-stack
           else dup INTRINSIC_SYSCALL5 = if*
-            here eputs ": TODO: type checking of INTRINSIC_SYSCALL5 is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            // token
+            op Op.token ptr+
+            // stack
+            stack
+            // ins
+            over
+            over
+            6 expect-arity
+              DATATYPE_INT
+              over
+              TypeStack.top ptr+ @ptr
+              TypeFrame.type ptr+
+              !int
+            // outs
+            sizeof(TypeStack) tmp-alloc
+              dup  DATATYPE_INT
+              swap op Op.token ptr+ Token.loc ptr+
+              swap type-stack-push
+            type-check-stack
           else dup INTRINSIC_SYSCALL6 = if*
             // token
             op Op.token ptr+
@@ -3775,6 +3807,7 @@ proc summary in
   // just a counter of how big of region to allocate in the .bss section
   "Global memory size (bytes):   " puts global-memory-capacity @int putu "\n" puts
   "Type Frames leaked:           " puts type-frame-pool-count  @int putu "/" puts TYPE_FRAME_POOL_CAP putu "\n" puts
+  "Type Frame size (bytes):      " puts sizeof(TypeFrame) putu "\n" puts
 end
 
 proc usage
