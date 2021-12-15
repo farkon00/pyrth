@@ -3564,9 +3564,10 @@ in
               swap type-stack-push
             type-check-stack
           else dup INTRINSIC_ARGC = if*
-            here eputs ": TODO: type checking of INTRINSIC_ARGC is not implemented yet\n" eputs
-            op Op.token ptr+ Token.loc ptr+ located-here
-            1 exit
+            DATATYPE_INT
+            op Op.token ptr+ Token.loc ptr+
+            stack
+            type-stack-push
           else dup INTRINSIC_ARGV = if*
             DATATYPE_PTR
             op Op.token ptr+ Token.loc ptr+
