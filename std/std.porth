@@ -975,22 +975,26 @@ in
   memory content sizeof(Str) end
   statbuf @stat.st_size content !Str.count
 
-  0                        // offset
-  fd @64                   // fd
-  MAP_PRIVATE              // flags
-  PROT_READ                // prot
-  content @Str.count       // length
-  NULL                     // addr
-  mmap
-  cast(ptr)
-  content !Str.data
+  content @Str.count 0 > if
+    0                        // offset
+    fd @64                   // fd
+    MAP_PRIVATE              // flags
+    PROT_READ                // prot
+    content @Str.count       // length
+    NULL                     // addr
+    mmap
+    cast(ptr)
+    content !Str.data
 
-  content @Str.data cast(int) 0 < if
-    "ERROR: could not memory map file " eputs file-path-cstr @ptr cstr-to-str eputs "\n" eputs
-    1 exit
+    content @Str.data cast(int) 0 < if
+      "ERROR: could not memory map file " eputs file-path-cstr @ptr cstr-to-str eputs "\n" eputs
+      1 exit
+    end
+
+    content @Str
+  else
+    0 NULL
   end
-
-  content @Str
 end
 
 proc ?file-exist ptr -- bool in
