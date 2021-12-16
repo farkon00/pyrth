@@ -3824,7 +3824,7 @@ in
 
   "Usage: " eputs name @ptr cstr-to-str puts " [OPTIONS] <SUBCOMMAND>\n"                     fd @64 fputs
   "  OPTIONS:\n"                                                                             fd @64 fputs
-  "    -check                Type check the program.\n"                                      fd @64 fputs
+  "    -unsafe               Disable type checking.\n"                                       fd @64 fputs
   "  SUBCOMMANDS:\n"                                                                         fd @64 fputs
   "    sim <file>            Simulate the program.\n"                                        fd @64 fputs
   "    com [OPTIONS] <file>  Compile the program\n"                                          fd @64 fputs
@@ -3841,15 +3841,15 @@ proc main in
   memory program sizeof(ptr) end
   args @@ptr program !ptr
 
-  memory check sizeof(bool) end
-  false check !bool
+  memory unsafe sizeof(bool) end
+  false unsafe !bool
 
   while
     args sizeof(ptr) inc64-by
     args @@ptr NULL ptr= if
       false // break
-    else args @@ptr "-check"c cstreq if*
-      true check !bool
+    else args @@ptr "-unsafe"c cstreq if*
+      true unsafe !bool
       true  // continue
     else
       false // break
@@ -3876,7 +3876,7 @@ proc main in
     end
 
     args @@ptr compile-file-into-ops
-    check @bool if type-check-program end
+    unsafe @bool lnot if type-check-program end
 
     simulate-ops
   else args @@ptr "com"c cstreq if*
@@ -3904,7 +3904,7 @@ proc main in
     end
 
     file-path-cstr @ptr compile-file-into-ops
-    check @bool if type-check-program end
+    unsafe @bool lnot if type-check-program end
 
     // TODOO: the output file path should be based on the input file path
     "output.asm"c generate-nasm-linux-x86_64
@@ -3946,7 +3946,7 @@ proc main in
     end
 
     args @@ptr compile-file-into-ops
-    check @bool if type-check-program end
+    unsafe @bool lnot if type-check-program end
 
     dump-ops
   else args @@ptr "lex"c cstreq if*
@@ -3967,7 +3967,7 @@ proc main in
     end
 
     args @@ptr compile-file-into-ops
-    check @bool if type-check-program end
+    unsafe @bool lnot if type-check-program end
 
     summary
   else
