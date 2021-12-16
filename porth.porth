@@ -2628,7 +2628,7 @@ proc compile-file-into-ops ptr in
             here eputs ": unreachable\n" eputs
             1 exit
           else
-            token Token.loc ptr+ eputloc ": ERROR: `end` can only close `if` or `else` for now\n" eputs
+            token Token.loc ptr+ eputloc ": ERROR: `end` can only close `if`, `else`, `do`, or `proc` blocks\n" eputs
             dup Op.token ptr+ Token.loc ptr+ eputloc ": NOTE: found `" eputs dup Op.token ptr+ Token.text ptr+ @Str eputs "` instead\n" eputs
             1 exit
           end
