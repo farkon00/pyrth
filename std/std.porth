@@ -837,16 +837,13 @@ proc execvp
   ptr // argv
   ptr // file
 in
-  memory empty_envp sizeof(ptr) end
-  0 empty_envp !64
-
   memory argvp sizeof(ptr) end
   argvp !64
 
   memory file-path sizeof(ptr) end
   file-path !64
 
-  empty_envp
+  envp
   argvp @ptr
   file-path @ptr
   execve drop
@@ -870,7 +867,7 @@ in
       file-path @ptr cstr-to-str tmp-append drop
       1                          tmp-alloc  drop  // NULL terminator
 
-      empty_envp swap
+      envp swap
       argvp @ptr swap
       execve drop
     end
