@@ -1963,9 +1963,10 @@ proc simulate-ops in
       else sim-op Op.operand ptr+ @64 INTRINSIC_STORE64 = if*
         sim-stack-pop cast(ptr) sim-stack-pop swap !64
       else sim-op Op.operand ptr+ @64 INTRINSIC_ARGC = if*
-        here eputs ": TODO: `argc` is not implemented yet\n" eputs
-        sim-op Op.token ptr+ Token.loc ptr+ located-here
-        1 exit
+        argc
+        args @ptr argv ptr-diff 8 /
+        -
+        sim-stack-push
       else sim-op Op.operand ptr+ @64 INTRINSIC_ARGV = if*
         args @ptr cast(int) sim-stack-push
       else sim-op Op.operand ptr+ @64 INTRINSIC_ENVP = if*
