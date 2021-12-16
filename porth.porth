@@ -917,9 +917,9 @@ proc type-stack-dump ptr in
   TypeStack.top ptr+ @ptr
     while dup NULL ptr!= do
       dup TypeFrame.loc ptr+                     putloc
-      ": "                                       puts
+      ": NOTE: type `"                           puts
       dup TypeFrame.type ptr+ @int datatype-name puts
-      "\n"                                       puts
+      "`\n"                                      puts
 
       TypeFrame.prev ptr+ @ptr
     end
@@ -3764,7 +3764,9 @@ in
   stack TypeStack.count ptr+ @int
   outs  TypeStack.count ptr+ @int
     over over > if
-      here eputs ": TODO: reporting unhandled data on the stack is not implemented\n" eputs
+      stack TypeStack.top ptr+ @ptr TypeFrame.loc ptr+ eputloc
+      ": ERROR: Unhandled data on the stack:\n"        eputs
+      stack type-stack-dump
       1 exit
     end
 
