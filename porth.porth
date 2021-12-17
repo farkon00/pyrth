@@ -4333,14 +4333,53 @@ in
   "    sim <file>            Simulate the program.\n"                                        fd @64 fputs
   "    com [OPTIONS] <file>  Compile the program\n"                                          fd @64 fputs
   "      OPTIONS:\n"                                                                         fd @64 fputs
-  // TODO: introduce `-t <target>` flag instead of `-fasm` flag
-  "        -fasm               Use fasm instead of nasm\n"                                   fd @64 fputs
+  "        -t                  Specify the target for generation.\n"                         fd @64 fputs
+  "                            Default: nasm-linux-x86_64.\n"                                fd @64 fputs
+  "                            Specify `-t list` to list all available targets.\n"           fd @64 fputs
   "        -r                  Run the program after successful compilation\n"               fd @64 fputs
   "        -s                  Silent mode. Don't print any info about compilation phases\n" fd @64 fputs
   "    dump <file>           Dump the ops of the program\n"                                  fd @64 fputs
   "    lex <file>            Produce lexical analysis of the file\n"                         fd @64 fputs
   "    summary <file>        Print the summary of the program\n"                             fd @64 fputs
   "    help                  Print this help to stdout and exit with 0 code\n"               fd @64 fputs
+end
+
+const TARGET_NASM_LINUX_X86_64 1 offset end
+const TARGET_FASM_LINUX_X86_64 1 offset end
+const COUNT_TARGETS               reset end
+
+proc target-name int -- int ptr in
+  assert "Exhaustive handling of targets in target-name" COUNT_TARGETS 2 = end
+  dup TARGET_NASM_LINUX_X86_64 = if
+    drop "nasm-linux-x86_64"
+  else dup TARGET_FASM_LINUX_X86_64 = if*
+    drop "fasm-linux-x86_64"
+  else
+    drop
+    0 NULL
+    here eputs ": Assertion Failed: unreachable\n" eputs
+    1 exit
+  end
+end
+
+// TODO: "optional" type
+// Something like if you return `int bool` and the `bool` is `false`, the `int` might be missing
+// Need to think more about this
+proc target-by-name int ptr -- int bool in
+  assert "Exhaustive handling of targets in target-by-name" COUNT_TARGETS 2 = end
+  over over "nasm-linux-x86_64" streq if
+    drop drop
+    TARGET_NASM_LINUX_X86_64
+    true
+  else over over "fasm-linux-x86_64" streq if*
+    drop drop
+    TARGET_FASM_LINUX_X86_64
+    true
+  else
+    drop drop
+    0
+    false
+  end
 end
 
 proc main in
@@ -4350,8 +4389,8 @@ proc main in
   memory unsafe sizeof(bool) end
   false unsafe !bool
 
-  memory fasm sizeof(bool) end
-  false fasm !bool
+  memory target sizeof(int) end
+  TARGET_NASM_LINUX_X86_64 target !int
 
   while
     args sizeof(ptr) inc64-by
@@ -4399,9 +4438,35 @@ proc main in
       else args @@ptr "-s"c cstreq if*
         true silent !bool
         true  // continue
-      else args @@ptr "-fasm"c cstreq if*
-        true fasm !bool
-        true
+      else args @@ptr "-t"c cstreq if*
+        args sizeof(ptr) inc64-by
+        args @@ptr NULL ptr= if
+          program @ptr stderr usage
+          "ERROR: no argument is provided for parameter `-t`\n" eputs
+          1 exit
+        end
+
+        args @@ptr "list"c cstreq if
+          "Available targets:\n" puts
+          0 while dup COUNT_TARGETS < do
+            "  " puts dup target-name puts "\n" puts
+            1 +
+          end drop
+          0 exit
+        end
+
+        args @@ptr cstr-to-str target-by-name if
+          target !int
+        else
+          drop
+          program @ptr stderr usage
+          "ERROR: unknown target `"                                 eputs
+          args @@ptr cstr-to-str                                    eputs
+          "`. Use `-t list` to list all of the available targets\n" eputs
+          1 exit
+        end
+
+        true  // continue
       else
         args @@ptr file-path-cstr !ptr
         args sizeof(ptr) inc64-by
@@ -4418,8 +4483,9 @@ proc main in
     file-path-cstr @ptr compile-file-into-ops
     unsafe @bool lnot if type-check-program end
 
-    // TODOO: the output file path should be based on the input file path
-    fasm @bool lnot if
+    assert "Exhaustive target handling in main" COUNT_TARGETS 2 = end
+    target @int TARGET_NASM_LINUX_X86_64 = if
+      // TODOO: the output file path should be based on the input file path
       "output.asm"c generate-nasm-linux-x86_64
 
       tmp-end
@@ -4436,7 +4502,7 @@ proc main in
       "output.o"c   tmp-append-ptr
       NULL          tmp-append-ptr
       cmd-echoed
-    else
+    else target @int TARGET_FASM_LINUX_X86_64 = if*
       "output.asm"c generate-fasm-linux-x86_64
 
       tmp-end
@@ -4448,11 +4514,14 @@ proc main in
       cmd-echoed
 
       tmp-end
-      "chmod"c          tmp-append-ptr
-      "+x"c             tmp-append-ptr
-      "output"c         tmp-append-ptr
-      NULL              tmp-append-ptr
+      "chmod"c      tmp-append-ptr
+      "+x"c         tmp-append-ptr
+      "output"c     tmp-append-ptr
+      NULL          tmp-append-ptr
       cmd-echoed
+    else
+      here eputs ": Assertion Failed: unreachable\n" eputs
+      1 exit
     end
 
     run @bool if
