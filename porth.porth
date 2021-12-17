@@ -2479,6 +2479,44 @@ in
   push-op
 end
 
+proc enclose-else-if*
+  int // ip-if*
+  ptr // token
+in
+  memory token sizeof(Token) end
+  sizeof(Token) swap token memcpy drop
+
+  memory ifstar-ip sizeof(int) end
+  ifstar-ip !int
+
+  memory ifstar-op sizeof(ptr) end
+  ifstar-ip @int sizeof(Op) * ops +ptr ifstar-op !ptr
+
+  ifstar-op @ptr Op.type ptr+ @int OP_IFSTAR != if
+    here eputs ": Assertion Failed: expected `if*`\n" eputs
+    1 exit
+  end
+
+  memory else-ip sizeof(int) end
+  parse-block-stack-pop else-ip !int
+
+  memory else-op sizeof(ptr) end
+  else-ip @int sizeof(Op) * ops +ptr else-op !ptr
+
+  ops-count @int 1 +
+  ifstar-op @ptr Op.operand ptr+
+  !int
+
+  ops-count @int
+  else-op @ptr Op.operand ptr+
+  !int
+
+  OP_END
+  ops-count @int 1 +
+  token
+  push-op
+end
+
 proc compile-file-into-ops ptr in
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
@@ -2597,8 +2635,7 @@ proc compile-file-into-ops ptr in
             dup ops-count @64 swap Op.operand ptr+ !64
             OP_END ops-count @64 1 + token push-op
           else dup Op.type ptr+ @64 OP_IFSTAR = if*
-            here eputs ": TODO: closing `if*` with `end` is not implemented yet\n" eputs
-            1 exit
+            over token enclose-else-if*
           else dup Op.type ptr+ @64 OP_ELSE = if*
             dup ops-count @64 swap Op.operand ptr+ !64
             OP_END ops-count @64 1 + token push-op
