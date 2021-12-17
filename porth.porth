@@ -3185,8 +3185,10 @@ proc compile-file-into-ops ptr in
           konst const-define
         else dup @Str "proc" streq if*
           inside-proc @bool if
-            here eputs ": TODO: reporting proc inside proc error is not implemented yet\n" eputs
-            token Token.loc ptr+ located-here
+            token Token.loc ptr+                                                             eputloc
+            ": ERROR: definition procedures inside of procedures is not allowed (for now)\n" eputs
+            prok Proc.loc ptr+                                                               eputloc
+            ": NOTE: the current procedure starts here\n"                                    eputs
             1 exit
           end
 
