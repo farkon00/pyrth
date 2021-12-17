@@ -1195,7 +1195,453 @@ in
   end
 end
 
-proc generate-nasm-linux-x86_64 ptr in
+proc generate-fasm-linux-x86_64
+  ptr // file-path
+in
+  memory file-path sizeof(ptr) end
+  file-path !ptr
+
+  silent @bool lnot if
+    "[INFO] Generating output.asm\n" puts
+  end
+
+  memory out-fd sizeof(u64) end
+
+  420                     // mode
+  O_CREAT O_WRONLY or O_TRUNC or  // flags
+  file-path @ptr        // pathname
+  // TODO: this is lame, let's just support negative numbers properly
+  0 100 - //AT_FDCWD
+  openat
+  out-fd !64
+
+  out-fd @64 0 < if
+    "[ERROR] could not open `output.asm`\n" eputs
+    1 exit
+  end
+
+  "format ELF64 executable 3\n"            out-fd @64 fputs
+  "segment readable executable\n"          out-fd @64 fputs
+  "print:\n"                               out-fd @64 fputs
+  "    mov     r9, -3689348814741910323\n" out-fd @64 fputs
+  "    sub     rsp, 40\n"                  out-fd @64 fputs
+  "    mov     BYTE [rsp+31], 10\n"        out-fd @64 fputs
+  "    lea     rcx, [rsp+30]\n"            out-fd @64 fputs
+  ".L2:\n"                                 out-fd @64 fputs
+  "    mov     rax, rdi\n"                 out-fd @64 fputs
+  "    lea     r8, [rsp+32]\n"             out-fd @64 fputs
+  "    mul     r9\n"                       out-fd @64 fputs
+  "    mov     rax, rdi\n"                 out-fd @64 fputs
+  "    sub     r8, rcx\n"                  out-fd @64 fputs
+  "    shr     rdx, 3\n"                   out-fd @64 fputs
+  "    lea     rsi, [rdx+rdx*4]\n"         out-fd @64 fputs
+  "    add     rsi, rsi\n"                 out-fd @64 fputs
+  "    sub     rax, rsi\n"                 out-fd @64 fputs
+  "    add     eax, 48\n"                  out-fd @64 fputs
+  "    mov     BYTE [rcx], al\n"           out-fd @64 fputs
+  "    mov     rax, rdi\n"                 out-fd @64 fputs
+  "    mov     rdi, rdx\n"                 out-fd @64 fputs
+  "    mov     rdx, rcx\n"                 out-fd @64 fputs
+  "    sub     rcx, 1\n"                   out-fd @64 fputs
+  "    cmp     rax, 9\n"                   out-fd @64 fputs
+  "    ja      .L2\n"                      out-fd @64 fputs
+  "    lea     rax, [rsp+32]\n"            out-fd @64 fputs
+  "    mov     edi, 1\n"                   out-fd @64 fputs
+  "    sub     rdx, rax\n"                 out-fd @64 fputs
+  "    xor     eax, eax\n"                 out-fd @64 fputs
+  "    lea     rsi, [rsp+32+rdx]\n"        out-fd @64 fputs
+  "    mov     rdx, r8\n"                  out-fd @64 fputs
+  "    mov     rax, 1\n"                   out-fd @64 fputs
+  "    syscall\n"                          out-fd @64 fputs
+  "    add     rsp, 40\n"                  out-fd @64 fputs
+  "    ret\n"                              out-fd @64 fputs
+  "entry start\n"                          out-fd @64 fputs
+  "start:\n"                               out-fd @64 fputs
+  "    mov [args_ptr], rsp\n"              out-fd @64 fputs
+  "    mov rax, ret_stack_end\n"           out-fd @64 fputs
+  "    mov [ret_stack_rsp], rax\n"         out-fd @64 fputs
+
+  0 while dup ops-count @64 < do
+    dup sizeof(Op) * ops +ptr
+
+    assert "Exhaustive handling of Op types in generate-nasm-linux-x86_64" COUNT_OPS 18 = end
+
+    "addr_" out-fd @64 fputs
+    over    out-fd @64 fputu
+    ":\n"   out-fd @64 fputs
+
+    dup Op.type ptr+ @64 OP_PUSH_INT = if
+       "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
+       "    push rax\n"       out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_PUSH_BOOL = if*
+       "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
+       "    push rax\n"       out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_PUSH_PTR = if*
+       "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
+       "    push rax\n"       out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_PUSH_LOCAL_MEM = if*
+       "    mov rax, [ret_stack_rsp]\n" out-fd @64 fputs
+       "    add rax, "                  out-fd @64 fputs
+       dup Op.operand ptr+ @64             out-fd @64 fputu
+       "\n"                             out-fd @64 fputs
+       "    push rax\n"                 out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_PUSH_GLOBAL_MEM = if*
+       "    mov rax, mem\n" out-fd @64 fputs
+       "    add rax, "      out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
+       "    push rax\n"     out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_PUSH_STR = if*
+       "    mov rax, " out-fd @64 fputs
+         dup Op.operand ptr+ @64
+         sizeof(Str) *
+         strlits +ptr
+         @Str.count
+         out-fd @64 fputu
+       "\n" out-fd @64 fputs
+
+       "    push rax\n"     out-fd @64 fputs
+       "    push str_"      out-fd @64 fputs
+       dup Op.operand ptr+ @64 out-fd @64 fputu
+       "\n"                 out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_PUSH_CSTR = if*
+       "    push str_"      out-fd @64 fputs
+       dup Op.operand ptr+ @64 out-fd @64 fputu
+       "\n"                 out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_IF = if*
+       "    pop rax\n"       out-fd @64 fputs
+       "    test rax, rax\n" out-fd @64 fputs
+       "    jz addr_"        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_IFSTAR = if*
+       "    pop rax\n"       out-fd @64 fputs
+       "    test rax, rax\n" out-fd @64 fputs
+       "    jz addr_"        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_ELSE = if*
+       "    jmp addr_"       out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_END = if*
+       "    jmp addr_"       out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_WHILE = if*
+       // NOTE: nothing to generate. `while` is basically a label
+    else dup Op.type ptr+ @64 OP_DO = if*
+       "    pop rax\n"       out-fd @64 fputs
+       "    test rax, rax\n" out-fd @64 fputs
+       "    jz addr_" out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n" out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_SKIP_PROC = if*
+       "    jmp addr_"      out-fd @64 fputs
+       dup Op.operand ptr+ @64 out-fd @64 fputu
+       "\n"                 out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_PREP_PROC = if*
+       "    sub rsp, "      out-fd @64 fputs
+       dup Op.operand ptr+ @64 out-fd @64 fputu
+       "\n"                 out-fd @64 fputs
+
+       "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
+       "    mov rsp, rax\n"             out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_RET = if*
+       "    mov rax, rsp\n"             out-fd @64 fputs
+       "    mov rsp, [ret_stack_rsp]\n" out-fd @64 fputs
+       "    add rsp, "                  out-fd @64 fputs
+       dup Op.operand ptr+ @64             out-fd @64 fputu
+       "\n"                             out-fd @64 fputs
+       "    ret\n"                      out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_CALL = if*
+       "    mov rax, rsp\n"             out-fd @64 fputs
+       "    mov rsp, [ret_stack_rsp]\n" out-fd @64 fputs
+       "    call addr_"                 out-fd @64 fputs
+       dup Op.operand ptr+ @64             out-fd @64 fputu
+       "\n"                             out-fd @64 fputs
+       "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
+       "    mov rsp, rax\n"             out-fd @64 fputs
+    else dup Op.type ptr+ @64 OP_INTRINSIC = if*
+        assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
+          COUNT_INTRINSICS 44 =
+        end
+
+        dup Op.operand ptr+ @64
+        dup INTRINSIC_PLUS = if
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    add rax, rbx\n"        out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_MINUS = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    sub rbx, rax\n"        out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+        else dup INTRINSIC_MUL = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    mul rbx\n"             out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_DIVMOD = if*
+            "    xor rdx, rdx\n"        out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    pop rax\n"             out-fd @64 fputs
+            "    div rbx\n"             out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+            "    push rdx\n"            out-fd @64 fputs
+        else dup INTRINSIC_MAX = if*
+            "    pop rax\n"         out-fd @64 fputs
+            "    pop rbx\n"         out-fd @64 fputs
+            "    cmp rbx, rax\n"    out-fd @64 fputs
+            "    cmovge rax, rbx\n" out-fd @64 fputs
+            "    push rax\n"        out-fd @64 fputs
+        else dup INTRINSIC_SHR = if*
+            "    pop rcx\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    shr rbx, cl\n"         out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+        else dup INTRINSIC_SHL = if*
+            "    pop rcx\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    shl rbx, cl\n"         out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+        else dup INTRINSIC_OR = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    or rbx, rax\n"         out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+        else dup INTRINSIC_AND = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    and rbx, rax\n"        out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+        else dup INTRINSIC_NOT = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    not rax\n"             out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_PRINT = if*
+            "    pop rdi\n"             out-fd @64 fputs
+            "    call print\n"          out-fd @64 fputs
+        else dup INTRINSIC_EQ = if*
+            "    mov rcx, 0\n"          out-fd @64 fputs
+            "    mov rdx, 1\n"          out-fd @64 fputs
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    cmp rax, rbx\n"        out-fd @64 fputs
+            "    cmove rcx, rdx\n"      out-fd @64 fputs
+            "    push rcx\n"            out-fd @64 fputs
+        else dup INTRINSIC_GT = if*
+            "    mov rcx, 0\n"          out-fd @64 fputs
+            "    mov rdx, 1\n"          out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    pop rax\n"             out-fd @64 fputs
+            "    cmp rax, rbx\n"        out-fd @64 fputs
+            "    cmovg rcx, rdx\n"      out-fd @64 fputs
+            "    push rcx\n"            out-fd @64 fputs
+        else dup INTRINSIC_LT = if*
+            "    mov rcx, 0\n"          out-fd @64 fputs
+            "    mov rdx, 1\n"          out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    pop rax\n"             out-fd @64 fputs
+            "    cmp rax, rbx\n"        out-fd @64 fputs
+            "    cmovl rcx, rdx\n"      out-fd @64 fputs
+            "    push rcx\n"            out-fd @64 fputs
+        else dup INTRINSIC_GE = if*
+            "    mov rcx, 0\n"          out-fd @64 fputs
+            "    mov rdx, 1\n"          out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    pop rax\n"             out-fd @64 fputs
+            "    cmp rax, rbx\n"        out-fd @64 fputs
+            "    cmovge rcx, rdx\n"     out-fd @64 fputs
+            "    push rcx\n"            out-fd @64 fputs
+        else dup INTRINSIC_LE = if*
+            "    mov rcx, 0\n"          out-fd @64 fputs
+            "    mov rdx, 1\n"          out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    pop rax\n"             out-fd @64 fputs
+            "    cmp rax, rbx\n"        out-fd @64 fputs
+            "    cmovle rcx, rdx\n"     out-fd @64 fputs
+            "    push rcx\n"            out-fd @64 fputs
+        else dup INTRINSIC_NE = if*
+            "    mov rcx, 0\n"          out-fd @64 fputs
+            "    mov rdx, 1\n"          out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    pop rax\n"             out-fd @64 fputs
+            "    cmp rax, rbx\n"        out-fd @64 fputs
+            "    cmovne rcx, rdx\n"     out-fd @64 fputs
+            "    push rcx\n"            out-fd @64 fputs
+        else dup INTRINSIC_DUP = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_SWAP = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+        else dup INTRINSIC_DROP = if*
+            "    pop rax\n"             out-fd @64 fputs
+        else dup INTRINSIC_OVER = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+        else dup INTRINSIC_ROT = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    pop rcx\n"             out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+            "    push rcx\n"            out-fd @64 fputs
+        else dup INTRINSIC_LOAD8 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    xor rbx, rbx\n"        out-fd @64 fputs
+            "    mov bl, [rax]\n"       out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+        else dup INTRINSIC_STORE8 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    mov [rax], bl\n"       out-fd @64 fputs
+        else dup INTRINSIC_LOAD16 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    xor rbx, rbx\n"        out-fd @64 fputs
+            "    mov bx, [rax]\n"       out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+        else dup INTRINSIC_STORE16 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    mov [rax], bx\n"       out-fd @64 fputs
+        else dup INTRINSIC_LOAD32 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    xor rbx, rbx\n"        out-fd @64 fputs
+            "    mov ebx, [rax]\n"      out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+        else dup INTRINSIC_STORE32 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    mov [rax], ebx\n"      out-fd @64 fputs
+        else dup INTRINSIC_LOAD64 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    xor rbx, rbx\n"        out-fd @64 fputs
+            "    mov rbx, [rax]\n"      out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+        else dup INTRINSIC_STORE64 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rbx\n"             out-fd @64 fputs
+            "    mov [rax], rbx\n"      out-fd @64 fputs
+        else dup INTRINSIC_ARGC = if*
+            "    mov rax, [args_ptr]\n" out-fd @64 fputs
+            "    mov rax, [rax]\n"      out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_ARGV = if*
+            "    mov rax, [args_ptr]\n" out-fd @64 fputs
+            "    add rax, 8\n"          out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_ENVP = if*
+            "    mov rax, [args_ptr]\n" out-fd @64 fputs
+            "    mov rax, [rax]\n"      out-fd @64 fputs
+            "    add rax, 2\n"          out-fd @64 fputs
+            "    shl rax, 3\n"          out-fd @64 fputs
+            "    mov rbx, [args_ptr]\n" out-fd @64 fputs
+            "    add rbx, rax\n"        out-fd @64 fputs
+            "    push rbx\n"            out-fd @64 fputs
+        else dup INTRINSIC_CAST_PTR = if*
+        else dup INTRINSIC_CAST_INT = if*
+        else dup INTRINSIC_CAST_BOOL = if*
+        else dup INTRINSIC_SYSCALL0 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    syscall\n"             out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_SYSCALL1 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rdi\n"             out-fd @64 fputs
+            "    syscall\n"             out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_SYSCALL2 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rdi\n"             out-fd @64 fputs
+            "    pop rsi\n"             out-fd @64 fputs
+            "    syscall\n"             out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_SYSCALL3 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rdi\n"             out-fd @64 fputs
+            "    pop rsi\n"             out-fd @64 fputs
+            "    pop rdx\n"             out-fd @64 fputs
+            "    syscall\n"             out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_SYSCALL4 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rdi\n"             out-fd @64 fputs
+            "    pop rsi\n"             out-fd @64 fputs
+            "    pop rdx\n"             out-fd @64 fputs
+            "    pop r10\n"             out-fd @64 fputs
+            "    syscall\n"             out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_SYSCALL5 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rdi\n"             out-fd @64 fputs
+            "    pop rsi\n"             out-fd @64 fputs
+            "    pop rdx\n"             out-fd @64 fputs
+            "    pop r10\n"             out-fd @64 fputs
+            "    pop r8\n"              out-fd @64 fputs
+            "    syscall\n"             out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_SYSCALL6 = if*
+            "    pop rax\n"             out-fd @64 fputs
+            "    pop rdi\n"             out-fd @64 fputs
+            "    pop rsi\n"             out-fd @64 fputs
+            "    pop rdx\n"             out-fd @64 fputs
+            "    pop r10\n"             out-fd @64 fputs
+            "    pop r8\n"              out-fd @64 fputs
+            "    pop r9\n"              out-fd @64 fputs
+            "    syscall\n"             out-fd @64 fputs
+            "    push rax\n"            out-fd @64 fputs
+        else dup INTRINSIC_??? = if*
+        else
+          here eputs ": unreachable.\n" eputs
+          1 exit
+        end
+        drop
+    else
+      here eputs ": unreachable.\n" eputs
+      1 exit
+    end
+
+    drop
+
+    1 +
+  end drop
+
+  "addr_"    out-fd @64 fputs
+  ops-count @64 out-fd @64 fputu
+  ":\n"      out-fd @64 fputs
+
+  "    mov rax, 60\n"        out-fd @64 fputs
+  "    mov rdi, 0\n"         out-fd @64 fputs
+  "    syscall\n"            out-fd @64 fputs
+  "segment readable writable\n"          out-fd @64 fputs
+  0 while dup strlits-count @64 < do
+    "str_"                           out-fd @64 fputs
+    dup                              out-fd @64 fputu
+    ": db "                          out-fd @64 fputs
+    dup sizeof(Str) * strlits +ptr @Str out-fd @64 fputdecstr
+    "\n"                             out-fd @64 fputs
+    1 +
+  end drop
+  // "segment .bss\n"           out-fd @64 fputs
+  "args_ptr: rq 1\n"       out-fd @64 fputs
+  "ret_stack_rsp: rq 1\n"  out-fd @64 fputs
+  "ret_stack: rb "         out-fd @64 fputs X86_64_RET_STACK_CAP out-fd @64 fputu "\n" out-fd @64 fputs
+  "ret_stack_end:\n"         out-fd @64 fputs
+  "mem: rb "                 out-fd @64 fputs
+  global-memory-capacity @64 out-fd @64 fputu
+  "\n"                       out-fd @64 fputs
+
+  out-fd @64 close drop
+end
+
+proc generate-gas-linux-x86_64
+  ptr // file-path
+in
+  drop
+  here eputs ": TODO: generate-gas-linux-x86_64 is not implemented\n" eputs
+  1 exit
+end
+
+proc generate-nasm-linux-x86_64
+  ptr // file-path
+in
   memory file-path sizeof(ptr) end
   file-path !ptr
 
@@ -3882,6 +4328,8 @@ in
   "    sim <file>            Simulate the program.\n"                                        fd @64 fputs
   "    com [OPTIONS] <file>  Compile the program\n"                                          fd @64 fputs
   "      OPTIONS:\n"                                                                         fd @64 fputs
+  // TODO: introduce `-t <target>` flag instead of `-fasm` flag
+  "        -fasm               Use fasm instead of nasm\n"                                   fd @64 fputs
   "        -r                  Run the program after successful compilation\n"               fd @64 fputs
   "        -s                  Silent mode. Don't print any info about compilation phases\n" fd @64 fputs
   "    dump <file>           Dump the ops of the program\n"                                  fd @64 fputs
@@ -3896,6 +4344,9 @@ proc main in
 
   memory unsafe sizeof(bool) end
   false unsafe !bool
+
+  memory fasm sizeof(bool) end
+  false fasm !bool
 
   while
     args sizeof(ptr) inc64-by
@@ -3943,6 +4394,9 @@ proc main in
       else args @@ptr "-s"c cstreq if*
         true silent !bool
         true  // continue
+      else args @@ptr "-fasm"c cstreq if*
+        true fasm !bool
+        true
       else
         args @@ptr file-path-cstr !ptr
         args sizeof(ptr) inc64-by
@@ -3960,22 +4414,41 @@ proc main in
     unsafe @bool lnot if type-check-program end
 
     // TODOO: the output file path should be based on the input file path
-    "output.asm"c generate-nasm-linux-x86_64
+    fasm @bool lnot if
+      "output.asm"c generate-nasm-linux-x86_64
 
-    tmp-end
-    "nasm"c       tmp-append-ptr
-    "-felf64"c    tmp-append-ptr
-    "output.asm"c tmp-append-ptr
-    NULL          tmp-append-ptr
-    cmd-echoed
+      tmp-end
+      "nasm"c       tmp-append-ptr
+      "-felf64"c    tmp-append-ptr
+      "output.asm"c tmp-append-ptr
+      NULL          tmp-append-ptr
+      cmd-echoed
 
-    tmp-end
-    "ld"c         tmp-append-ptr
-    "-o"c         tmp-append-ptr
-    "output"c     tmp-append-ptr
-    "output.o"c   tmp-append-ptr
-    NULL          tmp-append-ptr
-    cmd-echoed
+      tmp-end
+      "ld"c         tmp-append-ptr
+      "-o"c         tmp-append-ptr
+      "output"c     tmp-append-ptr
+      "output.o"c   tmp-append-ptr
+      NULL          tmp-append-ptr
+      cmd-echoed
+    else
+      "output.asm"c generate-fasm-linux-x86_64
+
+      tmp-end
+      "fasm"c       tmp-append-ptr
+      "-m"c         tmp-append-ptr
+      "524288"c     tmp-append-ptr
+      "output.asm"c tmp-append-ptr
+      NULL          tmp-append-ptr
+      cmd-echoed
+
+      tmp-end
+      "chmod"c          tmp-append-ptr
+      "+x"c             tmp-append-ptr
+      "output"c         tmp-append-ptr
+      NULL              tmp-append-ptr
+      cmd-echoed
+    end
 
     run @bool if
       tmp-end
