@@ -2752,7 +2752,7 @@ in
   done @bool if
     const-stack-count @64 1 != if
       token Token.loc ptr+ eputloc
-      ": ERROR: The result of expression in compile time evaluation must be a single number\n" eputs
+      ": ERROR: The result of expression in compile time evaluation must be a single element on the data stack\n" eputs
       1 exit
     end
 
@@ -3186,6 +3186,7 @@ proc compile-file-into-ops ptr in
         else dup @Str "proc" streq if*
           inside-proc @bool if
             here eputs ": TODO: reporting proc inside proc error is not implemented yet\n" eputs
+            token Token.loc ptr+ located-here
             1 exit
           end
 
@@ -4268,7 +4269,9 @@ in
     end
 
     over over < if
-      here eputs ": TODO: reporting insufficient data on the stack is not implemented\n" eputs
+      outs TypeStack.top ptr+ @ptr TypeFrame.loc ptr+        eputloc
+      ": ERROR: Insufficient data on the stack. Expected:\n" eputs
+      outs type-stack-dump
       1 exit
     end
   drop
