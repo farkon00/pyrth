@@ -1630,14 +1630,6 @@ in
   out-fd @64 close drop
 end
 
-proc generate-gas-linux-x86_64
-  ptr // file-path
-in
-  drop
-  here eputs ": TODO: generate-gas-linux-x86_64 is not implemented\n" eputs
-  1 exit
-end
-
 proc generate-nasm-linux-x86_64
   ptr // file-path
 in
