@@ -1,0 +1,8 @@
+include "std.porth"
+
+proc main in
+  here eputs ": TODO: test.porth is not implemented\n" eputs
+  1 exit
+end
+
+main
