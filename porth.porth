@@ -996,6 +996,7 @@ in
   end
 end
 
+// TODOOOOOOOOOO: proc-lookup-by-addr in O(1) by storing proc index in the operand of OP_PREP_PROC
 proc proc-lookup-by-addr
   int // proc addr
   --
