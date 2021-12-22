@@ -358,7 +358,9 @@ const MAP_ANONYMOUS 32 end
 const PROT_READ 1 end
 const PROT_WRITE 2 end
 
-const sizeof(timespec) 16 end
+const timespec.tv_sec  sizeof(int) offset end
+const timespec.tv_nsec sizeof(int) offset end
+const sizeof(timespec) reset end
 
 proc ptr+ ptr int -- ptr in
   swap cast(int)
@@ -436,6 +438,7 @@ proc close int -- int in SYS_close syscall1 end
 proc exit int in SYS_exit syscall1 drop end
 proc mmap int int int int int ptr -- int in SYS_mmap syscall6 end
 proc clock_nanosleep ptr ptr int int -- int in SYS_clock_nanosleep syscall4 end
+proc clock_gettime ptr int -- int in SYS_clock_gettime syscall2 end
 proc fork -- int in SYS_fork syscall0 end
 proc getpid -- int in SYS_getpid syscall0 end
 proc execve ptr ptr ptr -- int in SYS_execve syscall3 end
@@ -685,7 +688,10 @@ end
 const PUTU_BUFFER_CAP 32 end
 // TODO: fputu should fail if write call fails
 // TODO: fputu does not print negative numbers
-proc fputu int int in
+proc fputu
+  int // number
+  int // fd
+in
   memory buffer PUTU_BUFFER_CAP end
   memory fd sizeof(u64) end
   fd !64
@@ -706,8 +712,47 @@ proc fputu int int in
   drop
 end
 
+proc fput0u
+  int // number
+  int // padding
+  int // fd
+in
+  memory buffer PUTU_BUFFER_CAP end
+  memory fd sizeof(int) end
+  fd !int
+  memory padding sizeof(int) end
+  padding !int
+  memory number sizeof(int) end
+  number !int
+
+  // *********9010
+  //          ^
+
+  buffer PUTU_BUFFER_CAP ptr+
+  while
+    padding @int 0 >
+    number  @int 0 >
+    lor
+  do
+    1 ptr-
+
+    number @int
+    10 divmod
+    '0' +
+    rot over over !8
+    rot number !int
+    swap drop
+
+    padding dec64
+  end
+
+  dup buffer PUTU_BUFFER_CAP ptr+ swap ptr-diff swap fd @64 fputs
+end
+
 proc putu int in stdout fputu end
+proc put0u int int in stdout fput0u end
 proc eputu int in stderr fputu end
+
 
 // TODO: there is no fputi function that would print signed integers
 
@@ -1075,4 +1120,38 @@ in
     tmp-end result @ptr ptr-diff
     result @ptr
   end
+end
+
+memory timeit-begin sizeof(timespec) end
+
+proc timeit/start in
+  timeit-begin CLOCK_MONOTONIC clock_gettime 0 < if
+    "ERROR: timeit/start: could not get current time for some reason\n" eputs
+    1 exit
+  end
+end
+
+const 1e9 1000000000 end
+
+proc timeit/finish int ptr in
+  memory timeit-end sizeof(timespec) end
+  timeit-end CLOCK_MONOTONIC clock_gettime 0 < if
+    "ERROR: timeit/end: could not get current time for some reason\n" eputs
+    1 exit
+  end
+  puts " took " puts
+
+  timeit-end   timespec.tv_sec ptr+ @int
+  timeit-begin timespec.tv_sec ptr+ @int
+  -
+  1e9 *
+  timeit-end   timespec.tv_nsec ptr+ @int
+  timeit-begin timespec.tv_nsec ptr+ @int
+  -
+  +
+    dup 1e9 /        putu
+    "."              puts
+    dup 1e9 % 9      put0u
+    " secs\n"        puts
+  drop
 end

@@ -3928,6 +3928,8 @@ end
 proc type-check-program in
   memory prok sizeof(ptr) end
 
+  timeit/start
+
   0 while dup procs-count @int < do
     dup sizeof(Proc) * procs +ptr
     prok !ptr
@@ -3944,6 +3946,8 @@ proc type-check-program in
   memory empty-stack sizeof(TypeStack) end
   sizeof(TypeStack) 0 empty-stack memset drop
   empty-stack 0 empty-stack 0 type-check-program-from
+
+  "Type checking" timeit/finish
 end
 
 proc summary in
@@ -4126,7 +4130,9 @@ proc main in
       1 exit
     end
 
-    file-path-cstr @ptr compile-file-into-ops
+    timeit/start
+      file-path-cstr @ptr compile-file-into-ops
+    "Compilation" timeit/finish
     unsafe @bool lnot if type-check-program end
 
     assert "Exhaustive target handling in main" COUNT_TARGETS 2 = end
