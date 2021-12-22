@@ -1124,7 +1124,7 @@ end
 
 memory timeit-begin sizeof(timespec) end
 
-proc timeit/start in
+proc timeit/from-here in
   timeit-begin CLOCK_MONOTONIC clock_gettime 0 < if
     "ERROR: timeit/start: could not get current time for some reason\n" eputs
     1 exit
@@ -1133,7 +1133,7 @@ end
 
 const 1e9 1000000000 end
 
-proc timeit/finish int ptr in
+proc timeit/to-here int ptr in
   memory timeit-end sizeof(timespec) end
   timeit-end CLOCK_MONOTONIC clock_gettime 0 < if
     "ERROR: timeit/end: could not get current time for some reason\n" eputs
