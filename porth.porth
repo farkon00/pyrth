@@ -2356,6 +2356,8 @@ proc compile-file-into-ops ptr in
           konst Const.type ptr+ !64
 
           konst const-define
+        else dup @Str "inline" streq if*
+          // TODOOOOOOOOOOOOOOOOOO: inline procedures are not implemented for porth.porth
         else dup @Str "proc" streq if*
           inside-proc @bool if
             token Token.loc ptr+                                                             eputloc
