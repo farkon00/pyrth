@@ -14,14 +14,14 @@ const stdin  0 end
 const stdout 1 end
 const stderr 2 end
 
-proc @ptr ptr -- ptr in @64 cast(ptr) end
-proc @@ptr ptr -- ptr in @ptr @ptr end
-proc @bool ptr -- bool in @64 cast(bool) end
-proc @int ptr -- int in @64 end
+inline proc @ptr ptr -- ptr in @64 cast(ptr) end
+inline proc @@ptr ptr -- ptr in @ptr @ptr end
+inline proc @bool ptr -- bool in @64 cast(bool) end
+inline proc @int ptr -- int in @64 end
 
-proc !bool bool ptr in !64 end
-proc !ptr ptr ptr in !64 end
-proc !int int ptr in !64 end
+inline proc !bool bool ptr in !64 end
+inline proc !ptr ptr ptr in !64 end
+inline proc !int int ptr in !64 end
 
 /// Syscalls
 // Stolen from https://filippo.io/linux-syscall-table/
@@ -362,58 +362,58 @@ const timespec.tv_sec  sizeof(int) offset end
 const timespec.tv_nsec sizeof(int) offset end
 const sizeof(timespec) reset end
 
-proc ptr+ ptr int -- ptr in
+inline proc ptr+ ptr int -- ptr in
   swap cast(int)
   swap cast(int)
   +
   cast(ptr)
 end
-proc ptr- ptr int -- ptr in
+inline proc ptr- ptr int -- ptr in
   swap cast(int)
   swap cast(int)
   -
   cast(ptr)
 end
-proc ptr!= ptr ptr -- bool in
+inline proc ptr!= ptr ptr -- bool in
   swap cast(int)
   swap cast(int)
   !=
 end
-proc ptr= ptr ptr -- bool in
+inline proc ptr= ptr ptr -- bool in
   swap cast(int)
   swap cast(int)
   =
 end
-proc ptr< ptr ptr -- bool in
+inline proc ptr< ptr ptr -- bool in
   swap cast(int)
   swap cast(int)
   <
 end
-proc +ptr int ptr -- ptr in
+inline proc +ptr int ptr -- ptr in
   cast(int) + cast(ptr)
 end
 
-proc ptr-diff ptr ptr -- int in
+inline proc ptr-diff ptr ptr -- int in
   swap cast(int)
   swap cast(int)
   -
 end
 
 const sizeof(stat) 144 end
-proc stat.st_dev     ptr -- ptr in 0   ptr+ end
-proc stat.st_ino     ptr -- ptr in 8   ptr+ end
-proc stat.st_mode    ptr -- ptr in 24  ptr+ end
-proc stat.st_nlink   ptr -- ptr in 16  ptr+ end
-proc stat.st_uid     ptr -- ptr in 28  ptr+ end
-proc stat.st_gid     ptr -- ptr in 32  ptr+ end
-proc stat.st_rdev    ptr -- ptr in 40  ptr+ end
-proc stat.st_size    ptr -- ptr in 48  ptr+ end
-proc @stat.st_size   ptr -- int in stat.st_size @64 end
-proc stat.st_blksize ptr -- ptr in 56  ptr+ end
-proc stat.st_blocks  ptr -- ptr in 64  ptr+ end
-proc stat.st_atim    ptr -- ptr in 72  ptr+ end
-proc stat.st_mtim    ptr -- ptr in 88  ptr+ end
-proc stat.st_ctim    ptr -- ptr in 104 ptr+ end
+inline proc stat.st_dev     ptr -- ptr in 0   ptr+ end
+inline proc stat.st_ino     ptr -- ptr in 8   ptr+ end
+inline proc stat.st_mode    ptr -- ptr in 24  ptr+ end
+inline proc stat.st_nlink   ptr -- ptr in 16  ptr+ end
+inline proc stat.st_uid     ptr -- ptr in 28  ptr+ end
+inline proc stat.st_gid     ptr -- ptr in 32  ptr+ end
+inline proc stat.st_rdev    ptr -- ptr in 40  ptr+ end
+inline proc stat.st_size    ptr -- ptr in 48  ptr+ end
+inline proc @stat.st_size   ptr -- int in stat.st_size @64 end
+inline proc stat.st_blksize ptr -- ptr in 56  ptr+ end
+inline proc stat.st_blocks  ptr -- ptr in 64  ptr+ end
+inline proc stat.st_atim    ptr -- ptr in 72  ptr+ end
+inline proc stat.st_mtim    ptr -- ptr in 88  ptr+ end
+inline proc stat.st_ctim    ptr -- ptr in 104 ptr+ end
 const sizeof(stat.st_dev) sizeof(u64) end
 const sizeof(stat.st_ino) sizeof(u64) end
 const sizeof(stat.st_mode) sizeof(u32) end
@@ -429,55 +429,55 @@ const sizeof(stat.st_mtim) sizeof(timespec) end
 const sizeof(stat.st_ctim) sizeof(timespec) end
 
 // Wrappers for common syscalls
-proc write int ptr int -- int in SYS_write syscall3 end
-proc read int ptr int -- int in SYS_read syscall3 end
-proc openat int int ptr int -- int in SYS_openat syscall4 end
-proc fstat ptr int -- int in SYS_fstat syscall2 end
-proc stat ptr ptr -- int in SYS_stat syscall2 end
-proc close int -- int in SYS_close syscall1 end
-proc exit int in SYS_exit syscall1 drop end
-proc mmap int int int int int ptr -- int in SYS_mmap syscall6 end
-proc clock_nanosleep ptr ptr int int -- int in SYS_clock_nanosleep syscall4 end
-proc clock_gettime ptr int -- int in SYS_clock_gettime syscall2 end
-proc fork -- int in SYS_fork syscall0 end
-proc getpid -- int in SYS_getpid syscall0 end
-proc execve ptr ptr ptr -- int in SYS_execve syscall3 end
-proc wait4 ptr int ptr int -- int in SYS_wait4 syscall4 end
+inline proc write int ptr int -- int in SYS_write syscall3 end
+inline proc read int ptr int -- int in SYS_read syscall3 end
+inline proc openat int int ptr int -- int in SYS_openat syscall4 end
+inline proc fstat ptr int -- int in SYS_fstat syscall2 end
+inline proc stat ptr ptr -- int in SYS_stat syscall2 end
+inline proc close int -- int in SYS_close syscall1 end
+inline proc exit int in SYS_exit syscall1 drop end
+inline proc mmap int int int int int ptr -- int in SYS_mmap syscall6 end
+inline proc clock_nanosleep ptr ptr int int -- int in SYS_clock_nanosleep syscall4 end
+inline proc clock_gettime ptr int -- int in SYS_clock_gettime syscall2 end
+inline proc fork -- int in SYS_fork syscall0 end
+inline proc getpid -- int in SYS_getpid syscall0 end
+inline proc execve ptr ptr ptr -- int in SYS_execve syscall3 end
+inline proc wait4 ptr int ptr int -- int in SYS_wait4 syscall4 end
 
-proc /   int int -- int in divmod drop end
-proc %   int int -- int in divmod swap drop end
-proc mod int int -- int in % end
-proc div int int -- int in / end
+inline proc /   int int -- int in divmod drop end
+inline proc %   int int -- int in divmod swap drop end
+inline proc mod int int -- int in % end
+inline proc div int int -- int in / end
 
-proc nth_argv int -- ptr in
+inline proc nth_argv int -- ptr in
   8 * argv +ptr @64 cast(ptr)
 end
 
-proc lnot bool -- bool in
+inline proc lnot bool -- bool in
   cast(int) 1 - cast(bool)
 end
 
-proc land bool bool -- bool in
+inline proc land bool bool -- bool in
   swap cast(int)
   swap cast(int)
   and
   cast(bool)
 end
 
-proc lor bool bool -- bool in
+inline proc lor bool bool -- bool in
   swap cast(int)
   swap cast(int)
   or
   cast(bool)
 end
 
-proc inc64-by ptr int in over @64 + swap !64 end
-proc inc64 ptr in dup @64 1 + swap !64 end
-proc dec64 ptr in dup @64 1 - swap !64 end
-proc inc32 ptr in dup @32 1 + swap !32 end
-proc dec32 ptr in dup @32 1 - swap !32 end
-proc inc8 ptr in dup @8 1 + swap !8 end
-proc dec8 ptr in dup @8 1 - swap !8 end
+inline proc inc64-by ptr int in over @64 + swap !64 end
+inline proc inc64 ptr in dup @64 1 + swap !64 end
+inline proc dec64 ptr in dup @64 1 - swap !64 end
+inline proc inc32 ptr in dup @32 1 + swap !32 end
+inline proc dec32 ptr in dup @32 1 - swap !32 end
+inline proc inc8 ptr in dup @8 1 + swap !8 end
+inline proc dec8 ptr in dup @8 1 - swap !8 end
 
 proc swap64 ptr ptr in
   memory a sizeof(u64) end
@@ -509,36 +509,36 @@ proc cstreq ptr ptr -- bool in
   land
 end
 
-proc cstr-to-str ptr -- int ptr in dup cstrlen swap end
+inline proc cstr-to-str ptr -- int ptr in dup cstrlen swap end
 
 // TODO: fputs should crash the app if write fails
-proc fputs int ptr int in write drop end
-proc puts int ptr in stdout fputs end
-proc eputs int ptr in stderr fputs end
+inline proc fputs int ptr int in write drop end
+inline proc puts int ptr in stdout fputs end
+inline proc eputs int ptr in stderr fputs end
 
 const offsetof(Str.count) sizeof(u64) offset end
 const offsetof(Str.data) sizeof(ptr) offset end
 const sizeof(Str) reset end
 
-proc Str.count ptr -- ptr in offsetof(Str.count) ptr+ end
-proc Str.data ptr -- ptr in offsetof(Str.data) ptr+ end
-proc @Str.count ptr -- int in Str.count @64 end
-proc @Str.data ptr -- ptr in Str.data  @64 cast(ptr) end
-proc !Str.count int ptr in Str.count !64 end
-proc !Str.data ptr ptr in Str.data  !64 end
+inline proc Str.count ptr -- ptr in offsetof(Str.count) ptr+ end
+inline proc Str.data ptr -- ptr in offsetof(Str.data) ptr+ end
+inline proc @Str.count ptr -- int in Str.count @64 end
+inline proc @Str.data ptr -- ptr in Str.data  @64 cast(ptr) end
+inline proc !Str.count int ptr in Str.count !64 end
+inline proc !Str.data ptr ptr in Str.data  !64 end
 
-proc @Str ptr -- int ptr in
+inline proc @Str ptr -- int ptr in
   dup @Str.count
   swap @Str.data
 end
 
-proc !Str int ptr ptr in
+inline proc !Str int ptr ptr in
   dup rot swap
   !Str.data
   !Str.count
 end
 
-proc str-chop-one-left ptr in
+inline proc str-chop-one-left ptr in
    dup Str.count dec64
        Str.data inc64
 end
@@ -602,7 +602,7 @@ in
   else false end
 end
 
-proc ?str-empty ptr -- bool in
+inline proc ?str-empty ptr -- bool in
   offsetof(Str.count) ptr+
   @64
   0 =
@@ -631,7 +631,7 @@ in
 end
 
 // TODO: rename isdigit to ?digit
-proc isdigit int -- bool in
+inline proc isdigit int -- bool in
   dup
     '0' >=
   swap
@@ -640,7 +640,7 @@ proc isdigit int -- bool in
 end
 
 // TODO: rename isalpha to ?alpha
-proc isalpha int -- bool in
+inline proc isalpha int -- bool in
   dup
     dup
       'a' >=
@@ -657,7 +657,7 @@ proc isalpha int -- bool in
 end
 
 // TODO: rename isalnum to ?alnum
-proc isalnum int -- bool in
+inline proc isalnum int -- bool in
   dup
     isdigit
   swap
@@ -749,9 +749,9 @@ in
   dup buffer PUTU_BUFFER_CAP ptr+ swap ptr-diff swap fd @64 fputs
 end
 
-proc putu int in stdout fputu end
-proc put0u int int in stdout fput0u end
-proc eputu int in stderr fputu end
+inline proc putu int in stdout fputu end
+inline proc put0u int int in stdout fput0u end
+inline proc eputu int in stderr fputu end
 
 
 // TODO: there is no fputi function that would print signed integers
@@ -800,7 +800,7 @@ end
 
 memory rand-state sizeof(u64) end
 
-proc srand int in
+inline proc srand int in
   rand-state !64
 end
 
@@ -809,7 +809,7 @@ end
 const RAND_A 6364136223846793005 end
 const RAND_C 1442695040888963407 end
 
-proc rand -- int in
+inline proc rand -- int in
   rand-state @64
   RAND_A *
   RAND_C +
@@ -849,11 +849,11 @@ const TMP_CAP 8 1024 * 1024 * end
 memory tmp-start TMP_CAP end
 memory tmp-size sizeof(u64) end
 
-proc tmp-clean in 0 tmp-size !64 end
-proc tmp-end -- ptr in tmp-start tmp-size @64 ptr+ end
+inline proc tmp-clean in 0 tmp-size !64 end
+inline proc tmp-end -- ptr in tmp-start tmp-size @64 ptr+ end
 // TODO: make tmp-rewind to fill up the "freed" memory with some recognizable pattern like 0xcccccccc
 // It should be probably enabled in some special debug mode, cause it's a runtime cost
-proc tmp-rewind ptr in tmp-start ptr-diff tmp-size !int end
+inline proc tmp-rewind ptr in tmp-start ptr-diff tmp-size !int end
 
 proc tmp-alloc
   int
@@ -869,9 +869,9 @@ in
   tmp-size @64 rot + tmp-size !64
 end
 
-proc tmp-str-to-cstr int ptr -- ptr in over 1 + tmp-alloc memcpy end
-proc tmp-append int ptr -- ptr in over tmp-alloc memcpy end
-proc tmp-append-ptr ptr in
+inline proc tmp-str-to-cstr int ptr -- ptr in over 1 + tmp-alloc memcpy end
+inline proc tmp-append int ptr -- ptr in over tmp-alloc memcpy end
+inline proc tmp-append-ptr ptr in
   sizeof(ptr) tmp-alloc !ptr
 end
 
