@@ -102,6 +102,8 @@ class Intrinsic(Enum):
     SYSCALL6=auto()
     STOP=auto()
 
+# TODO: make conditional and unconditional jumps jump by relative address
+# This will make the code more relocatable which will make it easily inlinable
 class OpType(Enum):
     PUSH_INT=auto()
     PUSH_PTR=auto()
@@ -1296,6 +1298,10 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
         elif token.typ == TokenType.KEYWORD:
             assert len(Keyword) == 16, "Exhaustive keywords handling in parse_program_from_tokens()"
             if token.value == Keyword.IF:
+                if ctx.current_proc is not None and ctx.current_proc.inline:
+                    compiler_error(token.loc, "no conditions in inline procedures");
+                    exit(1)
+
                 ctx.ops.append(Op(typ=OpType.IF, token=token))
                 ctx.stack.append(ctx.ip)
                 ctx.ip += 1
@@ -1383,6 +1389,9 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 ctx.stack.append(ctx.ip)
                 ctx.ip += 1
             elif token.value == Keyword.DO:
+                if ctx.current_proc is not None and ctx.current_proc.inline:
+                    compiler_error(token.loc, "no loops in inline procedures")
+                    exit(1)
                 ctx.ops.append(Op(typ=OpType.DO, token=token))
                 if len(ctx.stack) == 0:
                     compiler_error(token.loc, "`do` is not preceded by `while`")
@@ -1453,6 +1462,9 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 const_value, const_typ = eval_const_value(ctx, rtokens)
                 ctx.consts[const_name] = Const(value=const_value, loc=const_loc, typ=const_typ)
             elif token.value == Keyword.MEMORY:
+                if ctx.current_proc is not None and ctx.current_proc.inline:
+                    compiler_error(token.loc, "no local memory in inline procedures!");
+                    exit(1)
 
                 if len(rtokens) == 0:
                     compiler_error(token.loc, "expected memory name but found nothing")
