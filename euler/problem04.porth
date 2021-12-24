@@ -1,4 +1,3 @@
-// WARNING! This problem is extremely slow in Simulation Mode with CPython! Use PyPy or Compilation Mode!
 include "std.porth"
 
 memory ans sizeof(u64) end

@@ -1,7 +1,5 @@
 include "std/std.porth"
 
-// TODO: problem12 is too slow for `porth.py sim`
-
 proc tri int -- int in dup 1 + * 2 / end
 
 proc count-div int -- int in

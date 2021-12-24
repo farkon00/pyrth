@@ -1,4 +1,3 @@
-// TODO: bubble-sort is not test at the moment because rand does not work properly in simulation mode
 include "std.porth"
 
 const N 20 end
