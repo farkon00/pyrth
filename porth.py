@@ -1263,8 +1263,18 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 ctx.ops.append(Op(typ=OpType.PUSH_MEM, token=token, operand=ctx.memories[token.value].offset))
                 ctx.ip += 1
             elif token.value in ctx.procs:
-                ctx.ops.append(Op(typ=OpType.CALL, token=token, operand=ctx.procs[token.value].addr))
-                ctx.ip += 1
+                proc = ctx.procs[token.value]
+                if proc.inline:
+                    proc_ip = proc.addr
+                    assert ctx.ops[proc_ip].typ == OpType.PREP_PROC
+                    proc_ip += 1
+                    while ctx.ops[proc_ip].typ != OpType.RET:
+                        ctx.ops.append(ctx.ops[proc_ip])
+                        ctx.ip += 1
+                        proc_ip += 1
+                else:
+                    ctx.ops.append(Op(typ=OpType.CALL, token=token, operand=proc.addr))
+                    ctx.ip += 1
             elif token.value in ctx.consts:
                 const = ctx.consts[token.value]
                 if const.typ == DataType.INT:
