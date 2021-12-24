@@ -1130,25 +1130,32 @@ end
 
 const 1e9 1000000000 end
 
-proc timeit/to-here int ptr in
+proc timeit/to-here
+  int ptr // message
+  bool    // silent
+in
   memory timeit-end sizeof(timespec) end
-  timeit-end CLOCK_MONOTONIC clock_gettime 0 < if
-    "ERROR: timeit/end: could not get current time for some reason\n" eputs
-    1 exit
-  end
-  puts " took " puts
+  lnot if
+    timeit-end CLOCK_MONOTONIC clock_gettime 0 < if
+      "ERROR: timeit/end: could not get current time for some reason\n" eputs
+      1 exit
+    end
+    puts " took " puts
 
-  timeit-end   timespec.tv_sec ptr+ @int
-  timeit-begin timespec.tv_sec ptr+ @int
-  -
-  1e9 *
-  timeit-end   timespec.tv_nsec ptr+ @int
-  timeit-begin timespec.tv_nsec ptr+ @int
-  -
-  +
-    dup 1e9 /        putu
-    "."              puts
-    dup 1e9 % 9      put0u
-    " secs\n"        puts
-  drop
+    timeit-end   timespec.tv_sec ptr+ @int
+    timeit-begin timespec.tv_sec ptr+ @int
+    -
+    1e9 *
+    timeit-end   timespec.tv_nsec ptr+ @int
+    timeit-begin timespec.tv_nsec ptr+ @int
+    -
+    +
+      dup 1e9 /        putu
+      "."              puts
+      dup 1e9 % 9      put0u
+      " secs\n"        puts
+    drop
+  else
+    drop drop
+  end
 end

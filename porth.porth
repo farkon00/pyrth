@@ -2655,10 +2655,9 @@ in
 end
 
 proc compile-program-into-ops ptr in
-  // TODO: make timeit disablable by -s flag
-  // timeit/from-here
+  timeit/from-here
     compile-file-into-ops
-  // "Compilation" timeit/to-here
+  "Compilation" silent @bool timeit/to-here
 end
 
 // TODO: rename expect-arity-2 to expect-arity when there are no use cases for the original expect-arity anymore
@@ -3467,7 +3466,7 @@ end
 proc type-check-program in
   memory prok sizeof(ptr) end
 
-  // timeit/from-here
+  timeit/from-here
 
   0 while dup procs-count @int < do
     dup sizeof(Proc) * procs +ptr
@@ -3486,7 +3485,7 @@ proc type-check-program in
   sizeof(TypeStack) 0 empty-stack memset drop
   empty-stack 0 empty-stack 0 type-check-program-from
 
-  // "Type checking" timeit/to-here
+  "Type checking" silent @bool timeit/to-here
 end
 
 proc summary in
@@ -3662,7 +3661,7 @@ proc main in
     file-path-cstr @ptr compile-program-into-ops
     unsafe @bool lnot if type-check-program end
 
-    // timeit/from-here
+    timeit/from-here
 
     assert "Exhaustive target handling in main" COUNT_TARGETS 2 = end
     target @int TARGET_NASM_LINUX_X86_64 = if
@@ -3705,7 +3704,7 @@ proc main in
       1 exit
     end
 
-    // "Generation" timeit/to-here
+    "Generation" silent @bool timeit/to-here
 
     run @bool if
       tmp-end
