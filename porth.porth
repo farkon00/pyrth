@@ -19,8 +19,8 @@ proc fputloc ptr int in
   dup Loc.col ptr+ @64        fd @64 fputu
   drop
 end
-proc putloc ptr in stdout fputloc end
-proc eputloc ptr in stderr fputloc end
+inline proc putloc ptr in stdout fputloc end
+inline proc eputloc ptr in stderr fputloc end
 /// END Loc //////////////////////////////
 
 /// BEGIN Token //////////////////////////////
@@ -51,7 +51,7 @@ const STRBUF_CAP 32 1024 * end
 memory strbuf-size sizeof(int) end
 memory strbuf-start STRBUF_CAP end
 
-proc strbuf-end -- ptr in strbuf-start strbuf-size @int ptr+ end
+inline proc strbuf-end -- ptr in strbuf-start strbuf-size @int ptr+ end
 proc strbuf-append-char int in
   strbuf-size @int STRBUF_CAP >= if
     here eputs ": Assertion Failed: string literal buffer overflow\n" eputs
@@ -1049,7 +1049,7 @@ memory local-memories-count sizeof(u64) end
 memory local-memories sizeof(Memory) LOCAL_MEMORIES_CAP * end
 memory local-memory-capacity sizeof(u64) end
 
-proc local-memories-clean in
+inline proc local-memories-clean in
   0 local-memories-count !64
   0 local-memory-capacity !64
 end
@@ -1163,7 +1163,7 @@ proc cmd-echoed ptr in
   end
 end
 
-proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
+inline proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
 
 const X86_64_RET_STACK_CAP 8192 end
 
@@ -1725,8 +1725,8 @@ const FPB_CAP 8 1024 * end
 memory fpb-start FPB_CAP end
 memory fpb-size sizeof(u64) end
 
-proc fpb-end -- ptr in fpb-start fpb-size @64 ptr+ end
-proc fpb-rewind ptr in fpb-start ptr-diff fpb-size !int end
+inline proc fpb-end -- ptr in fpb-start fpb-size @64 ptr+ end
+inline proc fpb-rewind ptr in fpb-start ptr-diff fpb-size !int end
 
 proc fpb-alloc
   int
@@ -1742,7 +1742,7 @@ in
   fpb-size @64 rot + fpb-size !64
 end
 
-proc fpb-append int ptr -- ptr in over fpb-alloc memcpy end
+inline proc fpb-append int ptr -- ptr in over fpb-alloc memcpy end
 /// END File Path Buffer //////////////////////////////
 
 /// BEGIN Compiler //////////////////////////////
@@ -1784,7 +1784,7 @@ memory const-stack-count sizeof(u64) end
 memory const-stack sizeof(ConstFrame) CONST_STACK_CAP * end
 memory iota sizeof(int) end
 
-proc const-stack-clean in
+inline proc const-stack-clean in
   0 const-stack-count !64
 end
 
@@ -2656,7 +2656,7 @@ in
   dst @ptr
 end
 
-proc compile-program-into-ops ptr in
+inline proc compile-program-into-ops ptr in
   timeit/from-here
     compile-file-into-ops
   "Compilation" silent @bool timeit/to-here
