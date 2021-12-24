@@ -1309,7 +1309,8 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
             assert len(Keyword) == 16, "Exhaustive keywords handling in parse_program_from_tokens()"
             if token.value == Keyword.IF:
                 if ctx.current_proc is not None and ctx.current_proc.inline:
-                    compiler_error(token.loc, "no conditions in inline procedures");
+                    compiler_error(ctx.current_proc.loc, "no conditions in inline procedures");
+                    compiler_note(token.loc, "condition is used here")
                     exit(1)
 
                 ctx.ops.append(Op(typ=OpType.IF, token=token))
@@ -1400,7 +1401,8 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 ctx.ip += 1
             elif token.value == Keyword.DO:
                 if ctx.current_proc is not None and ctx.current_proc.inline:
-                    compiler_error(token.loc, "no loops in inline procedures")
+                    compiler_error(ctx.current_proc.loc, "no loops in inline procedures")
+                    compiler_note(token.loc, "loop is used here")
                     exit(1)
                 ctx.ops.append(Op(typ=OpType.DO, token=token))
                 if len(ctx.stack) == 0:
@@ -1473,7 +1475,8 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 ctx.consts[const_name] = Const(value=const_value, loc=const_loc, typ=const_typ)
             elif token.value == Keyword.MEMORY:
                 if ctx.current_proc is not None and ctx.current_proc.inline:
-                    compiler_error(token.loc, "no local memory in inline procedures!");
+                    compiler_error(ctx.current_proc.loc, "no local memory in inline procedures!");
+                    compiler_note(token.loc, "local memory is defined here")
                     exit(1)
 
                 if len(rtokens) == 0:
