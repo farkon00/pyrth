@@ -37,6 +37,7 @@ class Keyword(Enum):
     ASSERT=auto()
     IN=auto()
     BIKESHEDDER=auto()
+    INLINE=auto()
 
 class DataType(IntEnum):
     INT=auto()
@@ -101,6 +102,8 @@ class Intrinsic(Enum):
     SYSCALL6=auto()
     STOP=auto()
 
+# TODO: make conditional and unconditional jumps jump by relative address
+# This will make the code more relocatable which will make it easily inlinable
 class OpType(Enum):
     PUSH_INT=auto()
     PUSH_PTR=auto()
@@ -836,7 +839,7 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
         out.write("ret_stack_end:\n")
         out.write("mem: resb %d\n" % program.memory_capacity)
 
-assert len(Keyword) == 15, f"Exhaustive KEYWORD_NAMES definition. {len(Keyword)}"
+assert len(Keyword) == 16, f"Exhaustive KEYWORD_NAMES definition. {len(Keyword)}"
 KEYWORD_BY_NAMES: Dict[str, Keyword] = {
     'if': Keyword.IF,
     'if*': Keyword.IFSTAR,
@@ -853,6 +856,7 @@ KEYWORD_BY_NAMES: Dict[str, Keyword] = {
     'assert': Keyword.ASSERT,
     'in': Keyword.IN,
     '--': Keyword.BIKESHEDDER,
+    'inline': Keyword.INLINE,
 }
 KEYWORD_NAMES: Dict[Keyword, str] = {v: k for k, v in KEYWORD_BY_NAMES.items()}
 
@@ -955,6 +959,7 @@ class Memory:
 
 @dataclass
 class Proc:
+    inline: bool
     addr: OpAddr
     loc: Loc
     contract: Contract
@@ -1201,6 +1206,46 @@ def parse_proc_contract(rtokens: List[Token]) -> Contract:
     assert stopper == Keyword.IN
     return contract
 
+def introduce_proc(ctx: ParseContext, token: Token, rtokens: List[Token], inline=False):
+    if ctx.current_proc is None:
+        ctx.ops.append(Op(typ=OpType.SKIP_PROC, token=token))
+        ctx.stack.append(ctx.ip)
+        ctx.ip += 1
+
+        proc_addr = ctx.ip
+        ctx.ops.append(Op(typ=OpType.PREP_PROC, token=token))
+        ctx.stack.append(ctx.ip)
+        ctx.ip += 1
+
+        if len(rtokens) == 0:
+            compiler_error(token.loc, "expected procedure name but found nothing")
+            exit(1)
+        token = rtokens.pop()
+        if token.typ != TokenType.WORD:
+            compiler_error(token.loc, "expected procedure name to be %s but found %s" % (human(TokenType.WORD), human(token.typ)))
+            exit(1)
+        assert isinstance(token.value, str), "This is probably a bug in the lexer"
+        proc_loc = token.loc
+        proc_name = token.value
+        check_name_redefinition(ctx, token.value, token.loc)
+
+        proc_contract = parse_proc_contract(rtokens)
+
+        ctx.procs[proc_name] = Proc(
+            addr=proc_addr,
+            loc=token.loc,
+            local_memories={},
+            local_memory_capacity=0,
+            contract=proc_contract,
+            inline=inline
+        )
+        ctx.current_proc = ctx.procs[proc_name]
+    else:
+        # TODO: forbid constant definition inside of proc
+        compiler_error(token.loc, "defining procedures inside of procedures is not allowed")
+        compiler_note(ctx.current_proc.loc, "the current procedure starts here")
+        exit(1)
+
 def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_paths: List[str], included: int):
     rtokens: List[Token] = list(reversed(tokens))
     while len(rtokens) > 0:
@@ -1218,8 +1263,18 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 ctx.ops.append(Op(typ=OpType.PUSH_MEM, token=token, operand=ctx.memories[token.value].offset))
                 ctx.ip += 1
             elif token.value in ctx.procs:
-                ctx.ops.append(Op(typ=OpType.CALL, token=token, operand=ctx.procs[token.value].addr))
-                ctx.ip += 1
+                proc = ctx.procs[token.value]
+                if proc.inline:
+                    proc_ip = proc.addr
+                    assert ctx.ops[proc_ip].typ == OpType.PREP_PROC
+                    proc_ip += 1
+                    while ctx.ops[proc_ip].typ != OpType.RET:
+                        ctx.ops.append(ctx.ops[proc_ip])
+                        ctx.ip += 1
+                        proc_ip += 1
+                else:
+                    ctx.ops.append(Op(typ=OpType.CALL, token=token, operand=proc.addr))
+                    ctx.ip += 1
             elif token.value in ctx.consts:
                 const = ctx.consts[token.value]
                 if const.typ == DataType.INT:
@@ -1251,8 +1306,13 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
             ctx.ops.append(Op(typ=OpType.PUSH_INT, operand=token.value, token=token));
             ctx.ip += 1
         elif token.typ == TokenType.KEYWORD:
-            assert len(Keyword) == 15, "Exhaustive keywords handling in parse_program_from_tokens()"
+            assert len(Keyword) == 16, "Exhaustive keywords handling in parse_program_from_tokens()"
             if token.value == Keyword.IF:
+                if ctx.current_proc is not None and ctx.current_proc.inline:
+                    compiler_error(ctx.current_proc.loc, "no conditions in inline procedures");
+                    compiler_note(token.loc, "condition is used here")
+                    exit(1)
+
                 ctx.ops.append(Op(typ=OpType.IF, token=token))
                 ctx.stack.append(ctx.ip)
                 ctx.ip += 1
@@ -1340,6 +1400,10 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 ctx.stack.append(ctx.ip)
                 ctx.ip += 1
             elif token.value == Keyword.DO:
+                if ctx.current_proc is not None and ctx.current_proc.inline:
+                    compiler_error(ctx.current_proc.loc, "no loops in inline procedures")
+                    compiler_note(token.loc, "loop is used here")
+                    exit(1)
                 ctx.ops.append(Op(typ=OpType.DO, token=token))
                 if len(ctx.stack) == 0:
                     compiler_error(token.loc, "`do` is not preceded by `while`")
@@ -1410,6 +1474,10 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 const_value, const_typ = eval_const_value(ctx, rtokens)
                 ctx.consts[const_name] = Const(value=const_value, loc=const_loc, typ=const_typ)
             elif token.value == Keyword.MEMORY:
+                if ctx.current_proc is not None and ctx.current_proc.inline:
+                    compiler_error(ctx.current_proc.loc, "no local memory in inline procedures!");
+                    compiler_note(token.loc, "local memory is defined here")
+                    exit(1)
 
                 if len(rtokens) == 0:
                     compiler_error(token.loc, "expected memory name but found nothing")
@@ -1435,37 +1503,16 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     ctx.current_proc.local_memories[memory_name] = Memory(offset=ctx.current_proc.local_memory_capacity, loc=memory_loc)
                     ctx.current_proc.local_memory_capacity += memory_size
             elif token.value == Keyword.PROC:
-                if ctx.current_proc is None:
-                    ctx.ops.append(Op(typ=OpType.SKIP_PROC, token=token))
-                    ctx.stack.append(ctx.ip)
-                    ctx.ip += 1
-
-                    proc_addr = ctx.ip
-                    ctx.ops.append(Op(typ=OpType.PREP_PROC, token=token))
-                    ctx.stack.append(ctx.ip)
-                    ctx.ip += 1
-
-                    if len(rtokens) == 0:
-                        compiler_error(token.loc, "expected procedure name but found nothing")
-                        exit(1)
-                    token = rtokens.pop()
-                    if token.typ != TokenType.WORD:
-                        compiler_error(token.loc, "expected procedure name to be %s but found %s" % (human(TokenType.WORD), human(token.typ)))
-                        exit(1)
-                    assert isinstance(token.value, str), "This is probably a bug in the lexer"
-                    proc_loc = token.loc
-                    proc_name = token.value
-                    check_name_redefinition(ctx, token.value, token.loc)
-
-                    proc_contract = parse_proc_contract(rtokens)
-
-                    ctx.procs[proc_name] = Proc(addr=proc_addr, loc=token.loc, local_memories={}, local_memory_capacity=0, contract=proc_contract)
-                    ctx.current_proc = ctx.procs[proc_name]
-                else:
-                    # TODO: forbid constant definition inside of proc
-                    compiler_error(token.loc, "defining procedures inside of procedures is not allowed")
-                    compiler_note(ctx.current_proc.loc, "the current procedure starts here")
+                introduce_proc(ctx, token, rtokens)
+            elif token.value == Keyword.INLINE:
+                if len(rtokens) == 0:
+                    compiler_error(token.loc, "Expected `proc` keyword after `inline` but got nothing")
                     exit(1)
+                token = rtokens.pop()
+                if token.value != Keyword.PROC:
+                    compiler_error(token.loc, f"Expected keyword `proc` after `inline` but got `{token.text}`")
+                    exit(1)
+                introduce_proc(ctx, token, rtokens, inline=True)
             elif token.value in [Keyword.OFFSET, Keyword.RESET]:
                 compiler_error(token.loc, f"keyword `{token.text}` is supported only in compile time evaluation context")
                 exit(1)
