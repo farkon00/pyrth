@@ -959,6 +959,7 @@ const Proc.addr sizeof(u64)       offset end
 const Proc.loc  sizeof(Loc)       offset end
 const Proc.ins  sizeof(TypeStack) offset end
 const Proc.outs sizeof(TypeStack) offset end
+const Proc.inline sizeof(bool)    offset end
 const sizeof(Proc)                 reset end
 const PROCS_CAP 1024 end
 memory procs-count sizeof(u64) end
@@ -2136,6 +2137,67 @@ in
   push-op
 end
 
+proc introduce-proc
+  ptr // token
+  ptr // lexer
+in
+  memory lexer_ sizeof(ptr) end
+  lexer_ !ptr
+  memory token sizeof(Token) end
+  sizeof(Token) swap token memcpy drop
+  memory prok sizeof(Proc) end
+
+  inside-proc @bool if
+    token Token.loc ptr+                                                             eputloc
+    ": ERROR: definition procedures inside of procedures is not allowed (for now)\n" eputs
+    procs-count @int 1 - sizeof(Proc) * procs +ptr Proc.loc ptr+                     eputloc
+    ": NOTE: the current procedure starts here\n"                                    eputs
+    1 exit
+  end
+
+  sizeof(Proc) 0 prok memset drop
+
+  sizeof(Loc) token Token.loc ptr+ prok Proc.loc ptr+ memcpy drop
+
+  token lexer_ @ptr lexer-next-token lnot if
+    token Token.loc ptr+ eputloc
+    ": expected procedure name but found nothing\n" eputs
+    1 exit
+  end
+
+  token Token.type ptr+ @64 TOKEN_WORD != if
+    token Token.loc ptr+ eputloc
+    ": expected procedure name to be a word but found " eputs
+    token Token.type ptr+ @64 HUMAN_SINGULAR human-token-type eputs
+    " instead\n" eputs
+    1 exit
+  end
+
+  token Token.value ptr+ @Str
+  token Token.loc ptr+
+  check-name-redefinition
+
+  sizeof(Str) token Token.value ptr+ prok Proc.name ptr+ memcpy drop
+
+  ops-count @64 parse-block-stack-push
+  OP_SKIP_PROC 0 token push-op
+
+  ops-count @64
+  dup prok Proc.addr ptr+ !64
+      parse-block-stack-push
+  OP_PREP_PROC 0 token push-op
+
+  prok
+    lexer_ @ptr over Proc.ins ptr+ parse-proc-contract-list if
+      lexer_ @ptr over Proc.outs ptr+ parse-proc-contract-list drop
+    end
+  drop
+
+  true inside-proc !bool
+
+  prok proc-define
+end
+
 proc compile-file-into-ops ptr in
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
@@ -2147,7 +2209,6 @@ proc compile-file-into-ops ptr in
 
   memory token sizeof(Token) end
   memory konst sizeof(Const) end
-  memory prok sizeof(Proc) end
   memory memori sizeof(Memory) end
 
   false inside-proc !64
@@ -2359,55 +2420,7 @@ proc compile-file-into-ops ptr in
         else dup @Str "inline" streq if*
           // TODOOOOOOOOOOOOOOOOOO: inline procedures are not implemented for porth.porth
         else dup @Str "proc" streq if*
-          inside-proc @bool if
-            token Token.loc ptr+                                                             eputloc
-            ": ERROR: definition procedures inside of procedures is not allowed (for now)\n" eputs
-            prok Proc.loc ptr+                                                               eputloc
-            ": NOTE: the current procedure starts here\n"                                    eputs
-            1 exit
-          end
-
-          sizeof(Proc) 0 prok memset drop
-
-          sizeof(Loc) token Token.loc ptr+ prok Proc.loc ptr+ memcpy drop
-
-          token lexer lexer-next-token lnot if
-            token Token.loc ptr+ eputloc
-            ": expected procedure name but found nothing\n" eputs
-            1 exit
-          end
-
-          token Token.type ptr+ @64 TOKEN_WORD != if
-            token Token.loc ptr+ eputloc
-            ": expected procedure name to be a word but found " eputs
-            token Token.type ptr+ @64 HUMAN_SINGULAR human-token-type eputs
-            " instead\n" eputs
-            1 exit
-          end
-
-          token Token.value ptr+ @Str
-          token Token.loc ptr+
-          check-name-redefinition
-
-          sizeof(Str) token Token.value ptr+ prok Proc.name ptr+ memcpy drop
-
-          ops-count @64 parse-block-stack-push
-          OP_SKIP_PROC 0 token push-op
-
-          ops-count @64
-          dup prok Proc.addr ptr+ !64
-              parse-block-stack-push
-          OP_PREP_PROC 0 token push-op
-
-          prok
-            lexer over Proc.ins ptr+ parse-proc-contract-list if
-              lexer over Proc.outs ptr+ parse-proc-contract-list drop
-            end
-          drop
-
-          true inside-proc !bool
-
-          prok proc-define
+          token lexer introduce-proc
         else dup @Str "memory" streq if*
           token lexer lexer-next-token lnot if
             token Token.loc ptr+ eputloc
