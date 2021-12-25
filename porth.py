@@ -1269,6 +1269,8 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     assert ctx.ops[proc_ip].typ == OpType.PREP_PROC
                     proc_ip += 1
                     while ctx.ops[proc_ip].typ != OpType.RET:
+                        # TODOOOOOOOOOOOOOOO: inlining breaks type checking
+                        # TODOOOOOOOOOOOOOOO: inlining does not work with recursive inline procedures
                         ctx.ops.append(ctx.ops[proc_ip])
                         ctx.ip += 1
                         proc_ip += 1
