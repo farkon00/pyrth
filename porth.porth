@@ -711,6 +711,15 @@ in
   drop
 end
 
+inline proc push-op-by-ptr
+  ptr // ptr to op struct
+in
+  dup Op.type    ptr+ @int swap
+  dup Op.operand ptr+ @int swap
+  dup Op.token   ptr+      swap drop
+  push-op
+end
+
 proc dump-ops in
   0 while dup ops-count @64 < do
     dup sizeof(Op) * ops +ptr
@@ -959,7 +968,7 @@ const Proc.addr sizeof(u64)       offset end
 const Proc.loc  sizeof(Loc)       offset end
 const Proc.ins  sizeof(TypeStack) offset end
 const Proc.outs sizeof(TypeStack) offset end
-const Proc.inline sizeof(bool)    offset end
+const Proc.inlinable sizeof(bool) offset end
 const sizeof(Proc)                 reset end
 const PROCS_CAP 1024 end
 memory procs-count sizeof(u64) end
@@ -2140,7 +2149,10 @@ end
 proc introduce-proc
   ptr // token
   ptr // lexer
+  bool // inline
 in
+  memory inlinable sizeof(bool) end
+  inlinable !bool
   memory lexer_ sizeof(ptr) end
   lexer_ !ptr
   memory token sizeof(Token) end
@@ -2156,6 +2168,8 @@ in
   end
 
   sizeof(Proc) 0 prok memset drop
+
+  inlinable @bool prok Proc.inlinable ptr+ !bool
 
   sizeof(Loc) token Token.loc ptr+ prok Proc.loc ptr+ memcpy drop
 
@@ -2196,6 +2210,25 @@ in
   true inside-proc !bool
 
   prok proc-define
+end
+
+proc inline-procedure
+  ptr // proc
+in
+  Proc.addr ptr+ @int sizeof(Op) * ops +ptr
+
+  dup Op.type ptr+ @int OP_PREP_PROC != if
+    here eputs ": Assertion Failed: procedures must start with OP_PREP_PROC\n" eputs
+    1 exit
+  end
+
+  // TODO: this is unsafe and can easily overflow ops array
+  sizeof(Op) ptr+
+  while dup Op.type ptr+ @int OP_RET != do
+    dup push-op-by-ptr
+    sizeof(Op) ptr+
+  end
+  drop
 end
 
 proc compile-file-into-ops ptr in
@@ -2418,9 +2451,25 @@ proc compile-file-into-ops ptr in
 
           konst const-define
         else dup @Str "inline" streq if*
-          // TODOOOOOOOOOOOOOOOOOO: inline procedures are not implemented for porth.porth
+          token lexer lexer-next-token lnot if
+            token Token.loc ptr+ eputloc
+            ": ERROR: expected `proc` keyword after `inline` but got nothing\n" eputs
+            1 exit
+          end
+
+          token Token.type ptr+ @int TOKEN_WORD =
+          token Token.text ptr+ @Str "proc" streq
+          land lnot if
+            token Token.loc ptr+                                        eputloc
+            ": ERROR: Expected keyword `proc` after `inline` but got `" eputs
+            token Token.text ptr+ @Str                                  eputs
+            "`\n"                                                       eputs
+            1 exit
+          end
+
+          token lexer true introduce-proc
         else dup @Str "proc" streq if*
-          token lexer introduce-proc
+          token lexer false introduce-proc
         else dup @Str "memory" streq if*
           token lexer lexer-next-token lnot if
             token Token.loc ptr+ eputloc
@@ -2506,10 +2555,14 @@ proc compile-file-into-ops ptr in
           token
           push-op
         else drop dup @Str proc-lookup-by-name dup NULL ptr!= if*
-          OP_CALL
-          swap Proc.addr ptr+ @64
-          token
-          push-op
+          dup Proc.inlinable ptr+ @bool if
+            inline-procedure
+          else
+            OP_CALL
+            swap Proc.addr ptr+ @64
+            token
+            push-op
+          end
         else drop dup @Str local-memories-lookup dup NULL ptr!= if*
           OP_PUSH_LOCAL_MEM
           swap Memory.offset ptr+ @64
