@@ -1276,6 +1276,14 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 ctx.ip += 1
             elif token.value in ctx.procs:
                 proc = ctx.procs[token.value]
+                if ctx.current_proc == proc and proc.inline:
+                    # TODO: inline recursion prevention mechanism does not detect mutual recursion
+                    # Which is fine for now cause we do not even support mutual recursion.
+                    # But when we do, this might bite us in the ass. Which it will I'm 100% sure.
+                    # So this TODO is kinda pointless. But let's keep it in here just in case.
+                    compiler_error(token.loc, "no recursion in inline procedures");
+                    exit(1)
+
                 if proc.inline:
                     proc_ip = proc.addr
                     assert ctx.ops[proc_ip].typ == OpType.PREP_PROC
@@ -1283,9 +1291,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     ctx.ops.append(Op(typ=OpType.INLINED, token=token, operand=proc.addr))
                     ctx.ip += 1
                     while ctx.ops[proc_ip].typ != OpType.RET:
-                        # TODOOOOOOOOOOOOOOO: flag to disable inling for debug purposes
-                        # TODOOOOOOOOOOOOOOO: inlining breaks type checking
-                        # TODOOOOOOOOOOOOOOO: inlining does not work with recursive inline procedures
+                        # TODOOOOOOOOOOO: flag to disable inling for debug purposes
                         ctx.ops.append(ctx.ops[proc_ip])
                         ctx.ip += 1
                         proc_ip += 1

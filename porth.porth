@@ -3828,3 +3828,5 @@ proc main in
 end
 
 main
+// TODOOOOOOOOOOOOOOO: inlining does not work with recursive inline procedures
+// TODOOOOOOOOOOOOOOO: inlining breaks type checking of the procedures
