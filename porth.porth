@@ -2231,6 +2231,17 @@ in
   drop
 end
 
+proc current-proc -- ptr in
+  inside-proc @bool if
+    procs-count @int
+    1 -
+    sizeof(Proc) *
+    procs +ptr
+  else
+    NULL
+  end
+end
+
 proc compile-file-into-ops ptr in
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
@@ -2556,6 +2567,14 @@ proc compile-file-into-ops ptr in
           push-op
         else drop dup @Str proc-lookup-by-name dup NULL ptr!= if*
           dup Proc.inlinable ptr+ @bool if
+            current-proc
+              over over ptr= if
+                token Token.loc ptr+                           eputloc
+                ": ERROR: no recursion in inline procedures\n" eputs
+                1 exit
+              end
+            drop
+
             inline-procedure
           else
             OP_CALL
@@ -3679,6 +3698,8 @@ proc main in
       args @@ptr NULL ptr= if
         false // break
       else args @@ptr "-r"c cstreq if*
+        // TODO: when the child process exits with non-zero exit code the `com -r` does not reflect that
+        // Which is very confusing
         true run !bool
         true  // continue
       else args @@ptr "-s"c cstreq if*
@@ -3828,5 +3849,4 @@ proc main in
 end
 
 main
-// TODOOOOOOOOOOOOOOO: inlining does not work with recursive inline procedures
 // TODOOOOOOOOOOOOOOO: inlining breaks type checking of the procedures
