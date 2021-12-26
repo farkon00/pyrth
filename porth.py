@@ -123,6 +123,7 @@ class OpType(Enum):
     PREP_PROC=auto()
     RET=auto()
     CALL=auto()
+    INLINED=auto()
 
 class TokenType(Enum):
     WORD=auto()
@@ -243,14 +244,29 @@ def expect_arity(ctx: Context, op: Op, n: int) -> List[Tuple[DataType, Loc]]:
         exit(1)
     return ctx.stack[-n:]
 
-def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract]):
+@dataclass
+class Memory:
+    offset: MemAddr
+    loc: Loc
+
+@dataclass
+class Proc:
+    inline: bool
+    addr: OpAddr
+    body_size: int
+    loc: Loc
+    contract: Contract
+    local_memories: Dict[str, Memory]
+    local_memory_capacity: int
+
+def type_check_program(program: Program, procs: Dict[OpAddr, Proc]):
     visited_dos: Dict[OpAddr, DataStack] = {}
     contexts: List[Context] = [Context(stack=[], ip=0, outs=[])]
-    for proc_addr, proc_contract in reversed(list(proc_contracts.items())):
+    for proc_addr, proc in reversed(list(procs.items())):
         contexts.append(Context(
-            stack=list(proc_contract.ins),
+            stack=list(proc.contract.ins),
             ip=proc_addr,
-            outs=list(proc_contract.outs)
+            outs=list(proc.contract.outs)
         ))
     while len(contexts) > 0:
         ctx = contexts[-1];
@@ -259,7 +275,7 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             contexts.pop()
             continue
         op = program.ops[ctx.ip]
-        assert len(OpType) == 18, "Exhaustive ops handling in type_check_program()"
+        assert len(OpType) == 19, "Exhaustive ops handling in type_check_program()"
         if op.typ == OpType.PUSH_INT:
             ctx.stack.append((DataType.INT, op.token.loc))
             ctx.ip += 1
@@ -287,13 +303,18 @@ def type_check_program(program: Program, proc_contracts: Dict[OpAddr, Contract])
             ctx.ip = op.operand
         elif op.typ == OpType.PREP_PROC:
             ctx.ip += 1
-        elif op.typ == OpType.CALL:
-            assert isinstance(op.operand, OpAddr)
-            type_check_contract(op.token, ctx, proc_contracts[op.operand])
-            ctx.ip += 1
         elif op.typ == OpType.RET:
             type_check_context_outs(ctx)
             contexts.pop()
+        elif op.typ == OpType.CALL:
+            assert isinstance(op.operand, OpAddr)
+            type_check_contract(op.token, ctx, procs[op.operand].contract)
+            ctx.ip += 1
+        elif op.typ == OpType.INLINED:
+            assert isinstance(op.operand, OpAddr)
+            proc = procs[op.operand]
+            type_check_contract(op.token, ctx, proc.contract)
+            ctx.ip += proc.body_size
         elif op.typ == OpType.INTRINSIC:
             assert len(Intrinsic) == 45, "Exhaustive intrinsic handling in type_check_program()"
             assert isinstance(op.operand, Intrinsic), "This could be a bug in compilation step"
@@ -511,7 +532,7 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
         out.write("    mov [ret_stack_rsp], rax\n")
         for ip in range(len(program.ops)):
             op = program.ops[ip]
-            assert len(OpType) == 18, "Exhaustive ops handling in generate_nasm_linux_x86_64"
+            assert len(OpType) == 19, "Exhaustive ops handling in generate_nasm_linux_x86_64"
             out.write("addr_%d:\n" % ip)
             if op.typ in [OpType.PUSH_INT, OpType.PUSH_BOOL, OpType.PUSH_PTR]:
                 assert isinstance(op.operand, int), f"This could be a bug in the parsing step {op.operand}"
@@ -573,6 +594,9 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
                 out.write("    call addr_%d\n" % op.operand)
                 out.write("    mov [ret_stack_rsp], rsp\n")
                 out.write("    mov rsp, rax\n")
+            elif op.typ == OpType.INLINED:
+                # ignored, it is needed purely for type checking
+                pass
             elif op.typ == OpType.RET:
                 assert isinstance(op.operand, int)
                 out.write("    mov rax, rsp\n")
@@ -952,19 +976,6 @@ def human(obj: TokenType, number: HumanNumber = HumanNumber.Singular) -> str:
     else:
         assert False, "unreachable"
 
-@dataclass
-class Memory:
-    offset: MemAddr
-    loc: Loc
-
-@dataclass
-class Proc:
-    inline: bool
-    addr: OpAddr
-    loc: Loc
-    contract: Contract
-    local_memories: Dict[str, Memory]
-    local_memory_capacity: int
 
 @dataclass
 class Const:
@@ -1237,7 +1248,8 @@ def introduce_proc(ctx: ParseContext, token: Token, rtokens: List[Token], inline
             local_memories={},
             local_memory_capacity=0,
             contract=proc_contract,
-            inline=inline
+            inline=inline,
+            body_size=0
         )
         ctx.current_proc = ctx.procs[proc_name]
     else:
@@ -1268,6 +1280,8 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     proc_ip = proc.addr
                     assert ctx.ops[proc_ip].typ == OpType.PREP_PROC
                     proc_ip += 1
+                    ctx.ops.append(Op(typ=OpType.INLINED, token=token, operand=proc.addr))
+                    ctx.ip += 1
                     while ctx.ops[proc_ip].typ != OpType.RET:
                         # TODOOOOOOOOOOOOOOO: flag to disable inling for debug purposes
                         # TODOOOOOOOOOOOOOOO: inlining breaks type checking
@@ -1379,6 +1393,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     ctx.ops[block_ip].operand = ctx.current_proc.local_memory_capacity
                     block_ip = ctx.stack.pop()
                     assert ctx.ops[block_ip].typ == OpType.SKIP_PROC
+                    ctx.current_proc.body_size = ctx.ip - ctx.current_proc.addr
                     ctx.ops.append(Op(typ=OpType.RET, token=token, operand=ctx.current_proc.local_memory_capacity))
                     ctx.ops[block_ip].operand = ctx.ip + 1
                     ctx.current_proc = None
@@ -1766,9 +1781,8 @@ if __name__ == '__main__' and '__file__' in globals():
         parse_context = ParseContext()
         parse_program_from_file(parse_context, program_path, include_paths);
         program = Program(ops=parse_context.ops, memory_capacity=parse_context.memory_capacity)
-        proc_contracts = {proc.addr: proc.contract for proc in parse_context.procs.values()}
         if not unsafe:
-            type_check_program(program, proc_contracts)
+            type_check_program(program, {proc.addr: proc for proc in parse_context.procs.values()})
     elif subcommand == "com":
         silent = False
         control_flow = False
@@ -1825,7 +1839,6 @@ if __name__ == '__main__' and '__file__' in globals():
         parse_context = ParseContext()
         parse_program_from_file(parse_context, program_path, include_paths);
         program = Program(ops=parse_context.ops, memory_capacity=parse_context.memory_capacity)
-        proc_contracts = {proc.addr: proc.contract for proc in parse_context.procs.values()}
         if control_flow:
             dot_path = basepath + ".dot"
             if not silent:
@@ -1833,7 +1846,7 @@ if __name__ == '__main__' and '__file__' in globals():
             generate_control_flow_graph_as_dot_file(program, dot_path)
             cmd_call_echoed(["dot", "-Tsvg", "-O", dot_path], silent)
         if not unsafe:
-            type_check_program(program, proc_contracts)
+            type_check_program(program, {proc.addr: proc for proc in parse_context.procs.values()})
         if not silent:
             print("[INFO] Generating %s" % (basepath + ".asm"))
         generate_nasm_linux_x86_64(program, basepath + ".asm")
