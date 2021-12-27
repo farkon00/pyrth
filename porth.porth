@@ -2744,7 +2744,7 @@ end
 inline proc compile-program-into-ops ptr in
   timeit/from-here
     compile-file-into-ops
-  "Compilation" silent @bool timeit/to-here
+  "[INFO] Compilation" silent @bool timeit/to-here
 end
 
 // TODO: rename expect-arity-2 to expect-arity when there are no use cases for the original expect-arity anymore
@@ -3572,7 +3572,7 @@ proc type-check-program in
   sizeof(TypeStack) 0 empty-stack memset drop
   empty-stack 0 empty-stack 0 type-check-program-from
 
-  "Type checking" silent @bool timeit/to-here
+  "[INFO] Type checking" silent @bool timeit/to-here
 end
 
 proc summary in
@@ -3793,7 +3793,7 @@ proc main in
       1 exit
     end
 
-    "Generation" silent @bool timeit/to-here
+    "[INFO] Generation" silent @bool timeit/to-here
 
     run @bool if
       tmp-end
