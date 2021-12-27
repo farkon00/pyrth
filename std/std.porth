@@ -1130,6 +1130,8 @@ end
 
 const 1e9 1000000000 end
 
+// TODO: timeit/to-here has too much responsibility
+// Logging and disabling/enabling thereof should not be a concern of it.
 proc timeit/to-here
   int ptr // message
   bool    // silent
