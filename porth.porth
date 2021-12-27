@@ -969,6 +969,7 @@ const Proc.loc  sizeof(Loc)       offset end
 const Proc.ins  sizeof(TypeStack) offset end
 const Proc.outs sizeof(TypeStack) offset end
 const Proc.inlinable sizeof(bool) offset end
+const Proc.size sizeof(int)       offset end
 const sizeof(Proc)                 reset end
 const PROCS_CAP 1024 end
 memory procs-count sizeof(u64) end
@@ -2383,6 +2384,14 @@ proc compile-file-into-ops ptr in
               here eputs ": Assertion failed: Expected OP_SKIP_PROC before OP_PREP_PROC\n" eputs
               1 exit
             end
+
+            procs-count @int 1 - sizeof(Proc) * procs +ptr
+              ops-count @int
+              over Proc.addr ptr+ @int -
+              1 -
+
+              over Proc.size ptr+ !int
+            drop
 
             OP_RET
             local-memory-capacity @64
