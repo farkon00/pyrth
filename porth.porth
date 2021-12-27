@@ -651,6 +651,7 @@ const OP_SKIP_PROC       1 offset end
 const OP_PREP_PROC       1 offset end
 const OP_RET             1 offset end
 const OP_CALL            1 offset end
+const OP_INLINED         1 offset end
 const OP_WHILE           1 offset end
 const OP_DO              1 offset end
 const OP_INTRINSIC       1 offset end
@@ -661,7 +662,7 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 18 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 19 = end
        dup OP_PUSH_INT        =  if  "OP_PUSH_INT"
   else dup OP_PUSH_BOOL       =  if* "OP_PUSH_BOOL"
   else dup OP_PUSH_PTR        =  if* "OP_PUSH_PTR"
@@ -677,6 +678,7 @@ in
   else dup OP_PREP_PROC       =  if* "OP_PREP_PROC"
   else dup OP_RET             =  if* "OP_RET"
   else dup OP_CALL            =  if* "OP_CALL"
+  else dup OP_INLINED         =  if* "OP_INLINED"
   else dup OP_WHILE           =  if* "OP_WHILE"
   else dup OP_DO              =  if* "OP_DO"
   else
@@ -1255,7 +1257,7 @@ in
 
   dup sizeof(Op) * ops +ptr
 
-  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 18 = end
+  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 19 = end
 
   "addr_" out-fd @64 fputs
   over    out-fd @64 fputu
@@ -1341,6 +1343,8 @@ in
      "\n"                             out-fd @64 fputs
      "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
      "    mov rsp, rax\n"             out-fd @64 fputs
+  else dup Op.type ptr+ @64 OP_INLINED = if*
+     // ignored
   else dup Op.type ptr+ @64 OP_INTRINSIC = if*
       assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
         COUNT_INTRINSICS 44 =
@@ -2215,13 +2219,24 @@ end
 
 proc inline-procedure
   ptr // proc
+  ptr // token
 in
-  Proc.addr ptr+ @int sizeof(Op) * ops +ptr
+  memory token sizeof(Token) end
+  sizeof(Token) swap token memcpy drop
+  memory prok sizeof(ptr) end
+  prok !ptr
+
+  prok @ptr Proc.addr ptr+ @int sizeof(Op) * ops +ptr
 
   dup Op.type ptr+ @int OP_PREP_PROC != if
     here eputs ": Assertion Failed: procedures must start with OP_PREP_PROC\n" eputs
     1 exit
   end
+
+  OP_INLINED
+  prok @ptr Proc.addr ptr+ @int
+  token
+  push-op
 
   // TODO: this is unsafe and can easily overflow ops array
   sizeof(Op) ptr+
@@ -2271,7 +2286,7 @@ proc compile-file-into-ops ptr in
     else dup TOKEN_WORD = if*
       token Token.value ptr+ // token.value
 
-      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 18 = end
+      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 19 = end
 
       dup @Str intrinsic-by-name if
         OP_INTRINSIC swap token push-op
@@ -2584,6 +2599,7 @@ proc compile-file-into-ops ptr in
               end
             drop
 
+            token
             inline-procedure
           else
             OP_CALL
@@ -3084,7 +3100,7 @@ in
       op
       memcpy drop
 
-      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 18 = end
+      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 19 = end
       op Op.type ptr+ @int OP_PUSH_INT = if
         DATATYPE_INT
         op Op.token ptr+ Token.loc ptr+
@@ -3202,9 +3218,31 @@ in
         ip inc64
 
         true // continue
+      else op Op.type ptr+ @int OP_INLINED = if*
+        op Op.token ptr+
+        stack
+        op Op.operand ptr+ @int proc-lookup-by-addr
+          dup NULL ptr= if
+            here eputs ": Assertion Failed: expect proc always exist with this specific address. Something went wrong during the compilation process\n" eputs
+            1 exit
+          end
+          dup  Proc.ins  ptr+
+          swap Proc.outs ptr+
+        type-check-stack
+
+        ip @int
+        op Op.operand ptr+ @int proc-lookup-by-addr
+        dup NULL ptr= if
+          here eputs ": Assertion Failed: expect proc always exist with this specific address. Something went wrong during the compilation process\n" eputs
+          1 exit
+        end
+        Proc.size ptr+ @int +
+        1 +
+        ip !int
+
+        true // continue
       else op Op.type ptr+ @int OP_WHILE = if*
         ip inc64
-
         true // continue
       else op Op.type ptr+ @int OP_DO = if*
         op Op.token ptr+ stack type-check-if-op
@@ -3858,4 +3896,3 @@ proc main in
 end
 
 main
-// TODOOOOOOOOOOOOOOO: inlining breaks type checking of the procedures
