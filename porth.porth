@@ -2189,8 +2189,6 @@ in
 
   inlinable @bool prok Proc.inlinable ptr+ !bool
 
-  sizeof(Loc) token Token.loc ptr+ prok Proc.loc ptr+ memcpy drop
-
   token lexer_ @ptr lexer-next-token lnot if
     token Token.loc ptr+ eputloc
     ": expected procedure name but found nothing\n" eputs
@@ -2204,6 +2202,8 @@ in
     " instead\n" eputs
     1 exit
   end
+
+  sizeof(Loc) token Token.loc ptr+ prok Proc.loc ptr+ memcpy drop
 
   token Token.value ptr+ @Str
   token Token.loc ptr+

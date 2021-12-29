@@ -1011,7 +1011,7 @@ def check_name_redefinition(ctx: ParseContext, name: str, loc: Loc):
         compiler_error(loc, "redefinition of an intrinsic word `%s`" % (name, ))
         exit(1)
     if name in ctx.procs:
-        compiler_error(loc, "redefinition of a proc `%s`" % (name, ))
+        compiler_error(loc, "redefinition of a procedure `%s`" % (name, ))
         compiler_note(ctx.procs[name].loc, "the original definition is located here")
         exit(1)
     if name in ctx.consts:
