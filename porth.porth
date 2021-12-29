@@ -926,13 +926,18 @@ end
 
 proc ?type-stack-empty ptr -- bool in TypeStack.top ptr+ @ptr NULL ptr= end
 
-proc type-stack-dump ptr in
+proc type-stack-dump
+  ptr // type stack
+  int // fd
+in
+  memory fd sizeof(int) end
+  fd !int
   TypeStack.top ptr+ @ptr
     while dup NULL ptr!= do
-      dup TypeFrame.loc ptr+                     putloc
-      ": NOTE: type `"                           puts
-      dup TypeFrame.type ptr+ @int datatype-name puts
-      "`\n"                                      puts
+      dup TypeFrame.loc ptr+                     fd @int fputloc
+      ": NOTE: type `"                           fd @int fputs
+      dup TypeFrame.type ptr+ @int datatype-name fd @int fputs
+      "`\n"                                      fd @int fputs
 
       TypeFrame.prev ptr+ @ptr
     end
@@ -3554,8 +3559,7 @@ in
           else dup INTRINSIC_??? = if*
             op Op.token ptr+ Token.loc ptr+                             eputloc
             ": DEBUG: Stopping the compilation. Current stack state:\n" eputs
-            stack
-            type-stack-dump
+            stack stderr type-stack-dump
             1 exit
           else
             here eputs ": unreachable\n" eputs
@@ -3604,14 +3608,14 @@ in
     over over > if
       stack TypeStack.top ptr+ @ptr TypeFrame.loc ptr+ eputloc
       ": ERROR: Unhandled data on the stack:\n"        eputs
-      stack type-stack-dump
+      stack stderr type-stack-dump
       1 exit
     end
 
     over over < if
       outs TypeStack.top ptr+ @ptr TypeFrame.loc ptr+        eputloc
       ": ERROR: Insufficient data on the stack. Expected:\n" eputs
-      outs type-stack-dump
+      outs stderr type-stack-dump
       1 exit
     end
   drop
