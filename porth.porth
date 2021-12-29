@@ -1918,6 +1918,17 @@ in
           swap
           max
           DATATYPE_INT swap const-stack-push
+        else dup INTRINSIC_DIVMOD = if*
+          // TODO: `divmod` intrinsic ignores the types in compile time evaluation
+          const-stack-pop swap drop
+          const-stack-pop swap drop
+          swap
+          divmod
+          swap
+          DATATYPE_INT swap const-stack-push
+          DATATYPE_INT swap const-stack-push
+        else dup INTRINSIC_DROP = if*
+          const-stack-pop drop drop
         else
           token Token.loc ptr+ eputloc ": ERROR: intrinsic `" eputs token Token.value ptr+ @Str eputs "` is not supported in compile time evaluation\n" eputs
           1 exit
