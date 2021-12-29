@@ -2444,14 +2444,14 @@ proc compile-file-into-ops ptr in
         else dup @Str "include" streq if*
           token lexer lexer-next-token lnot if
             token Token.loc ptr+ eputloc
-            ": expected path to the include file but found nothing\n" eputs
+            ": ERROR: expected path to the include file but found nothing\n" eputs
             1 exit
           end
 
           token Token.type ptr+ @64 TOKEN_STR != if
             token Token.loc ptr+ eputloc
             // TODO: report what was found instead of a string
-            ": expected path to the include file to be a string\n" eputs
+            ": ERROR: expected path to the include file to be a string\n" eputs
             1 exit
           end
 
