@@ -1154,12 +1154,14 @@ proc cmd-echoed ptr in
   fork
 
   dup 0 = if
+    // child process
     drop
     dup @ptr
     swap
     execvp
     // TODO: report that you could not execute the child
   else dup 0 > if*
+    // parent process
     drop drop
     NULL
     0
@@ -1169,6 +1171,17 @@ proc cmd-echoed ptr in
       "[ERROR] could not wait until the child process has finished executing\n" eputs
       1 exit
     end
+
+    wstatus @int
+      dup WIFEXITED if
+        dup WEXITSTATUS
+          dup 0 > if
+            dup exit
+          end
+        drop
+      end
+    drop
+
   else
     drop drop
     "[ERROR] could not fork a child\n" eputs

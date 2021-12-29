@@ -516,6 +516,20 @@ inline proc fputs int ptr int in write drop end
 inline proc puts int ptr in stdout fputs end
 inline proc eputs int ptr in stderr fputs end
 
+inline proc WIFEXITED int -- bool in
+  // (((x) & 0x7f) == 0)
+  127 // 0x7f
+  and
+  0 =
+end
+
+inline proc WEXITSTATUS int -- int in
+  // (((x) & 0xff00) >> 8)
+  65280 // 0xff00
+  and
+  8 shr
+end
+
 const offsetof(Str.count) sizeof(u64) offset end
 const offsetof(Str.data) sizeof(ptr) offset end
 const sizeof(Str) reset end
@@ -749,10 +763,11 @@ in
   dup buffer PUTU_BUFFER_CAP ptr+ swap ptr-diff swap fd @64 fputs
 end
 
+// TODO: implement putx that prints a number in hex
+
 inline proc putu int in stdout fputu end
 inline proc put0u int int in stdout fput0u end
 inline proc eputu int in stderr fputu end
-
 
 // TODO: there is no fputi function that would print signed integers
 
