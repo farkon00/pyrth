@@ -714,7 +714,7 @@ in
     "0" fd @64 fputs
   else
     buffer PUTU_BUFFER_CAP ptr+
-    while over 0 > do
+    while over 0 != do
       1 ptr- dup rot
       10 divmod
       rot swap '0' + swap !8 swap
