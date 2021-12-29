@@ -1842,7 +1842,7 @@ proc const-stack-pop
   int // value
 in
   const-stack-count @64 0 <= if
-    here eputs ": TODO: const stack underflow\n" eputs
+    here eputs ": Assertion Failed: const stack underflow\n" eputs
     1 exit
   end
 
@@ -1850,6 +1850,22 @@ in
   const-stack-count @64 sizeof(ConstFrame) * const-stack +ptr
   dup ConstFrame.type ptr+ @64
   swap ConstFrame.value ptr+ @64
+end
+
+proc const-expect-arity
+  int // arity
+  ptr // token
+in
+  memory token sizeof(ptr) end
+  token !ptr
+
+  const-stack-count @64 > if
+    token @ptr Token.loc ptr+             eputloc
+    ": ERROR: not enough arguments for `" eputs
+    token @ptr Token.value ptr+ @Str      eputs
+    "` intrinsic\n"                       eputs
+    1 exit
+  end
 end
 
 proc eval-const-value
@@ -1874,16 +1890,19 @@ in
     else token Token.type ptr+ @64 TOKEN_WORD = if*
       token Token.value ptr+ @Str intrinsic-by-name if
         dup INTRINSIC_CAST_PTR = if
+          1 token const-expect-arity
           const-stack-pop
           swap drop
           DATATYPE_PTR swap
           const-stack-push
         else dup INTRINSIC_CAST_BOOL = if*
+          1 token const-expect-arity
           const-stack-pop
           swap drop
           DATATYPE_BOOL swap
           const-stack-push
         else dup INTRINSIC_MINUS = if*
+          2 token const-expect-arity
           // TODO: `-` intrinsic ignores the types in compile time evaluation
           const-stack-pop swap drop
           const-stack-pop swap drop
@@ -1891,6 +1910,7 @@ in
           -
           DATATYPE_INT swap const-stack-push
         else dup INTRINSIC_PLUS = if*
+          2 token const-expect-arity
           // TODO: `+` intrinsic ignores the types in compile time evaluation
           const-stack-pop swap drop
           const-stack-pop swap drop
@@ -1898,6 +1918,7 @@ in
           +
           DATATYPE_INT swap const-stack-push
         else dup INTRINSIC_MUL = if*
+          2 token const-expect-arity
           // TODO: `*` intrinsic ignores the types in compile time evaluation
           const-stack-pop swap drop
           const-stack-pop swap drop
@@ -1905,6 +1926,7 @@ in
           *
           DATATYPE_INT swap const-stack-push
         else dup INTRINSIC_EQ = if*
+          2 token const-expect-arity
           // TODO: `=` intrinsic ignores the types in compile time evaluation
           const-stack-pop swap drop
           const-stack-pop swap drop
@@ -1912,6 +1934,7 @@ in
           = cast(int)
           DATATYPE_BOOL swap const-stack-push
         else dup INTRINSIC_MAX = if*
+          2 token const-expect-arity
           // TODO: `max` intrinsic ignores the types in compile time evaluation
           const-stack-pop swap drop
           const-stack-pop swap drop
@@ -1919,6 +1942,7 @@ in
           max
           DATATYPE_INT swap const-stack-push
         else dup INTRINSIC_DIVMOD = if*
+          2 token const-expect-arity
           // TODO: `divmod` intrinsic ignores the types in compile time evaluation
           const-stack-pop swap drop
           const-stack-pop swap drop
@@ -1928,6 +1952,7 @@ in
           DATATYPE_INT swap const-stack-push
           DATATYPE_INT swap const-stack-push
         else dup INTRINSIC_DROP = if*
+          1 token const-expect-arity
           const-stack-pop drop drop
         else
           token Token.loc ptr+ eputloc ": ERROR: intrinsic `" eputs token Token.value ptr+ @Str eputs "` is not supported in compile time evaluation\n" eputs
@@ -1936,6 +1961,7 @@ in
       else token Token.value ptr+ @Str "end" streq if*
         true done !64
       else token Token.value ptr+ @Str "offset" streq if*
+        1 token const-expect-arity
         const-stack-pop swap drop // TODO: offset ignores the type
         DATATYPE_INT iota @int const-stack-push
         iota @int + iota !int
