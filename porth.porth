@@ -2193,13 +2193,13 @@ in
 
   token lexer_ @ptr lexer-next-token lnot if
     token Token.loc ptr+ eputloc
-    ": expected procedure name but found nothing\n" eputs
+    ": ERROR: expected procedure name but found nothing\n" eputs
     1 exit
   end
 
   token Token.type ptr+ @64 TOKEN_WORD != if
     token Token.loc ptr+ eputloc
-    ": expected procedure name to be a word but found " eputs
+    ": ERROR: expected procedure name to be a word but found " eputs
     token Token.type ptr+ @64 HUMAN_SINGULAR human-token-type eputs
     " instead\n" eputs
     1 exit
