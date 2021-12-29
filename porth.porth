@@ -1936,8 +1936,10 @@ in
       else
         drop // try-parse-int
         drop // const
-        token Token.loc ptr+ eputloc ": ERROR: only intrinsic words are allowed in compile time evaluation\n" eputs
-        token Token.loc ptr+ eputloc ": NOTE: intrinsic `" eputs token Token.value ptr+ @Str eputs "` does not exist\n" eputs
+        token Token.loc ptr+             eputloc
+        ": ERROR: unsupported word `"    eputs
+        token Token.value ptr+ @Str      eputs
+        "` in compile time evaluation\n" eputs
         1 exit
       end
       drop // intrinsic
