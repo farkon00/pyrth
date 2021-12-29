@@ -1953,7 +1953,7 @@ in
   done @bool if
     const-stack-count @64 1 != if
       token Token.loc ptr+ eputloc
-      ": ERROR: The result of expression in compile time evaluation must be a single element on the data stack\n" eputs
+      ": ERROR: The result of expression in compile time evaluation must be a single number\n" eputs
       1 exit
     end
 
