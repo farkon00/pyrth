@@ -141,7 +141,7 @@ def run_test_for_folder(folder: str):
             run_test_for_file(entry.path, stats)
     print()
     print("porth.py failed: %d, porth.porth failed: %d, Ignored: %d" % (stats.porth_py_failed, stats.porth_porth_failed, stats.ignored))
-    if stats.porth_py_failed != 0:
+    if stats.porth_py_failed != 0 or stats.porth_porth_failed != 0:
         print("Failed files:")
         print()
         for failed_file in stats.failed_files:

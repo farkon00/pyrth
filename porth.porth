@@ -2444,17 +2444,25 @@ proc compile-file-into-ops ptr in
 
           // TODO: introduce include limit
           fpb-end
-          "./"                     fpb-append drop
+          "./"                        fpb-append drop
           token Token.value ptr+ @Str fpb-append drop
-          1                        fpb-alloc drop
+          1                           fpb-alloc drop
 
           // TODO: customizable include path list
           dup ?file-exist lnot if
             fpb-rewind
             fpb-end
-            "./std/"                 fpb-append drop
+            "./std/"                    fpb-append drop
             token Token.value ptr+ @Str fpb-append drop
-            1                        fpb-alloc drop
+            1                           fpb-alloc drop
+          end
+
+          dup ?file-exist lnot if
+            token Token.loc ptr+        eputloc
+            ": ERROR: file `"           eputs
+            token Token.value ptr+ @Str eputs
+            "` not found\n"             eputs
+            1 exit
           end
 
           compile-file-into-ops
