@@ -999,7 +999,7 @@ class ParseContext:
 def check_name_redefinition(ctx: ParseContext, name: str, loc: Loc):
     if ctx.current_proc is None:
         if name in ctx.memories:
-            compiler_error(loc, "redefinition of a memory region `%s`" % name)
+            compiler_error(loc, "redefinition of a global memory region `%s`" % name)
             compiler_note(ctx.memories[name].loc, "the original definition is located here")
             exit(1)
     else:

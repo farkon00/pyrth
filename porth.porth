@@ -2031,14 +2031,14 @@ in
   end drop
 
   name @Str local-memories-lookup dup NULL ptr!= if
-    loc eputloc ": ERROR: redefinition of local memory `" eputs name @Str eputs "`\n" eputs
+    loc eputloc ": ERROR: redefinition of a local memory region `" eputs name @Str eputs "`\n" eputs
     dup Memory.loc ptr+ eputloc ": NOTE: the original definition is located here\n" eputs
     1 exit
   end drop
 
   inside-proc @bool lnot if
     name @Str global-memories-lookup dup NULL ptr!= if
-      loc eputloc ": ERROR: redefinition of global memory `" eputs name @Str eputs "`\n" eputs
+      loc eputloc ": ERROR: redefinition of a global memory region `" eputs name @Str eputs "`\n" eputs
       dup Memory.loc ptr+ eputloc ": NOTE: the original definition is located here\n" eputs
       1 exit
     end drop
