@@ -1613,7 +1613,7 @@ def lex_lines(file_path: str, lines: List[str]) -> Generator[Token, None, None]:
             elif line[col] == "'":
                 col_end = find_string_literal_end(line, col+1, quote="'")
                 if col_end >= len(line) or line[col_end] != "'":
-                    compiler_error(loc, "unclosed character literal")
+                    compiler_error((loc[0], loc[1], col_end), "unclosed character literal")
                     exit(1)
                 text_of_token = line[col+1:col_end]
                 char_bytes = unescape_string(text_of_token).encode('utf-8')

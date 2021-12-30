@@ -117,7 +117,7 @@ proc lexer-next-line ptr in
   lexer @ptr Lexer.row ptr+ inc64
 end
 
-proc lexer-loc
+proc lexer-get-loc
   ptr // loc
   ptr // lexer
 in
@@ -146,11 +146,12 @@ in
   !int
 end
 
-proc lexer-consume-strlit
+proc lexer-consume-str-like-lit
   ptr // lexer
   int // quote
   --
   int ptr // string literal
+  bool    // closed
 in
   memory quote sizeof(int) end
   quote !int
@@ -180,7 +181,7 @@ in
           dup str-chop-one-left
 
           dup ?str-empty if
-            loc lexer @ptr lexer-loc
+            loc lexer @ptr lexer-get-loc
             loc eputloc ": ERROR: unfinished escape sequence\n" eputs
             1 exit
           end
@@ -206,7 +207,7 @@ in
             count inc64
             true
           else
-            loc lexer @ptr lexer-loc
+            loc lexer @ptr lexer-get-loc
             loc eputloc ": ERROR: unknown escape character `" eputs 1 over @Str.data eputs "`\n" eputs
             1 exit
             false
@@ -221,13 +222,39 @@ in
     do end
   drop
 
-  closed @bool lnot if
-    loc lexer @ptr lexer-loc
+  count @int start @ptr closed @bool
+end
+
+proc lexer-consume-strlit
+  ptr // lexer
+  int // quote
+  --
+  int ptr // string literal
+in
+  memory loc sizeof(Loc) end
+  memory lexer sizeof(ptr) end
+  over lexer !ptr
+  lexer-consume-str-like-lit lnot if
+    loc lexer @ptr lexer-get-loc
     loc eputloc ": ERROR: unclosed string literal\n" eputs
     1 exit
   end
+end
 
-  count @int start @ptr
+proc lexer-consume-charlit
+  ptr // lexer
+  int // quote
+  --
+  int ptr // char literal
+in
+  memory loc sizeof(Loc) end
+  memory lexer sizeof(ptr) end
+  over lexer !ptr
+  lexer-consume-str-like-lit lnot if
+    loc lexer @ptr lexer-get-loc
+    loc eputloc ": ERROR: unclosed character literal\n" eputs
+    1 exit
+  end
 end
 
 proc lexer-next-token
@@ -258,7 +285,7 @@ in
   dup Lexer.line ptr+ ?str-empty lnot if
     token @ptr Token.loc ptr+
     lexer @ptr
-    lexer-loc
+    lexer-get-loc
 
     dup Lexer.line ptr+ @Str.data @8 '"' = if
        // String literal
@@ -281,7 +308,7 @@ in
     else dup Lexer.line ptr+ @Str.data @8 '\'' = if*
        // Character literal
        dup Lexer.line ptr+ str-chop-one-left
-       '\'' lexer-consume-strlit word !Str
+       '\'' lexer-consume-charlit word !Str
 
        word @Str.count 1 = if
          word @Str.data @8 token @ptr Token.value ptr+ !int
