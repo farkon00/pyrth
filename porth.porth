@@ -2045,6 +2045,14 @@ in
   memory name sizeof(Str) end
   name !Str
 
+  name @Str intrinsic-by-name if
+    loc                                            eputloc
+    ": ERROR: redefinition of an intrinsic word `" eputs
+    name @Str                                      eputs
+    "`\n"                                          eputs
+    1 exit
+  end drop
+
   name @Str const-lookup dup NULL ptr!= if
     loc eputloc ": ERROR: redefinition of a constant `" eputs name @Str eputs "`\n" eputs
     dup Const.loc ptr+ eputloc ": NOTE: the original definition is located here\n" eputs
@@ -2103,6 +2111,7 @@ in
             true // continue
           else
             here eputs ": TODO: report unknown type in the proc contract\n" eputs
+            token Token.loc ptr+ located-here
             1 exit
             drop
             false // break, compile error
