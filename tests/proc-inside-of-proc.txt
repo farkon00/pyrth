@@ -4,7 +4,7 @@
 :i returncode 1
 :b stdout 0
 
-:b stderr 181
-./tests/proc-inside-of-proc.porth:2:1: ERROR: defining procedures inside of procedures is not allowed
+:b stderr 193
+./tests/proc-inside-of-proc.porth:2:1: ERROR: definition procedures inside of procedures is not allowed (for now)
 ./tests/proc-inside-of-proc.porth:1:6: NOTE: the current procedure starts here
 

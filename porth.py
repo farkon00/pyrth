@@ -1254,7 +1254,7 @@ def introduce_proc(ctx: ParseContext, token: Token, rtokens: List[Token], inline
         ctx.current_proc = ctx.procs[proc_name]
     else:
         # TODO: forbid constant definition inside of proc
-        compiler_error(token.loc, "defining procedures inside of procedures is not allowed")
+        compiler_error(token.loc, "definition procedures inside of procedures is not allowed (for now)")
         compiler_note(ctx.current_proc.loc, "the current procedure starts here")
         exit(1)
 
