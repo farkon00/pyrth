@@ -2710,8 +2710,10 @@ proc compile-file-into-ops ptr in
           token
           push-op
         else drop
-          token Token.loc ptr+ eputloc
-          ": ERROR: unknown word `" puts dup @Str puts "`\n" puts
+          token Token.loc ptr+      eputloc
+          ": ERROR: unknown word `" eputs
+          dup @Str                  eputs
+          "`\n"                     eputs
           1 exit
         end
       end
