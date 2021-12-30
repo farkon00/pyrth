@@ -2748,7 +2748,7 @@ proc compile-file-into-ops ptr in
     sizeof(Op) *
     ops +ptr
 
-    dup Op.token ptr+ Token.loc ptr+ eputloc ": unclosed block\n" eputs
+    dup Op.token ptr+ Token.loc ptr+ eputloc ": ERROR: unclosed block\n" eputs
 
     1 exit
     drop
