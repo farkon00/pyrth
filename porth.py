@@ -1373,7 +1373,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     ctx.ops.append(Op(typ=OpType.ELSE, token=token))
                     ctx.ip += 1
                 else:
-                    compiler_error(ctx.ops[if_ip].token.loc, f'`else` can only come after `if` or `if*`')
+                    compiler_error(token.loc, f'`else` can only come after `if` or `if*`')
                     exit(1)
             elif token.value == Keyword.END:
                 block_ip = ctx.stack.pop()

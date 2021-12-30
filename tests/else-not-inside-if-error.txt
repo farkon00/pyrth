@@ -5,5 +5,5 @@
 :b stdout 0
 
 :b stderr 92
-./tests/else-not-inside-if-error.porth:2:1: ERROR: `else` can only come after `if` or `if*`
+./tests/else-not-inside-if-error.porth:3:1: ERROR: `else` can only come after `if` or `if*`
 
