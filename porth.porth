@@ -313,7 +313,7 @@ in
        word @Str.count 1 = if
          word @Str.data @8 token @ptr Token.value ptr+ !int
        else
-         token @ptr Token.loc ptr+ eputloc ": only a single byte is allowed inside of a character literal\n" eputs
+         token @ptr Token.loc ptr+ eputloc ": ERROR: only a single byte is allowed inside of a character literal\n" eputs
          1 exit
        end
 
