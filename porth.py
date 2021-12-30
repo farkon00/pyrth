@@ -1416,7 +1416,8 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     ctx.ops[block_ip].operand = ctx.ip
                     ctx.ops[ctx.ip].operand = ctx.ip + 1
                 else:
-                    compiler_error(ctx.ops[block_ip].token.loc, '`end` can only close `if`, `else`, `do`, or `proc` blocks for now')
+                    compiler_error(token.loc, '`end` can only close `if`, `if*`, `else`, `do`, or `proc` blocks')
+                    compiler_note(ctx.ops[block_ip].token.loc, f'found `{ctx.ops[block_ip].token.text}` instead')
                     exit(1)
                 ctx.ip += 1
             elif token.value == Keyword.WHILE:
