@@ -1573,6 +1573,8 @@ def find_string_literal_end(line: str, start: int, quote: str = '"') -> int:
             start += 1
     return start
 
+# TODOOOOOOOOOOOOOO: remove multiline strings from porth.py
+# They are not supported by porth.porth anyway and probably never will be.
 def lex_lines(file_path: str, lines: List[str]) -> Generator[Token, None, None]:
     assert len(TokenType) == 6, 'Exhaustive handling of token types in lex_lines'
     row = 0
@@ -1599,6 +1601,7 @@ def lex_lines(file_path: str, lines: List[str]) -> Generator[Token, None, None]:
                         str_literal_buf += line[start:col_end]
                         break
                 if row >= len(lines):
+                    loc = (loc[0], loc[1], loc[2] + len(str_literal_buf))
                     compiler_error(loc, "unclosed string literal")
                     exit(1)
                 assert line[col_end] == '"'
