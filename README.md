@@ -101,6 +101,12 @@ If you wanna use the Porth compiler separately from its codebase you only need t
 
 By default the compiler searches files to include in `./` and `./std/`. You can add more search paths via the `-I` flag before the subcommand: `./porth.py -I <custom-path> com ...`. See `./porth.py help` for more info.
 
+### Editor Support
+
+<!-- TODO: document editor support -->
+
+See [./editor/](./editor/) folder.
+
 ## Language Reference
 
 This is what the language supports so far. **Since the language is a work in progress everything in this section is the subject to change.**
