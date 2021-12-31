@@ -1436,6 +1436,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 while_ip = ctx.stack.pop()
                 if ctx.ops[while_ip].typ != OpType.WHILE:
                     compiler_error(token.loc, "`do` is not preceded by `while`")
+                    compiler_note(ctx.ops[while_ip].token.loc, f"preceded by `{ctx.ops[while_ip].token.text}` instead")
                     exit(1)
                 ctx.ops[ctx.ip].operand = while_ip
                 ctx.stack.append(ctx.ip)
