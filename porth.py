@@ -92,6 +92,8 @@ class Intrinsic(Enum):
     ARGC=auto()
     ARGV=auto()
     ENVP=auto()
+    # TODOOOOOOOO: `here` should be a keyword like in porth.porth
+    # Consider also highlighting it in the editor supports
     HERE=auto()
     SYSCALL0=auto()
     SYSCALL1=auto()

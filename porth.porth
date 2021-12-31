@@ -26,12 +26,96 @@ inline proc eputloc ptr in stderr fputloc end
 /// BEGIN Token //////////////////////////////
 /// Token is a group of characters within the source code that is
 /// recognized as certain class: int, word, string, etc.
-const TOKEN_INT  1 offset end
-const TOKEN_WORD 1 offset end
-const TOKEN_STR  1 offset end
-const TOKEN_CSTR 1 offset end
-const TOKEN_CHAR 1 offset end
-const COUNT_TOKENS reset end
+const TOKEN_INT     1 offset end
+const TOKEN_WORD    1 offset end
+const TOKEN_KEYWORD 1 offset end
+const TOKEN_STR     1 offset end
+const TOKEN_CSTR    1 offset end
+const TOKEN_CHAR    1 offset end
+const COUNT_TOKENS     reset end
+
+const KEYWORD_IF          1 offset end
+const KEYWORD_IFSTAR      1 offset end
+const KEYWORD_ELSE        1 offset end
+const KEYWORD_END         1 offset end
+const KEYWORD_WHILE       1 offset end
+const KEYWORD_DO          1 offset end
+const KEYWORD_INCLUDE     1 offset end
+const KEYWORD_MEMORY      1 offset end
+const KEYWORD_PROC        1 offset end
+const KEYWORD_CONST       1 offset end
+const KEYWORD_OFFSET      1 offset end
+const KEYWORD_RESET       1 offset end
+const KEYWORD_ASSERT      1 offset end
+const KEYWORD_IN          1 offset end
+const KEYWORD_BIKESHEDDER 1 offset end
+const KEYWORD_INLINE      1 offset end
+const KEYWORD_HERE        1 offset end
+const COUNT_KEYWORDS         reset end
+
+proc keyword-by-name
+  int ptr
+  --
+  int bool
+in
+  memory name sizeof(Str) end
+  name !Str
+  true
+  assert "Exhaustive keyword handling" COUNT_KEYWORDS 17 = end
+       name @Str "if"      streq if  KEYWORD_IF
+  else name @Str "if*"     streq if* KEYWORD_IFSTAR
+  else name @Str "else"    streq if* KEYWORD_ELSE
+  else name @Str "end"     streq if* KEYWORD_END
+  else name @Str "while"   streq if* KEYWORD_WHILE
+  else name @Str "do"      streq if* KEYWORD_DO
+  else name @Str "include" streq if* KEYWORD_INCLUDE
+  else name @Str "memory"  streq if* KEYWORD_MEMORY
+  else name @Str "proc"    streq if* KEYWORD_PROC
+  else name @Str "const"   streq if* KEYWORD_CONST
+  else name @Str "offset"  streq if* KEYWORD_OFFSET
+  else name @Str "reset"   streq if* KEYWORD_RESET
+  else name @Str "assert"  streq if* KEYWORD_ASSERT
+  else name @Str "in"      streq if* KEYWORD_IN
+  else name @Str "--"      streq if* KEYWORD_BIKESHEDDER
+  else name @Str "inline"  streq if* KEYWORD_INLINE
+  else name @Str "here"    streq if* KEYWORD_HERE
+  else
+    drop false 0
+  end
+
+  swap
+end
+
+proc keyword-name
+  int
+  --
+  int ptr
+in
+  assert "Exhaustive keyword handling" COUNT_KEYWORDS 17 = end
+       dup KEYWORD_IF          = if  "if"
+  else dup KEYWORD_IFSTAR      = if* "if*"
+  else dup KEYWORD_ELSE        = if* "else"
+  else dup KEYWORD_END         = if* "end"
+  else dup KEYWORD_WHILE       = if* "while"
+  else dup KEYWORD_DO          = if* "do"
+  else dup KEYWORD_INCLUDE     = if* "include"
+  else dup KEYWORD_MEMORY      = if* "memory"
+  else dup KEYWORD_PROC        = if* "proc"
+  else dup KEYWORD_CONST       = if* "const"
+  else dup KEYWORD_OFFSET      = if* "offset"
+  else dup KEYWORD_RESET       = if* "reset"
+  else dup KEYWORD_ASSERT      = if* "assert"
+  else dup KEYWORD_IN          = if* "in"
+  else dup KEYWORD_BIKESHEDDER = if* "--"
+  else dup KEYWORD_INLINE      = if* "inline"
+  else dup KEYWORD_HERE        = if* "here"
+  else
+    0 NULL
+    here eputs ": unreachable\n" eputs
+    1 exit
+  end
+  rot drop
+end
 
 const Token.type sizeof(u64) offset end
 const Token.loc  sizeof(Loc) offset end
@@ -287,6 +371,8 @@ in
     lexer @ptr
     lexer-get-loc
 
+    assert "Exhaustive token types handling in lexer-next-token" COUNT_TOKENS 6 = end
+
     dup Lexer.line ptr+ @Str.data @8 '"' = if
        // String literal
        dup Lexer.line ptr+ str-chop-one-left
@@ -327,12 +413,14 @@ in
        str-chop-by-delim
 
        word @Str try-parse-int if
-          token @ptr Token.value ptr+ !64
-          TOKEN_INT token @ptr Token.type  ptr+ !64
-       else
-          drop // number from try-parse-int
-          word @Str  token @ptr Token.value ptr+ !Str
-          TOKEN_WORD token @ptr Token.type ptr+ !64
+         token @ptr Token.value ptr+ !64
+         TOKEN_INT token @ptr Token.type ptr+ !64
+       else drop word @Str keyword-by-name if*
+         token @ptr Token.value ptr+ !64
+         TOKEN_KEYWORD token @ptr Token.type ptr+ !64
+       else drop
+         word @Str  token @ptr Token.value ptr+ !Str
+         TOKEN_WORD token @ptr Token.type ptr+ !64
        end
     end
 
@@ -358,7 +446,7 @@ proc lex-file ptr in
 
   while token lexer lexer-next-token do
 
-    assert "Exhaustive handling of token types in lex-file" COUNT_TOKENS 5 = end
+    assert "Exhaustive handling of token types in lex-file" COUNT_TOKENS 6 = end
 
     token Token.loc ptr+ // loc
     dup Loc.file-path ptr+ @Str puts ":" puts
@@ -377,6 +465,8 @@ proc lex-file ptr in
       "[CSTR] \"" puts token Token.value ptr+ @Str puts "\"\n" puts
     else dup TOKEN_CHAR = if*
       "[CHAR] " puts token Token.value ptr+ @int putu "\n" puts
+    else dup TOKEN_KEYWORD = if*
+      "[KEYWORD] " puts token Token.value ptr+ @int keyword-name puts "\n" puts
     else
       here eputs ": Unreachable. Unknown token type.\n" eputs
       1 exit
@@ -435,12 +525,14 @@ const INTRINSIC_SYSCALL6  1 offset end
 const INTRINSIC_???       1 offset end
 const COUNT_INTRINSICS       reset end
 
+// TODO: ???const debug word that shows the current value of a constant
+
 proc intrinsic-name
   int // intrinsic
   --
   int ptr // name
 in
-  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 44 = end
+  assert "Exhaustive handling of Intrinsics in intrinsic-name" COUNT_INTRINSICS 44 = end
        dup INTRINSIC_PLUS      = if  drop "ptr+"
   else dup INTRINSIC_MINUS     = if* drop "-"
   else dup INTRINSIC_MUL       = if* drop "*"
@@ -573,7 +665,7 @@ in
 
   dup HUMAN_SINGULAR = if
     drop
-    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
+    assert "Exhaustive handling of token types" COUNT_TOKENS 6 = end
     dup TOKEN_INT = if
       drop
       "an integer"
@@ -589,6 +681,9 @@ in
     else dup TOKEN_CHAR = if*
       drop
       "a character"
+    else dup TOKEN_KEYWORD = if*
+      drop
+      "a keyword"
     else
       drop
       here eputs ": unreachable\n" eputs
@@ -596,7 +691,7 @@ in
     end
   else dup HUMAN_PLURAL = if*
     drop
-    assert "Exhaustive handling of token types" COUNT_TOKENS 5 = end
+    assert "Exhaustive handling of token types" COUNT_TOKENS 6 = end
     dup TOKEN_INT = if
       drop
       "integers"
@@ -612,6 +707,9 @@ in
     else dup TOKEN_CHAR = if*
       drop
       "characters"
+    else dup TOKEN_KEYWORD = if*
+      drop
+      "keywords"
     else
       drop
       here eputs ": unreachable\n" eputs
@@ -1985,16 +2083,6 @@ in
           token Token.loc ptr+ eputloc ": ERROR: intrinsic `" eputs token Token.value ptr+ @Str eputs "` is not supported in compile time evaluation\n" eputs
           1 exit
         end
-      else token Token.value ptr+ @Str "end" streq if*
-        true done !64
-      else token Token.value ptr+ @Str "offset" streq if*
-        1 token const-expect-arity
-        const-stack-pop swap drop // TODO: offset ignores the type
-        DATATYPE_INT iota @int const-stack-push
-        iota @int + iota !int
-      else token Token.value ptr+ @Str "reset" streq if*
-        DATATYPE_INT iota @int const-stack-push
-        0 iota !int
       else token Token.value ptr+ @Str const-lookup dup NULL ptr!= if*
         dup Const.type ptr+ @64
         swap Const.value ptr+ @64
@@ -2012,11 +2100,32 @@ in
         1 exit
       end
       drop // intrinsic
+    else token Token.type ptr+ @64 TOKEN_KEYWORD = if*
+      assert "Exhaustive handling of keywords in eval-const-value" COUNT_KEYWORDS 17 = end
+      token Token.value ptr+ @64
+        dup KEYWORD_END = if
+          true done !64
+        else dup KEYWORD_OFFSET = if*
+          1 token const-expect-arity
+          const-stack-pop swap drop // TODO: offset ignores the type
+          DATATYPE_INT iota @int const-stack-push
+          iota @int + iota !int
+        else dup KEYWORD_RESET = if*
+          DATATYPE_INT iota @int const-stack-push
+          0 iota !int
+        else
+          token Token.loc ptr+             eputloc
+          ": ERROR: unsupported keyword `" eputs
+          dup keyword-name                 eputs
+          "` in compile time evaluation\n" eputs
+          1 exit
+        end
+      drop
     else
-      token Token.loc ptr+ eputloc
-      ": ERROR: " eputs
+      token Token.loc ptr+                                    eputloc
+      ": ERROR: "                                             eputs
       token Token.type ptr+ @64 HUMAN_PLURAL human-token-type eputs
-      " are not supported in compile time evaluation\n" eputs
+      " are not supported in compile time evaluation\n"       eputs
       1 exit
     end
   end drop
@@ -2098,22 +2207,35 @@ in
     token lexer @ptr lexer-next-token if
       token Token.type ptr+ @int TOKEN_WORD = if
         token Token.value ptr+
-          dup @Str "in" streq if
-            false // break, reached the end of list
-          else dup @Str "--" streq if*
-            true bikeshedder !bool
-            false // break, reached the end of list
-          else dup @Str datatype-by-name if*
+          dup @Str datatype-by-name if
             token Token.loc ptr+
             stack @ptr
             type-stack-push
-
             true // continue
           else
-            here eputs ": TODO: report unknown type in the proc contract\n" eputs
-            token Token.loc ptr+ located-here
-            1 exit
             drop
+            token Token.loc ptr+          eputloc
+            ": ERROR: unknown type `"     eputs
+            dup @Str                      eputs
+            "` in procedure definition\n" eputs
+            1 exit
+            false // break, compile error
+          end
+          swap
+        drop
+      else token Token.type ptr+ @int TOKEN_KEYWORD = if*
+        token Token.value ptr+ @int
+          dup KEYWORD_IN = if
+            false // break, reached the end of list
+          else dup KEYWORD_BIKESHEDDER = if*
+            true bikeshedder !bool
+            false // break, reached the end of list
+          else
+            token Token.loc ptr+            eputloc
+            ": ERROR: unexpected keyword `" eputs
+            dup keyword-name                eputs
+            "` in procedure definition\n"   eputs
+            1 exit
             false // break, compile error
           end
           swap
@@ -2367,7 +2489,7 @@ proc compile-file-into-ops ptr in
   false inside-proc !64
 
   while token lexer lexer-next-token do
-    assert "Exhaustive handling of Token types" COUNT_TOKENS 5 = end
+    assert "Exhaustive handling of Token types" COUNT_TOKENS 6 = end
 
     token Token.type ptr+ @64 // token.type
 
@@ -2376,19 +2498,12 @@ proc compile-file-into-ops ptr in
       token Token.value ptr+ @64
       token
       push-op
-    else dup TOKEN_WORD = if*
-      token Token.value ptr+ // token.value
-
-      assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 19 = end
-
-      dup @Str intrinsic-by-name if
-        OP_INTRINSIC swap token push-op
-      else
-        drop
-        dup @Str "if" streq if
+    else dup TOKEN_KEYWORD = if*
+      token Token.value ptr+ @64
+        dup KEYWORD_IF = if
           ops-count @64 parse-block-stack-push
           OP_IF 0 token push-op
-        else dup @Str "if*" streq if*
+        else dup KEYWORD_IFSTAR = if*
           parse-block-stack-top lnot if
             token Token.loc ptr+ eputloc ": ERROR: `if*` can only come after `else`, but found nothing\n" eputs
             1 exit
@@ -2405,7 +2520,7 @@ proc compile-file-into-ops ptr in
 
           ops-count @64 parse-block-stack-push
           OP_IFSTAR 0 token push-op
-        else dup @Str "else" streq if*
+        else dup KEYWORD_ELSE = if*
           parse-block-stack-count @64 0 <= if
             token Token.loc ptr+ eputloc
             ": ERROR: `else` can only come after `if` or `if*`\n" eputs
@@ -2430,10 +2545,10 @@ proc compile-file-into-ops ptr in
 
           drop // if_op
           drop // if_ip
-        else dup @Str "while" streq if*
+        else dup KEYWORD_WHILE = if*
           ops-count @64 parse-block-stack-push
           OP_WHILE 0 token push-op
-        else dup @Str "do" streq if*
+        else dup KEYWORD_DO = if*
           parse-block-stack-count @64 0 <= if
             token Token.loc ptr+ eputloc ": ERROR: `do` is not preceded by `while`\n" eputs
             1 exit
@@ -2454,7 +2569,7 @@ proc compile-file-into-ops ptr in
 
           OP_DO swap token push-op
           drop // op
-        else dup @Str "end" streq if*
+        else dup KEYWORD_END = if*
           parse-block-stack-count @64 0 <= if
             token Token.loc ptr+ eputloc
             ": ERROR: `end` has nothing to close\n" eputs
@@ -2521,7 +2636,7 @@ proc compile-file-into-ops ptr in
 
           drop // op
           drop // ip
-        else dup @Str "include" streq if*
+        else dup KEYWORD_INCLUDE = if*
           token lexer lexer-next-token lnot if
             token Token.loc ptr+ eputloc
             ": ERROR: expected path to the include file but found nothing\n" eputs
@@ -2560,7 +2675,7 @@ proc compile-file-into-ops ptr in
           end
 
           compile-file-into-ops
-        else dup @Str "const" streq if*
+        else dup KEYWORD_CONST = if*
           token lexer lexer-next-token lnot if
             token Token.loc ptr+ eputloc
             ": expected constant name but found nothing\n" eputs
@@ -2587,15 +2702,15 @@ proc compile-file-into-ops ptr in
           konst Const.type ptr+ !64
 
           konst const-define
-        else dup @Str "inline" streq if*
+        else dup KEYWORD_INLINE = if*
           token lexer lexer-next-token lnot if
             token Token.loc ptr+ eputloc
             ": ERROR: expected `proc` keyword after `inline` but got nothing\n" eputs
             1 exit
           end
 
-          token Token.type ptr+ @int TOKEN_WORD =
-          token Token.text ptr+ @Str "proc" streq
+          token Token.type  ptr+ @int TOKEN_KEYWORD =
+          token Token.value ptr+ @int KEYWORD_PROC =
           land lnot if
             token Token.loc ptr+                                        eputloc
             ": ERROR: Expected keyword `proc` after `inline` but got `" eputs
@@ -2605,9 +2720,9 @@ proc compile-file-into-ops ptr in
           end
 
           token lexer true introduce-proc
-        else dup @Str "proc" streq if*
+        else dup KEYWORD_PROC = if*
           token lexer false introduce-proc
-        else dup @Str "memory" streq if*
+        else dup KEYWORD_MEMORY = if*
           token lexer lexer-next-token lnot if
             token Token.loc ptr+ eputloc
             ": expected memory name but found nothing\n" eputs
@@ -2644,7 +2759,7 @@ proc compile-file-into-ops ptr in
             global-memory-capacity @64 + global-memory-capacity !64
             memori global-memory-define
           end
-        else dup @Str "assert" streq if*
+        else dup KEYWORD_ASSERT = if*
           token lexer lexer-next-token lnot if
             token Token.loc ptr+ eputloc
             ": expected assert message but found nothing\n" eputs
@@ -2669,12 +2784,25 @@ proc compile-file-into-ops ptr in
             token Token.loc ptr+ eputloc ": ERROR: Static Assertion Failed: " eputs token Token.value ptr+ @Str eputs "\n" eputs
             1 exit
           end
-        else dup @Str "here" streq if*
+        else dup KEYWORD_HERE = if*
           OP_PUSH_STR
           token Token.loc ptr+ strbuf-loc strlit-define
           token
           push-op
-        else dup @Str const-lookup dup NULL ptr!= if*
+        else
+          token Token.loc ptr+ eputloc
+          ": ERROR: unexpected keyword `" eputs
+          dup keyword-name                eputs
+          "`\n"                           eputs
+          1 exit
+        end
+      drop
+    else dup TOKEN_WORD = if*
+      token Token.value ptr+ // token.value
+        assert "Exhaustive handling of Op types in parse-file-path" COUNT_OPS 19 = end
+        dup @Str intrinsic-by-name if
+          OP_INTRINSIC swap token push-op
+        else drop dup @Str const-lookup dup NULL ptr!= if*
           dup Const.type ptr+ @int
           assert "Exhaustive handling of data types in Const compilation\n" COUNT_DATATYPES 3 = end
           dup DATATYPE_INT = if
@@ -2726,7 +2854,6 @@ proc compile-file-into-ops ptr in
           "`\n"                     eputs
           1 exit
         end
-      end
       drop // token.value
     else dup TOKEN_STR = if*
       OP_PUSH_STR
