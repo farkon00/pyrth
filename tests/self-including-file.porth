@@ -1,1 +1,1 @@
-include "./self-including-file.porth"
+include "self-including-file.porth"

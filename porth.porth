@@ -1321,7 +1321,8 @@ end
 
 inline proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
 
-const X86_64_RET_STACK_CAP 8192 end
+// TODOOOOOOO: an option to detect stack overflow at runtime
+const X86_64_RET_STACK_CAP 64 1024 * end
 
 /// BEGIN Code Generator //////////////////////////////
 proc fputdecstr
@@ -1879,7 +1880,7 @@ end
 // This is a memory region where we store file paths for compile-file-into-ops operation.
 // This buffer is created to ensure that the file path string live long enough for
 // compile-file-into-ops to process the files properly.
-const FPB_CAP 8 1024 * end
+const FPB_CAP 32 1024 * end
 memory fpb-start FPB_CAP end
 memory fpb-size sizeof(u64) end
 
@@ -2473,7 +2474,15 @@ proc current-proc -- ptr in
   end
 end
 
-proc compile-file-into-ops ptr in
+const INCLUDE_LIMIT 100 end
+
+proc compile-file-into-ops
+  ptr  // file path cstr
+  int  // include level
+in
+  memory include-level sizeof(int) end
+  include-level !int
+
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
 
@@ -2651,7 +2660,14 @@ proc compile-file-into-ops ptr in
             1 exit
           end
 
-          // TODO: introduce include limit
+          include-level @int INCLUDE_LIMIT >= if
+            token Token.loc ptr+                                       eputloc
+            ": ERROR: Include limit is exceeded. A file was included " eputs
+            include-level @int                                         eputu
+            " times.\n"                                                eputs
+            1 exit
+          end
+
           fpb-end
           "./"                        fpb-append drop
           token Token.value ptr+ @Str fpb-append drop
@@ -2667,6 +2683,15 @@ proc compile-file-into-ops ptr in
           end
 
           dup ?file-exist lnot if
+            fpb-rewind
+            fpb-end
+            file-path-cstr @ptr cstr-to-str dirname fpb-append drop
+            "/"                                     fpb-append drop
+            token Token.value ptr+ @Str             fpb-append drop
+            1                                       fpb-alloc drop
+          end
+
+          dup ?file-exist lnot if
             token Token.loc ptr+        eputloc
             ": ERROR: file `"           eputs
             token Token.value ptr+ @Str eputs
@@ -2674,6 +2699,7 @@ proc compile-file-into-ops ptr in
             1 exit
           end
 
+          include-level @int 1 +
           compile-file-into-ops
         else dup KEYWORD_CONST = if*
           token lexer lexer-next-token lnot if
@@ -2999,7 +3025,7 @@ end
 
 inline proc compile-program-into-ops ptr in
   timeit/from-here
-    compile-file-into-ops
+    0 compile-file-into-ops
   "[INFO] Compilation" silent @bool timeit/to-here
 end
 
