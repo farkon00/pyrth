@@ -1176,3 +1176,28 @@ in
     drop drop
   end
 end
+
+proc dirname
+  int ptr
+  --
+  int ptr
+in
+  while
+    over over swap
+    dup 0 > if
+      1 - ptr+ @8 '/' !=
+    else
+      drop drop false
+    end
+  do
+    swap 1 - swap
+  end
+
+  swap
+    dup 0 > if
+      over over 1 - ptr+ @8 '/' = if
+        1 -
+      end
+    end
+  swap
+end
