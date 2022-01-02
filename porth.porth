@@ -3822,8 +3822,16 @@ in
       over TypeFrame.type ptr+ @int
       over TypeFrame.type ptr+ @int
       != if
-        here eputs ": TODO: reporting unexpected type on the stack is not implemented\n" eputs
-        over TypeFrame.loc ptr+ located-here
+        over TypeFrame.loc ptr+                      eputloc
+        ": ERROR: Unexpected type `"                 eputs
+        over TypeFrame.type ptr+ @int datatype-name  eputs
+        "` on the stack\n"                           eputs
+
+        dup TypeFrame.loc ptr+                       eputloc
+        ": NOTE: Expected type `"                    eputs
+        dup TypeFrame.type ptr+ @int datatype-name   eputs
+        "`\n"                                        eputs
+
         1 exit
       end
     drop
