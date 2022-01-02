@@ -3817,25 +3817,46 @@ in
     lor
     lnot
   do
-    stack TypeStack.top ptr+ @ptr
-    outs  TypeStack.top ptr+ @ptr
-      over TypeFrame.type ptr+ @int
-      over TypeFrame.type ptr+ @int
-      != if
-        over TypeFrame.loc ptr+                      eputloc
-        ": ERROR: Unexpected type `"                 eputs
-        over TypeFrame.type ptr+ @int datatype-name  eputs
-        "` on the stack\n"                           eputs
+    stack TypeStack.top ptr+ @ptr TypeFrame.type ptr+ @int
+    outs  TypeStack.top ptr+ @ptr TypeFrame.type ptr+ @int
+    != if
+      start-ip @int sizeof(Op) * ops +ptr
+        start-ip @int 0 = if
+          here eputs ": unreachable. You can't have unexpected data on the stack at the end of the program because there should be no data at the end of the program" eputs
+          69 exit
+        else dup Op.type ptr+ @int OP_DO = if*
+          dup Op.token ptr+ Token.loc ptr+ eputloc
+          dup Op.type ptr+ @int
+            ": ERROR: Unexpected data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations.\n" eputs
+          drop
+        else dup Op.type ptr+ @int OP_PREP_PROC = if*
+          dup Op.token ptr+ Token.loc ptr+ eputloc
+          dup Op.type ptr+ @int
+            ": ERROR: Unexpected data on the stack at the end of the procedure. The expected elements on the stack are listed after the `--` operator.\n" eputs
+          drop
+        else
+          here               eputs
+          ": unreachable "   eputs
+          69 exit
+        end
+      drop
 
+      stack TypeStack.top ptr+ @ptr
+        dup TypeFrame.loc ptr+                     eputloc
+        ": NOTE: Unexpected type `"                eputs
+        dup TypeFrame.type ptr+ @int datatype-name eputs
+        "`\n"                                      eputs
+      drop
+
+      outs TypeStack.top ptr+ @ptr
         dup TypeFrame.loc ptr+                       eputloc
         ": NOTE: Expected type `"                    eputs
         dup TypeFrame.type ptr+ @int datatype-name   eputs
         "`\n"                                        eputs
+      drop
 
-        1 exit
-      end
-    drop
-    drop
+      1 exit
+    end
     stack type-stack-pop
     outs  type-stack-pop
   end
@@ -3843,16 +3864,54 @@ in
   stack TypeStack.count ptr+ @int
   outs  TypeStack.count ptr+ @int
     over over > if
-      stack TypeStack.top ptr+ @ptr TypeFrame.loc ptr+ eputloc
-      ": ERROR: Unhandled data on the stack:\n"        eputs
+      start-ip @int sizeof(Op) * ops +ptr
+        start-ip @int 0 = if
+          stack TypeStack.top ptr+ @ptr TypeFrame.loc ptr+ eputloc
+          ": ERROR: Unhandled data at the end of the program. At the end of the program execution there should be no elements on the stack. Here are the elements currently on the stack:\n" eputs
+        else dup Op.type ptr+ @int OP_DO = if*
+          dup Op.token ptr+ Token.loc ptr+ eputloc
+          dup Op.type ptr+ @int
+            ": ERROR: Unhandled data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations. Here are the elements currently on the stack:\n" eputs
+          drop
+        else dup Op.type ptr+ @int OP_PREP_PROC = if*
+          dup Op.token ptr+ Token.loc ptr+ eputloc
+          dup Op.type ptr+ @int
+            ": ERROR: Unhandled data on the stack at the end of the procedure. The expected elements on the stack are listed after the `--` operator. Here are the elements currently on the stack:\n" eputs
+          drop
+        else
+          here               eputs
+          ": unreachable "   eputs
+          69 exit
+        end
+      drop
       stack stderr type-stack-dump
+
       1 exit
     end
 
     over over < if
-      outs TypeStack.top ptr+ @ptr TypeFrame.loc ptr+        eputloc
-      ": ERROR: Insufficient data on the stack. Expected:\n" eputs
+      start-ip @int sizeof(Op) * ops +ptr
+        start-ip @int 0 = if
+          here eputs ": unreachable. You can't have insufficient data on the stack at the end of the program because there should be no data at the end of the program" eputs
+          69 exit
+        else dup Op.type ptr+ @int OP_DO = if*
+          dup Op.token ptr+ Token.loc ptr+ eputloc
+          dup Op.type ptr+ @int
+            ": ERROR: Insufficient data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations. Here are the elements currently on the stack:\n" eputs
+          drop
+        else dup Op.type ptr+ @int OP_PREP_PROC = if*
+          dup Op.token ptr+ Token.loc ptr+ eputloc
+          dup Op.type ptr+ @int
+            ": ERROR: Insufficient data on the stack at the end of the procedure. The expected elements on the stack are listed after the `--` operator. Here are the elements currently on the stack:\n" eputs
+          drop
+        else
+          here               eputs
+          ": unreachable "   eputs
+          69 exit
+        end
+      drop
       outs stderr type-stack-dump
+
       1 exit
     end
   drop
