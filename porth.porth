@@ -848,18 +848,21 @@ in
 end
 
 proc dump-ops in
-  0 while dup ops-count @64 < do
-    dup sizeof(Op) * ops +ptr
-    dup Op.token ptr+ Token.loc ptr+ putloc ": " puts
-    over putu ": " puts dup Op.type ptr+ @64 op-type-as-str puts " " puts
-    dup Op.type ptr+ @64 OP_INTRINSIC = if
-      Op.operand ptr+ @64 intrinsic-name puts
-    else
-      Op.operand ptr+ @64 putu
+  0
+    while dup ops-count @64 < do
+      dup sizeof(Op) * ops +ptr
+        dup Op.token ptr+ Token.loc ptr+ putloc ": " puts
+        over putu " => " puts
+        dup Op.type ptr+ @64 op-type-as-str puts " " puts
+        dup Op.type ptr+ @64 OP_INTRINSIC = if
+          dup Op.operand ptr+ @64 intrinsic-name puts
+        else
+          dup Op.operand ptr+ @64 putu
+        end
+        "\n" puts
+      drop
+      1 +
     end
-    "\n" puts
-    1 +
-  end
   drop
 end
 /// END Op ////////////////////////////
