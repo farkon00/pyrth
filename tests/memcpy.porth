@@ -2,7 +2,7 @@ include "std.porth"
 
 const N 32              end
 const K 8               end
-// TODOOOOOOOOOOOOO: explore the idea of using inline procs in consts
+// TODOO: explore the idea of using inline procs in consts
 const M N K divmod drop end
 
 memory a N end

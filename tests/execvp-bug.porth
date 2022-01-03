@@ -1,4 +1,4 @@
-// TODOOOOOOOOOOOOOOOOO: The test case is broken for porth.py in 38b9e071deb2003424854f35296f96ed0ae838ea
+// TODOO: The test case is broken for porth.py in 38b9e071deb2003424854f35296f96ed0ae838ea
 include "std.porth"
 
 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" tmp-append drop

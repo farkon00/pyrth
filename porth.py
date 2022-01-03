@@ -92,7 +92,7 @@ class Intrinsic(Enum):
     ARGC=auto()
     ARGV=auto()
     ENVP=auto()
-    # TODOOOOOOOO: `here` should be a keyword like in porth.porth
+    # TODOO: `here` should be a keyword like in porth.porth
     # Consider also highlighting it in the editor supports
     HERE=auto()
     SYSCALL0=auto()
@@ -1293,7 +1293,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     ctx.ops.append(Op(typ=OpType.INLINED, token=token, operand=proc.addr))
                     ctx.ip += 1
                     while ctx.ops[proc_ip].typ != OpType.RET:
-                        # TODOOOOOOOOOOO: flag to disable inling for debug purposes
+                        # TODOO: flag to disable inling for debug purposes
                         ctx.ops.append(ctx.ops[proc_ip])
                         ctx.ip += 1
                         proc_ip += 1
@@ -1576,7 +1576,7 @@ def find_string_literal_end(line: str, start: int, quote: str = '"') -> int:
             start += 1
     return start
 
-# TODOOOOOOOOOOOOOO: remove multiline strings from porth.py
+# TODOO: remove multiline strings from porth.py
 # They are not supported by porth.porth anyway and probably never will be.
 def lex_lines(file_path: str, lines: List[str]) -> Generator[Token, None, None]:
     assert len(TokenType) == 6, 'Exhaustive handling of token types in lex_lines'

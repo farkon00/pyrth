@@ -1144,7 +1144,7 @@ in
   end
 end
 
-// TODOOOOOOOOOO: proc-lookup-by-addr in O(1) by storing proc index in the operand of OP_PREP_PROC
+// TODOO: proc-lookup-by-addr in O(1) by storing proc index in the operand of OP_PREP_PROC
 proc proc-lookup-by-addr
   int // proc addr
   --
@@ -1326,7 +1326,7 @@ end
 
 inline proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
 
-// TODOOOOOOO: an option to detect stack overflow at runtime
+// TODOO: an option to detect stack overflow at runtime
 const X86_64_RET_STACK_CAP 64 1024 * end
 
 /// BEGIN Code Generator //////////////////////////////
@@ -2683,7 +2683,7 @@ in
           token Token.value ptr+ @Str fpb-append drop
           1                           fpb-alloc drop
 
-          // TODO: customizable include path list
+          // TODOOO: customizable include path list
           dup ?file-exist lnot if
             fpb-rewind
             fpb-end
@@ -3033,7 +3033,7 @@ in
   dst @ptr
 end
 
-// TODOOOOOOOOOOOO: porth.porth allows memory in inline procs for some reason
+// TODOO: porth.porth allows memory in inline procs for some reason
 
 proc compile-program-into-ops ptr in
   memory empty-token sizeof(Token) end
@@ -3946,7 +3946,7 @@ in
   type-frame-pool-count !int
 end
 
-// TODOOOOOOOOO: multi-branch type check error reporting
+// TODOO: multi-branch type check error reporting
 proc type-check-program in
   memory prok sizeof(ptr) end
 
@@ -4014,7 +4014,7 @@ in
   "    help                  Print this help to stdout and exit with 0 code\n"               fd @64 fputs
 end
 
-// TODOOO: split "target" into "format" and "platform"
+// TODOO: split "target" into "format" and "platform"
 const TARGET_NASM_LINUX_X86_64 1 offset end
 const TARGET_FASM_LINUX_X86_64 1 offset end
 const COUNT_TARGETS               reset end
@@ -4151,7 +4151,7 @@ proc main in
 
     assert "Exhaustive target handling in main" COUNT_TARGETS 2 = end
     target @int TARGET_NASM_LINUX_X86_64 = if
-      // TODOO: the output file path should be based on the input file path
+      // TODOOO: the output file path should be based on the input file path
       "output.asm"c generate-nasm-linux-x86_64
 
       tmp-end
