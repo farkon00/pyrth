@@ -956,45 +956,6 @@ const TYPE_FRAME_POOL_CAP 16 1024 * end
 memory type-frame-pool TYPE_FRAME_POOL_CAP sizeof(TypeFrame) * end
 memory type-frame-pool-count sizeof(int) end
 
-proc dump-dot-type-frame-pool
-  int // file-path
-in
-  memory fd sizeof(int) end
-  fd !int
-
-  "digraph Pool {\n" fd @64 fputs
-  0 while dup type-frame-pool-count @int < do
-    "  Node_"              fd @64 fputs
-    dup                    fd @64 fputu
-    " [label="             fd @64 fputs
-    dup
-      sizeof(TypeFrame) *
-      type-frame-pool +ptr
-      TypeFrame.type ptr+
-      @int
-      datatype-name        fd @64 fputs
-    "]"                    fd @64 fputs
-
-    dup
-      sizeof(TypeFrame) *
-      type-frame-pool +ptr
-      TypeFrame.prev ptr+
-      @ptr
-      dup NULL ptr!= if
-        "  Node_"   fd @64 fputs
-        over        fd @64 fputu
-        " -> Node_" fd @64 fputs
-        type-frame-pool ptr-diff
-        sizeof(TypeFrame) /
-        fd @64 fputu
-        "\n" fd @64 fputs
-      else drop end
-
-    1 +
-  end drop
-  "}\n" fd @64 fputs
-end
-
 proc type-frame-alloc -- ptr in
   type-frame-pool-count @int TYPE_FRAME_POOL_CAP >= if
     here eputs ": ERROR: Type Frame Pool overflow! Time to implement proper memory management! Or you can just increase the size of the pool, that will work too. Kappa\n" eputs
