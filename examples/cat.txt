@@ -8,7 +8,7 @@ foo
 :b stdin 0
 
 :i returncode 0
-:b stdout 818
+:b stdout 856
 include "std.porth"
 
 memory fd sizeof(u64) end
@@ -23,9 +23,12 @@ proc @file_path_cstr -- ptr in file_path_cstr @64 cast(ptr) end
 proc !file_path_cstr ptr in file_path_cstr !64 end
 
 proc cat_fd in
-  while BUFFER_CAP buffer @fd read dup 0 > do
-     buffer puts
-  end drop
+  BUFFER_CAP buffer @fd read
+    while dup 0 > do
+       buffer puts
+       BUFFER_CAP buffer @fd read
+    end
+  drop
 end
 
 argc 2 < if
@@ -36,7 +39,7 @@ else
     dup nth_argv !file_path_cstr
 
     0 O_RDONLY @file_path_cstr AT_FDCWD openat
-    
+
     dup 0 < if
       "ERROR: could not open file " eputs
       @file_path_cstr cstr-to-str eputs
@@ -47,7 +50,7 @@ else
       cat_fd
       fd @64 close drop
     end
-  
+
     1 +
   end drop
 end

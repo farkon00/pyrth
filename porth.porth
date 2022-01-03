@@ -3519,11 +3519,6 @@ in
 
         true // continue
       else op Op.type ptr+ @int OP_WHILE = if*
-        ip inc64
-        true // continue
-      else op Op.type ptr+ @int OP_DO = if*
-        op Op.token ptr+ stack type-check-if-op
-
         ip @int start-ip @int != if
           stack
           ip @int 1 +
@@ -3536,6 +3531,18 @@ in
         else
           false // break, we repeated the loop
         end
+      else op Op.type ptr+ @int OP_DO = if*
+        op Op.token ptr+ stack type-check-if-op
+
+        // then branch
+        stack
+        ip @int 1 +
+        outs
+        start-ip @int
+        type-check-program-from
+
+        // else branch
+        false // break
       else op Op.type ptr+ @int OP_INTRINSIC = if*
         assert "Exhaustive handling of Intrinsics in type-check-program-from" COUNT_INTRINSICS 44 = end
 
@@ -3844,7 +3851,7 @@ in
         dup Op.type ptr+ @int OP_START = if
           here eputs ": unreachable. You can't have unexpected data on the stack at the end of the program because there should be no data at the end of the program" eputs
           69 exit
-        else dup Op.type ptr+ @int OP_DO = if*
+        else dup Op.type ptr+ @int OP_WHILE = if*
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
             ": ERROR: Unexpected data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations.\n" eputs
@@ -3888,7 +3895,7 @@ in
         dup Op.type ptr+ @int OP_START = if
           stack TypeStack.top ptr+ @ptr TypeFrame.loc ptr+ eputloc
           ": ERROR: Unhandled data at the end of the program. At the end of the program execution there should be no elements on the stack. Here are the elements currently on the stack:\n" eputs
-        else dup Op.type ptr+ @int OP_DO = if*
+        else dup Op.type ptr+ @int OP_WHILE = if*
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
             ": ERROR: Unhandled data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations. Here are the elements currently on the stack:\n" eputs
@@ -3914,7 +3921,7 @@ in
         dup Op.type ptr+ @int OP_START = if
           here eputs ": unreachable. You can't have insufficient data on the stack at the end of the program because there should be no data at the end of the program" eputs
           69 exit
-        else dup Op.type ptr+ @int OP_DO = if*
+        else dup Op.type ptr+ @int OP_WHILE = if*
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
             ": ERROR: Insufficient data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations. Here are the elements currently on the stack:\n" eputs
