@@ -13,7 +13,7 @@ from time import sleep
 import traceback
 
 PORTH_EXT = '.porth'
-X86_64_RET_STACK_CAP=8192
+X86_64_RET_STACK_CAP=64*1024
 # TODO: INCLUDE_LIMIT should be probably customizable
 INCLUDE_LIMIT=100
 
