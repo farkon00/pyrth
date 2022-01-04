@@ -38,6 +38,7 @@ class Keyword(Enum):
     IN=auto()
     BIKESHEDDER=auto()
     INLINE=auto()
+    HERE=auto()
 
 class DataType(IntEnum):
     INT=auto()
@@ -92,9 +93,6 @@ class Intrinsic(Enum):
     ARGC=auto()
     ARGV=auto()
     ENVP=auto()
-    # TODOO: `here` should be a keyword like in porth.porth
-    # Consider also highlighting it in the editor supports
-    HERE=auto()
     SYSCALL0=auto()
     SYSCALL1=auto()
     SYSCALL2=auto()
@@ -318,7 +316,7 @@ def type_check_program(program: Program, procs: Dict[OpAddr, Proc]):
             type_check_contract(op.token, ctx, proc.contract)
             ctx.ip += proc.body_size
         elif op.typ == OpType.INTRINSIC:
-            assert len(Intrinsic) == 45, "Exhaustive intrinsic handling in type_check_program()"
+            assert len(Intrinsic) == 44, "Exhaustive intrinsic handling in type_check_program()"
             assert isinstance(op.operand, Intrinsic), "This could be a bug in compilation step"
             if op.operand == Intrinsic.PLUS:
                 type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc), (DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
@@ -405,8 +403,6 @@ def type_check_program(program: Program, procs: Dict[OpAddr, Proc]):
                 type_check_contract(op.token, ctx, Contract(ins=[], outs=[(DataType.PTR, op.token.loc)]))
             elif op.operand == Intrinsic.ENVP:
                 type_check_contract(op.token, ctx, Contract(ins=[], outs=[(DataType.PTR, op.token.loc)]))
-            elif op.operand == Intrinsic.HERE:
-                type_check_contract(op.token, ctx, Contract(ins=[], outs=[(DataType.INT, op.token.loc), (DataType.PTR, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL0:
                 type_check_contract(op.token, ctx, Contract(ins=[(DataType.INT, op.token.loc)], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.SYSCALL1:
@@ -606,7 +602,7 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
                 out.write("    add rsp, %d\n" % op.operand)
                 out.write("    ret\n")
             elif op.typ == OpType.INTRINSIC:
-                assert len(Intrinsic) == 45, "Exhaustive intrinsic handling in generate_nasm_linux_x86_64()"
+                assert len(Intrinsic) == 44, "Exhaustive intrinsic handling in generate_nasm_linux_x86_64()"
                 if op.operand == Intrinsic.PLUS:
                     out.write("    pop rax\n")
                     out.write("    pop rbx\n")
@@ -786,13 +782,6 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
                     out.write("    mov rbx, [args_ptr]\n")
                     out.write("    add rbx, rax\n")
                     out.write("    push rbx\n")
-                elif op.operand == Intrinsic.HERE:
-                    value = ("%s:%d:%d" % op.token.loc).encode('utf-8')
-                    n = len(value)
-                    out.write("    mov rax, %d\n" % n)
-                    out.write("    push rax\n")
-                    out.write("    push str_%d\n" % len(strs))
-                    strs.append(value)
                 elif op.operand in [Intrinsic.CAST_PTR, Intrinsic.CAST_INT, Intrinsic.CAST_BOOL]:
                     pass
                 elif op.operand == Intrinsic.SYSCALL0:
@@ -865,7 +854,7 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
         out.write("ret_stack_end:\n")
         out.write("mem: resb %d\n" % program.memory_capacity)
 
-assert len(Keyword) == 16, f"Exhaustive KEYWORD_NAMES definition. {len(Keyword)}"
+assert len(Keyword) == 17, f"Exhaustive KEYWORD_NAMES definition. {len(Keyword)}"
 KEYWORD_BY_NAMES: Dict[str, Keyword] = {
     'if': Keyword.IF,
     'if*': Keyword.IFSTAR,
@@ -883,10 +872,11 @@ KEYWORD_BY_NAMES: Dict[str, Keyword] = {
     'in': Keyword.IN,
     '--': Keyword.BIKESHEDDER,
     'inline': Keyword.INLINE,
+    'here': Keyword.HERE
 }
 KEYWORD_NAMES: Dict[Keyword, str] = {v: k for k, v in KEYWORD_BY_NAMES.items()}
 
-assert len(Intrinsic) == 45, "Exhaustive INTRINSIC_BY_NAMES definition"
+assert len(Intrinsic) == 44, "Exhaustive INTRINSIC_BY_NAMES definition"
 INTRINSIC_BY_NAMES: Dict[str, Intrinsic] = {
     '+': Intrinsic.PLUS,
     '-': Intrinsic.MINUS,
@@ -924,7 +914,6 @@ INTRINSIC_BY_NAMES: Dict[str, Intrinsic] = {
     'argc': Intrinsic.ARGC,
     'argv': Intrinsic.ARGV,
     'envp': Intrinsic.ENVP,
-    'here': Intrinsic.HERE,
     'syscall0': Intrinsic.SYSCALL0,
     'syscall1': Intrinsic.SYSCALL1,
     'syscall2': Intrinsic.SYSCALL2,
@@ -1331,7 +1320,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
             ctx.ops.append(Op(typ=OpType.PUSH_INT, operand=token.value, token=token));
             ctx.ip += 1
         elif token.typ == TokenType.KEYWORD:
-            assert len(Keyword) == 16, "Exhaustive keywords handling in parse_program_from_tokens()"
+            assert len(Keyword) == 17, "Exhaustive keywords handling in parse_program_from_tokens()"
             if token.value == Keyword.IF:
                 if ctx.current_proc is not None and ctx.current_proc.inline:
                     compiler_error(ctx.current_proc.loc, "no conditions in inline procedures");
@@ -1547,6 +1536,10 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
             elif token.value in [Keyword.IN, Keyword.BIKESHEDDER]:
                 compiler_error(token.loc, f"Unexpected keyword `{token.text}`")
                 exit(1)
+            elif token.value == Keyword.HERE:
+                value = ("%s:%d:%d" % token.loc)
+                ctx.ops.append(Op(typ=OpType.PUSH_STR, operand=value, token=token));
+                ctx.ip += 1
             else:
                 assert False, 'unreachable';
         else:
