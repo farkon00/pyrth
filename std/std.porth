@@ -1206,7 +1206,7 @@ proc str-rfind
   int ptr
   int
   --
-  int bool
+  int
 in
   memory needle sizeof(int) end
   needle !int
@@ -1226,9 +1226,9 @@ in
   end
 
   dup str @Str.count < if
-    str @Str.count swap - 1 - true
+    str @Str.count swap - 1 -
   else
-    false
+    drop 0 1 -
   end
 end
 
