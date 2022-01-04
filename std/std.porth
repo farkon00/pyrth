@@ -1257,3 +1257,70 @@ in
     drop drop path @Str
   end
 end
+
+// # Run external command
+// 
+// Usage example:
+// ```porth
+// tmp-end
+//   "echo"c tmp-append-ptr
+//   "uwu"c  tmp-append-ptr
+//   NULL    tmp-append-ptr
+//   dup true cmd-echoed
+// tmp-rewind
+// ```
+//
+// This runs external command `echo uwu`
+proc cmd-echoed 
+  ptr   // array of cstrs reprets the command we are running
+  bool  // echo the command to stdout
+in
+  if
+    "[CMD]" puts
+    dup while dup @64 0 != do
+      " " puts
+      dup @64 cast(ptr) cstr-to-str shell-escape puts
+      8 ptr+
+    end drop
+    "\n" puts
+  end
+
+  memory wstatus sizeof(u64) end
+
+  fork
+
+  dup 0 = if
+    // child process
+    drop
+    dup @ptr
+    swap
+    execvp
+    // TODO: report that you could not execute the child
+  else dup 0 > if*
+    // parent process
+    drop drop
+    NULL
+    0
+    wstatus
+    0 1 - // TODO: replace this with -1 when we support negative numbers
+    wait4 0 < if
+      "[ERROR] could not wait until the child process has finished executing\n" eputs
+      1 exit
+    end
+
+    wstatus @int
+      dup WIFEXITED if
+        dup WEXITSTATUS
+          dup 0 > if
+            dup exit
+          end
+        drop
+      end
+    drop
+
+  else
+    drop drop
+    "[ERROR] could not fork a child\n" eputs
+    1 exit
+  end
+end

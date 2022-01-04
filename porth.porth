@@ -1234,57 +1234,6 @@ end
 
 memory silent sizeof(bool) end
 
-proc cmd-echoed ptr in
-  silent @bool lnot if
-    "[CMD]" puts
-    dup while dup @64 0 != do
-      " " puts
-      dup @64 cast(ptr) cstr-to-str shell-escape puts
-      8 ptr+
-    end drop
-    "\n" puts
-  end
-
-  memory wstatus sizeof(u64) end
-
-  fork
-
-  dup 0 = if
-    // child process
-    drop
-    dup @ptr
-    swap
-    execvp
-    // TODO: report that you could not execute the child
-  else dup 0 > if*
-    // parent process
-    drop drop
-    NULL
-    0
-    wstatus
-    0 1 - // TODO: replace this with -1 when we support negative numbers
-    wait4 0 < if
-      "[ERROR] could not wait until the child process has finished executing\n" eputs
-      1 exit
-    end
-
-    wstatus @int
-      dup WIFEXITED if
-        dup WEXITSTATUS
-          dup 0 > if
-            dup exit
-          end
-        drop
-      end
-    drop
-
-  else
-    drop drop
-    "[ERROR] could not fork a child\n" eputs
-    1 exit
-  end
-end
-
 inline proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
 
 // TODOO: an option to detect stack overflow at runtime
@@ -4120,7 +4069,7 @@ proc main in
       "-felf64"c    tmp-append-ptr
       "output.asm"c tmp-append-ptr
       NULL          tmp-append-ptr
-      cmd-echoed
+      silent @bool lnot cmd-echoed
 
       tmp-end
       "ld"c         tmp-append-ptr
@@ -4128,7 +4077,7 @@ proc main in
       "output"c     tmp-append-ptr
       "output.o"c   tmp-append-ptr
       NULL          tmp-append-ptr
-      cmd-echoed
+      silent @bool lnot cmd-echoed
     else target @int TARGET_FASM_LINUX_X86_64 = if*
       "output.asm"c generate-fasm-linux-x86_64
 
@@ -4138,14 +4087,14 @@ proc main in
       "524288"c     tmp-append-ptr
       "output.asm"c tmp-append-ptr
       NULL          tmp-append-ptr
-      cmd-echoed
+      silent @bool lnot cmd-echoed
 
       tmp-end
       "chmod"c      tmp-append-ptr
       "+x"c         tmp-append-ptr
       "output"c     tmp-append-ptr
       NULL          tmp-append-ptr
-      cmd-echoed
+      silent @bool lnot cmd-echoed
     else
       here eputs ": Assertion Failed: unreachable\n" eputs
       1 exit
@@ -4161,7 +4110,7 @@ proc main in
         args sizeof(ptr) inc64-by
       end
       NULL        tmp-append-ptr
-      cmd-echoed
+      silent @bool lnot cmd-echoed
     end
   else args @@ptr "help"c cstreq if*
     program @ptr stdout usage
