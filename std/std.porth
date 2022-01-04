@@ -1201,3 +1201,41 @@ in
     end
   swap
 end
+
+proc str-rfind
+  int ptr
+  int
+  --
+  int bool
+in
+  memory needle sizeof(int) end
+  needle !int
+
+  memory str sizeof(Str) end
+  str !Str
+
+  0
+  while
+    dup str @Str.count < if
+      str @Str.count over - 1 -
+      str @Str.data swap ptr+
+      @8 needle @int !=
+    else false end
+  do
+    1 +
+  end
+
+  dup str @Str.count < if
+    str @Str.count swap - 1 - true
+  else
+    false
+  end
+end
+
+proc putch
+  int
+in
+  memory buf sizeof(int) end
+  buf !8
+  1 buf puts
+end

@@ -34,3 +34,4 @@ execvp-bug
 quote-in-charlit
 shell-escape
 dirname
+str-rfind
