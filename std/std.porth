@@ -1239,3 +1239,21 @@ in
   buf !8
   1 buf puts
 end
+
+proc remove-ext
+  int ptr
+  --
+  int ptr
+in
+  memory path sizeof(Str) end
+  path !Str
+
+  path @Str '/' str-rfind
+  path @Str '.' str-rfind
+
+  over over < if
+    swap drop path @Str.data
+  else
+    drop drop path @Str
+  end
+end

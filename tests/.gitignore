@@ -35,3 +35,4 @@ quote-in-charlit
 shell-escape
 dirname
 str-rfind
+remove-ext
