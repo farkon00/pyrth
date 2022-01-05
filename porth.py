@@ -985,8 +985,6 @@ class ParseContext:
     consts: Dict[str, Const] = field(default_factory=dict)
     current_proc: Optional[Proc] = None
     iota: int = 0
-    # TODO: consider getting rid of the ip variable in ParseContext
-    ip: OpAddr = 0
 
 def check_name_redefinition(ctx: ParseContext, name: str, loc: Loc):
     if ctx.current_proc is None:
@@ -1211,14 +1209,12 @@ def parse_proc_contract(rtokens: List[Token]) -> Contract:
 
 def introduce_proc(ctx: ParseContext, token: Token, rtokens: List[Token], inline=False):
     if ctx.current_proc is None:
+        ctx.stack.append(len(ctx.ops));
         ctx.ops.append(Op(typ=OpType.SKIP_PROC, token=token))
-        ctx.stack.append(ctx.ip)
-        ctx.ip += 1
 
-        proc_addr = ctx.ip
+        proc_addr = len(ctx.ops)
+        ctx.stack.append(proc_addr)
         ctx.ops.append(Op(typ=OpType.PREP_PROC, token=token))
-        ctx.stack.append(ctx.ip)
-        ctx.ip += 1
 
         if len(rtokens) == 0:
             compiler_error(token.loc, "expected procedure name but found nothing")
@@ -1259,13 +1255,10 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
             assert isinstance(token.value, str), "This could be a bug in the lexer"
             if token.value in INTRINSIC_BY_NAMES:
                 ctx.ops.append(Op(typ=OpType.INTRINSIC, token=token, operand=INTRINSIC_BY_NAMES[token.value]))
-                ctx.ip += 1
             elif ctx.current_proc is not None and token.value in ctx.current_proc.local_memories:
                 ctx.ops.append(Op(typ=OpType.PUSH_LOCAL_MEM, token=token, operand=ctx.current_proc.local_memories[token.value].offset))
-                ctx.ip += 1
             elif token.value in ctx.memories:
                 ctx.ops.append(Op(typ=OpType.PUSH_GLOBAL_MEM, token=token, operand=ctx.memories[token.value].offset))
-                ctx.ip += 1
             elif token.value in ctx.procs:
                 proc = ctx.procs[token.value]
                 if ctx.current_proc == proc and proc.inline:
@@ -1281,15 +1274,12 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     assert ctx.ops[proc_ip].typ == OpType.PREP_PROC
                     proc_ip += 1
                     ctx.ops.append(Op(typ=OpType.INLINED, token=token, operand=proc.addr))
-                    ctx.ip += 1
                     while ctx.ops[proc_ip].typ != OpType.RET:
                         # TODOO: flag to disable inling for debug purposes
                         ctx.ops.append(ctx.ops[proc_ip])
-                        ctx.ip += 1
                         proc_ip += 1
                 else:
                     ctx.ops.append(Op(typ=OpType.CALL, token=token, operand=proc.addr))
-                    ctx.ip += 1
             elif token.value in ctx.consts:
                 const = ctx.consts[token.value]
                 if const.typ == DataType.INT:
@@ -1300,26 +1290,21 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     ctx.ops.append(Op(typ=OpType.PUSH_PTR, token=token, operand=const.value))
                 else:
                     assert False, "unreachable"
-                ctx.ip += 1
             else:
                 compiler_error(token.loc, "unknown word `%s`" % token.value)
                 exit(1)
         elif token.typ == TokenType.INT:
             assert isinstance(token.value, int), "This could be a bug in the lexer"
             ctx.ops.append(Op(typ=OpType.PUSH_INT, operand=token.value, token=token))
-            ctx.ip += 1
         elif token.typ == TokenType.STR:
             assert isinstance(token.value, str), "This could be a bug in the lexer"
             ctx.ops.append(Op(typ=OpType.PUSH_STR, operand=token.value, token=token));
-            ctx.ip += 1
         elif token.typ == TokenType.CSTR:
             assert isinstance(token.value, str), "This could be a bug in the lexer"
             ctx.ops.append(Op(typ=OpType.PUSH_CSTR, operand=token.value, token=token));
-            ctx.ip += 1
         elif token.typ == TokenType.CHAR:
             assert isinstance(token.value, int)
             ctx.ops.append(Op(typ=OpType.PUSH_INT, operand=token.value, token=token));
-            ctx.ip += 1
         elif token.typ == TokenType.KEYWORD:
             assert len(Keyword) == 17, "Exhaustive keywords handling in parse_program_from_tokens()"
             if token.value == Keyword.IF:
@@ -1328,9 +1313,8 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     compiler_note(token.loc, "condition is used here")
                     exit(1)
 
+                ctx.stack.append(len(ctx.ops))
                 ctx.ops.append(Op(typ=OpType.IF, token=token))
-                ctx.stack.append(ctx.ip)
-                ctx.ip += 1
             elif token.value == Keyword.IFSTAR:
                 if len(ctx.stack) == 0:
                     compiler_error(token.loc, '`if*` can only come after `else`')
@@ -1340,9 +1324,8 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 if ctx.ops[else_ip].typ != OpType.ELSE:
                     compiler_error(ctx.ops[else_ip].token.loc, '`if*` can only come after `else`')
                     exit(1)
+                ctx.stack.append(len(ctx.ops))
                 ctx.ops.append(Op(typ=OpType.IFSTAR, token=token))
-                ctx.stack.append(ctx.ip)
-                ctx.ip += 1
             elif token.value == Keyword.ELSE:
                 if len(ctx.stack) == 0:
                     compiler_error(token.loc, '`else` can only come after `if` or `if*`')
@@ -1350,20 +1333,18 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
 
                 if_ip = ctx.stack.pop()
                 if ctx.ops[if_ip].typ == OpType.IF:
-                    ctx.ops[if_ip].operand = ctx.ip + 1
-                    ctx.stack.append(ctx.ip)
+                    ctx.ops[if_ip].operand = len(ctx.ops) + 1
+                    ctx.stack.append(len(ctx.ops))
                     ctx.ops.append(Op(typ=OpType.ELSE, token=token))
-                    ctx.ip += 1
                 elif ctx.ops[if_ip].typ == OpType.IFSTAR:
                     else_before_ifstar_ip = None if len(ctx.stack) == 0 else ctx.stack.pop()
                     assert else_before_ifstar_ip is not None and ctx.ops[else_before_ifstar_ip].typ == OpType.ELSE, "At this point we should've already checked that `if*` comes after `else`. Otherwise this is a compiler bug."
 
-                    ctx.ops[if_ip].operand = ctx.ip + 1
-                    ctx.ops[else_before_ifstar_ip].operand = ctx.ip
+                    ctx.ops[if_ip].operand = len(ctx.ops) + 1
+                    ctx.ops[else_before_ifstar_ip].operand = len(ctx.ops)
 
-                    ctx.stack.append(ctx.ip)
+                    ctx.stack.append(len(ctx.ops))
                     ctx.ops.append(Op(typ=OpType.ELSE, token=token))
-                    ctx.ip += 1
                 else:
                     compiler_error(token.loc, f'`else` can only come after `if` or `if*`')
                     exit(1)
@@ -1371,11 +1352,9 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 block_ip = ctx.stack.pop()
 
                 if ctx.ops[block_ip].typ == OpType.ELSE:
-                    ctx.ops.append(Op(typ=OpType.END, token=token))
-                    ctx.ops[block_ip].operand = ctx.ip
-                    ctx.ops[ctx.ip].operand = ctx.ip + 1
+                    ctx.ops[block_ip].operand = len(ctx.ops)
+                    ctx.ops.append(Op(typ=OpType.END, token=token, operand=len(ctx.ops)+1))
                 elif ctx.ops[block_ip].typ == OpType.DO:
-                    ctx.ops.append(Op(typ=OpType.END, token=token))
                     assert ctx.ops[block_ip].operand is not None
                     while_ip = ctx.ops[block_ip].operand
                     assert isinstance(while_ip, OpAddr)
@@ -1384,44 +1363,39 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                         compiler_error(ctx.ops[while_ip].token.loc, '`end` can only close `do` blocks that are preceded by `while`')
                         exit(1)
 
-                    ctx.ops[ctx.ip].operand = while_ip
-                    ctx.ops[block_ip].operand = ctx.ip + 1
+                    ctx.ops.append(Op(typ=OpType.END, token=token, operand=while_ip))
+                    ctx.ops[block_ip].operand = len(ctx.ops)
                 elif ctx.ops[block_ip].typ == OpType.PREP_PROC:
                     assert ctx.current_proc is not None
                     ctx.ops[block_ip].operand = ctx.current_proc.local_memory_capacity
                     block_ip = ctx.stack.pop()
                     assert ctx.ops[block_ip].typ == OpType.SKIP_PROC
-                    ctx.current_proc.body_size = ctx.ip - ctx.current_proc.addr
+                    ctx.current_proc.body_size = len(ctx.ops) - ctx.current_proc.addr
                     ctx.ops.append(Op(typ=OpType.RET, token=token, operand=ctx.current_proc.local_memory_capacity))
-                    ctx.ops[block_ip].operand = ctx.ip + 1
+                    ctx.ops[block_ip].operand = len(ctx.ops)
                     ctx.current_proc = None
                 elif ctx.ops[block_ip].typ == OpType.IFSTAR:
                     else_before_ifstar_ip = None if len(ctx.stack) == 0 else ctx.stack.pop()
                     assert else_before_ifstar_ip is not None and ctx.ops[else_before_ifstar_ip].typ == OpType.ELSE, "At this point we should've already checked that `if*` comes after `else`. Otherwise this is a compiler bug."
 
-                    ctx.ops.append(Op(typ=OpType.END, token=token))
-                    ctx.ops[block_ip].operand = ctx.ip
-                    ctx.ops[else_before_ifstar_ip].operand = ctx.ip
-                    ctx.ops[ctx.ip].operand = ctx.ip + 1
+                    ctx.ops[block_ip].operand = len(ctx.ops)
+                    ctx.ops[else_before_ifstar_ip].operand = len(ctx.ops)
+                    ctx.ops.append(Op(typ=OpType.END, token=token, operand=len(ctx.ops)+1))
                 elif ctx.ops[block_ip].typ == OpType.IF:
-                    ctx.ops.append(Op(typ=OpType.END, token=token))
-                    ctx.ops[block_ip].operand = ctx.ip
-                    ctx.ops[ctx.ip].operand = ctx.ip + 1
+                    ctx.ops[block_ip].operand = len(ctx.ops)
+                    ctx.ops.append(Op(typ=OpType.END, token=token, operand=len(ctx.ops)+1))
                 else:
                     compiler_error(token.loc, '`end` can only close `if`, `if*`, `else`, `do`, or `proc` blocks')
                     compiler_note(ctx.ops[block_ip].token.loc, f'found `{ctx.ops[block_ip].token.text}` instead')
                     exit(1)
-                ctx.ip += 1
             elif token.value == Keyword.WHILE:
+                ctx.stack.append(len(ctx.ops))
                 ctx.ops.append(Op(typ=OpType.WHILE, token=token))
-                ctx.stack.append(ctx.ip)
-                ctx.ip += 1
             elif token.value == Keyword.DO:
                 if ctx.current_proc is not None and ctx.current_proc.inline:
                     compiler_error(ctx.current_proc.loc, "no loops in inline procedures")
                     compiler_note(token.loc, "loop is used here")
                     exit(1)
-                ctx.ops.append(Op(typ=OpType.DO, token=token))
                 if len(ctx.stack) == 0:
                     compiler_error(token.loc, "`do` is not preceded by `while`")
                     exit(1)
@@ -1430,9 +1404,8 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     compiler_error(token.loc, "`do` is not preceded by `while`")
                     compiler_note(ctx.ops[while_ip].token.loc, f"preceded by `{ctx.ops[while_ip].token.text}` instead")
                     exit(1)
-                ctx.ops[ctx.ip].operand = while_ip
-                ctx.stack.append(ctx.ip)
-                ctx.ip += 1
+                ctx.stack.append(len(ctx.ops))
+                ctx.ops.append(Op(typ=OpType.DO, token=token, operand=while_ip))
             elif token.value == Keyword.INCLUDE:
                 if len(rtokens) == 0:
                     compiler_error(token.loc, "expected path to the include file but found nothing")
@@ -1540,7 +1513,6 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
             elif token.value == Keyword.HERE:
                 value = ("%s:%d:%d" % token.loc)
                 ctx.ops.append(Op(typ=OpType.PUSH_STR, operand=value, token=token));
-                ctx.ip += 1
             else:
                 assert False, 'unreachable';
         else:
