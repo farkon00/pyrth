@@ -525,8 +525,6 @@ const INTRINSIC_SYSCALL6  1 offset end
 const INTRINSIC_???       1 offset end
 const COUNT_INTRINSICS       reset end
 
-// TODO: ???const debug word that shows the current value of a constant
-
 proc intrinsic-name
   int // intrinsic
   --
@@ -1074,13 +1072,6 @@ memory procs-count sizeof(u64) end
 memory procs sizeof(Proc) PROCS_CAP * end
 memory inside-proc sizeof(bool) end
 
-// TODO: Two phase compilation for the procedures
-// Phase 1: figure out all of the addresses of the procs
-// Phase 2: do the usual compilation knowing the address of the procs up front
-// This enables the user to define procs in whatever order the want.
-// You know, the usual thing that a modern compiled language should just support
-// out of the box
-
 proc proc-lookup-by-name
   int ptr // proc name
   --
@@ -1105,7 +1096,6 @@ in
   end
 end
 
-// TODOO: proc-lookup-by-addr in O(1) by storing proc index in the operand of OP_PREP_PROC
 proc proc-lookup-by-addr
   int // proc addr
   --
@@ -1152,7 +1142,6 @@ memory global-memories-count sizeof(u64) end
 memory global-memories sizeof(Memory) GLOBAL_MEMORIES_CAP * end
 memory global-memory-capacity sizeof(u64) end
 
-// TODO: check if the local memory overflows the return stack at compile time
 const LOCAL_MEMORIES_CAP 1024 end
 memory local-memories-count sizeof(u64) end
 memory local-memories sizeof(Memory) LOCAL_MEMORIES_CAP * end
@@ -2955,7 +2944,7 @@ proc compile-program-into-ops ptr in
   "[INFO] Compilation" silent @bool timeit/to-here
 end
 
-// TODO: rename expect-arity-2 to expect-arity when there are no use cases for the original expect-arity anymore
+// TODOOO: rename expect-arity-2 to expect-arity when there are no use cases for the original expect-arity anymore
 // the main difference between them is that expect-arity-2 does not allocate dst in tmp region, but rather accepts it
 // via the arguments
 proc expect-arity-2
@@ -3464,7 +3453,6 @@ in
           else dup INTRINSIC_MUL = if*
             op Op.token ptr+ stack type-check-binary-int-operator
           else dup INTRINSIC_DIVMOD = if*
-            // TODO: this weird thing should go away when we separate divmod into div and mod
             op Op.token ptr+ stack type-check-divmod-operator
           else dup INTRINSIC_MAX = if*
             op Op.token ptr+ stack type-check-binary-int-operator
@@ -3883,7 +3871,6 @@ proc type-check-program in
 end
 
 proc summary in
-  // TODO: lexer stats: tokens count, lines count, etc
   "Ops count:                    " puts ops-count              @int putu "/" puts OPS_CAP             putu "\n" puts
   "Consts count:                 " puts consts-count           @int putu "/" puts CONST_CAP           putu "\n" puts
   "Procs count:                  " puts procs-count            @int putu "/" puts PROCS_CAP           putu "\n" puts
@@ -3943,9 +3930,6 @@ proc target-name int -- int ptr in
   end
 end
 
-// TODO: "optional" type
-// Something like if you return `int bool` and the `bool` is `false`, the `int` might be missing
-// Need to think more about this
 proc target-by-name int ptr -- int bool in
   assert "Exhaustive handling of targets in target-by-name" COUNT_TARGETS 2 = end
   over over "nasm-linux-x86_64" streq if
@@ -4005,8 +3989,6 @@ proc main in
       args @@ptr NULL ptr= if
         false // break
       else args @@ptr "-r"c cstreq if*
-        // TODO: when the child process exits with non-zero exit code the `com -r` does not reflect that
-        // Which is very confusing
         true run !bool
         true  // continue
       else args @@ptr "-s"c cstreq if*

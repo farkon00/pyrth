@@ -10,14 +10,6 @@ include "./std/std.porth"
 "Hello, World\n" puts // ascii
 "Привет, Мир!\n" puts // utf-8
 "Hello, \"World\"\n" puts // string with double quotes
-// multline string
-// "
-// mult
-// line
-// string
-// " puts
-// TODO: multiline strings don't work porth.porth
-// I never had use for them tbh, we should probably remove them
 
 "------------------------------\n" puts
 

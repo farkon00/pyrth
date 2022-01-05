@@ -14,7 +14,6 @@ import traceback
 
 PORTH_EXT = '.porth'
 X86_64_RET_STACK_CAP=64*1024
-# TODO: INCLUDE_LIMIT should be probably customizable
 INCLUDE_LIMIT=100
 
 debug=False
@@ -58,8 +57,6 @@ class Intrinsic(Enum):
     PLUS=auto()
     MINUS=auto()
     MUL=auto()
-    # TODO: split divmod intrinsic into div and mod back
-    # It was never useful
     DIVMOD=auto()
     MAX=auto()
     EQ=auto()
@@ -425,7 +422,6 @@ def type_check_program(program: Program, procs: Dict[OpAddr, Proc]):
                 [a, b, c, d, e, f, number] = expect_arity(ctx, op, 7)
                 type_check_contract(op.token, ctx, Contract(ins=[a, b, c, d, e, f, (DataType.INT, number[1])], outs=[(DataType.INT, op.token.loc)]))
             elif op.operand == Intrinsic.STOP:
-                # TODO: we need some sort of a flag that would allow us to ignore all the stop requests
                 compiler_diagnostic(op.token.loc, "DEBUG", "Stopping the compilation. Current stack state:")
                 if len(ctx.stack) > 0:
                     for typ, loc in reversed(ctx.stack):
@@ -1275,7 +1271,6 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                     proc_ip += 1
                     ctx.ops.append(Op(typ=OpType.INLINED, token=token, operand=proc.addr))
                     while ctx.ops[proc_ip].typ != OpType.RET:
-                        # TODOO: flag to disable inling for debug purposes
                         ctx.ops.append(ctx.ops[proc_ip])
                         proc_ip += 1
                 else:
