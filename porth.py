@@ -110,7 +110,7 @@ class OpType(Enum):
     PUSH_BOOL=auto()
     PUSH_STR=auto()
     PUSH_CSTR=auto()
-    PUSH_MEM=auto()
+    PUSH_GLOBAL_MEM=auto()
     PUSH_LOCAL_MEM=auto()
     INTRINSIC=auto()
     IF=auto()
@@ -292,7 +292,7 @@ def type_check_program(program: Program, procs: Dict[OpAddr, Proc]):
         elif op.typ == OpType.PUSH_CSTR:
             ctx.stack.append((DataType.PTR, op.token.loc))
             ctx.ip += 1
-        elif op.typ == OpType.PUSH_MEM:
+        elif op.typ == OpType.PUSH_GLOBAL_MEM:
             ctx.stack.append((DataType.PTR, op.token.loc))
             ctx.ip += 1
         elif op.typ == OpType.PUSH_LOCAL_MEM:
@@ -549,7 +549,7 @@ def generate_nasm_linux_x86_64(program: Program, out_file_path: str):
                 value = op.operand.encode('utf-8') + b'\0'
                 out.write("    push str_%d\n" % len(strs))
                 strs.append(value)
-            elif op.typ == OpType.PUSH_MEM:
+            elif op.typ == OpType.PUSH_GLOBAL_MEM:
                 assert isinstance(op.operand, MemAddr), "This could be a bug in the parsing step"
                 out.write("    mov rax, mem\n")
                 out.write("    add rax, %d\n" % op.operand)
@@ -1263,7 +1263,7 @@ def parse_program_from_tokens(ctx: ParseContext, tokens: List[Token], include_pa
                 ctx.ops.append(Op(typ=OpType.PUSH_LOCAL_MEM, token=token, operand=ctx.current_proc.local_memories[token.value].offset))
                 ctx.ip += 1
             elif token.value in ctx.memories:
-                ctx.ops.append(Op(typ=OpType.PUSH_MEM, token=token, operand=ctx.memories[token.value].offset))
+                ctx.ops.append(Op(typ=OpType.PUSH_GLOBAL_MEM, token=token, operand=ctx.memories[token.value].offset))
                 ctx.ip += 1
             elif token.value in ctx.procs:
                 proc = ctx.procs[token.value]
