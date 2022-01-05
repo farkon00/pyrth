@@ -105,6 +105,7 @@ class Intrinsic(Enum):
 # TODO: make conditional and unconditional jumps jump by relative address
 # This will make the code more relocatable which will make it easily inlinable
 class OpType(Enum):
+    # TODO: introduce START operation just like in porth.porth
     PUSH_INT=auto()
     PUSH_PTR=auto()
     PUSH_BOOL=auto()
