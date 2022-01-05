@@ -1652,80 +1652,6 @@ def cmd_call_echoed(cmd: List[str], silent: bool) -> int:
         print("[CMD] %s" % " ".join(map(shlex.quote, cmd)))
     return subprocess.call(cmd)
 
-# TODO: with a lot of procs the control flow graphs becomes useless even on small programs
-# Maybe we should eliminate unreachable code or something
-# TODO: test.py never touches generate_control_flow_graph_as_dot_file
-# Which leads to constantly forgetting to update the implementation
-def generate_control_flow_graph_as_dot_file(program: Program, dot_path: str):
-    with open(dot_path, "w") as f:
-        f.write("digraph Program {\n")
-        assert len(OpType) == 16, f"Exhaustive handling of OpType in generate_control_flow_graph_as_dot_file(), {len(OpType)}"
-        for ip in range(len(program.ops)):
-            op = program.ops[ip]
-            if op.typ == OpType.INTRINSIC:
-                assert isinstance(op.operand, Intrinsic)
-                f.write(f"    Node_{ip} [label={repr(repr(INTRINSIC_NAMES[op.operand]))}];\n")
-                f.write(f"    Node_{ip} -> Node_{ip + 1};\n")
-            elif op.typ == OpType.PUSH_STR:
-                assert isinstance(op.operand, str)
-                f.write(f"    Node_{ip} [label={repr(repr(op.operand))}];\n")
-                f.write(f"    Node_{ip} -> Node_{ip + 1};\n")
-            elif op.typ == OpType.PUSH_CSTR:
-                assert isinstance(op.operand, str)
-                f.write(f"    Node_{ip} [label={repr(repr(op.operand))}];\n")
-                f.write(f"    Node_{ip} -> Node_{ip + 1};\n")
-            elif op.typ == OpType.PUSH_INT:
-                assert isinstance(op.operand, int)
-                f.write(f"    Node_{ip} [label={op.operand}]\n")
-                f.write(f"    Node_{ip} -> Node_{ip + 1};\n")
-            elif op.typ == OpType.PUSH_MEM:
-                assert isinstance(op.operand, int)
-                f.write(f"    Node_{ip} [label=\"mem({op.operand})\"]\n")
-                f.write(f"    Node_{ip} -> Node_{ip + 1};\n")
-            elif op.typ == OpType.PUSH_LOCAL_MEM:
-                assert isinstance(op.operand, int)
-                f.write(f"    Node_{ip} [label=\"local_mem({op.operand})\"]\n")
-                f.write(f"    Node_{ip} -> Node_{ip + 1};\n")
-            elif op.typ in [OpType.IF, OpType.IFSTAR]:
-                assert isinstance(op.operand, OpAddr), f"{op.operand}"
-                f.write(f"    Node_{ip} [shape=record label=if];\n")
-                f.write(f"    Node_{ip} -> Node_{ip + 1} [label=true];\n")
-                f.write(f"    Node_{ip} -> Node_{op.operand} [label=false style=dashed];\n")
-            elif op.typ == OpType.WHILE:
-                f.write(f"    Node_{ip} [shape=record label=while];\n")
-                f.write(f"    Node_{ip} -> Node_{ip + 1};\n")
-            elif op.typ == OpType.DO:
-                assert isinstance(op.operand, OpAddr)
-                f.write(f"    Node_{ip} [shape=record label=do];\n")
-                f.write(f"    Node_{ip} -> Node_{ip + 1} [label=true];\n")
-                f.write(f"    Node_{ip} -> Node_{op.operand} [label=false style=dashed];\n")
-            elif op.typ == OpType.ELSE:
-                assert isinstance(op.operand, OpAddr)
-                f.write(f"    Node_{ip} [shape=record label=else];\n")
-                f.write(f"    Node_{ip} -> Node_{op.operand};\n")
-            elif op.typ == OpType.END:
-                assert isinstance(op.operand, OpAddr)
-                f.write(f"    Node_{ip} [shape=record label=end];\n")
-                f.write(f"    Node_{ip} -> Node_{op.operand};\n")
-            elif op.typ == OpType.SKIP_PROC:
-                assert isinstance(op.operand, OpAddr)
-                f.write(f"    Node_{ip} [shape=record label=skip_proc];\n")
-                f.write(f"    Node_{ip} -> Node_{op.operand};\n")
-            elif op.typ == OpType.PREP_PROC:
-                f.write(f"    Node_{ip} [shape=record label=prep_proc];\n")
-                f.write(f"    Node_{ip} -> Node_{ip + 1};\n")
-            elif op.typ == OpType.RET:
-                f.write(f"    Node_{ip} [shape=record label=ret];\n")
-            elif op.typ == OpType.CALL:
-                assert isinstance(op.operand, OpAddr)
-                f.write(f"    Node_{ip} [shape=record label=call];\n")
-                f.write(f"    Node_{ip} -> Node_{op.operand};\n")
-                f.write(f"    Node_{ip} -> Node_{ip + 1};\n")
-            else:
-                assert False, f"unimplemented operation {op.typ}"
-        f.write(f"    Node_{len(program.ops)} [label=halt];\n")
-        f.write("}\n")
-
 def usage(compiler_name: str):
     print("Usage: %s [OPTIONS] <SUBCOMMAND> [ARGS]" % compiler_name)
     print("  OPTIONS:")
@@ -1738,7 +1664,6 @@ def usage(compiler_name: str):
     print("        -r                  Run the program after successful compilation")
     print("        -o <file|dir>       Customize the output path")
     print("        -s                  Silent mode. Don't print any info about compilation phases.")
-    print("        -cf                 Dump Control Flow graph of the program in a dot format.")
     print("    check <file>          Just compile to IR and type-check without generating asm or executing.")
     print("    help                  Print this help to stdout and exit with 0 code")
 
@@ -1791,7 +1716,6 @@ if __name__ == '__main__' and '__file__' in globals():
             type_check_program(program, {proc.addr: proc for proc in parse_context.procs.values()})
     elif subcommand == "com":
         silent = False
-        control_flow = False
         run = False
         output_path = None
         while len(argv) > 0:
@@ -1806,8 +1730,6 @@ if __name__ == '__main__' and '__file__' in globals():
                     print("[ERROR] no argument is provided for parameter -o", file=sys.stderr)
                     exit(1)
                 output_path, *argv = argv
-            elif arg == '-cf':
-                control_flow = True
             else:
                 program_path = arg
                 break
@@ -1845,12 +1767,6 @@ if __name__ == '__main__' and '__file__' in globals():
         parse_context = ParseContext()
         parse_program_from_file(parse_context, program_path, include_paths);
         program = Program(ops=parse_context.ops, memory_capacity=parse_context.memory_capacity)
-        if control_flow:
-            dot_path = basepath + ".dot"
-            if not silent:
-                print(f"[INFO] Generating {dot_path}")
-            generate_control_flow_graph_as_dot_file(program, dot_path)
-            cmd_call_echoed(["dot", "-Tsvg", "-O", dot_path], silent)
         if not unsafe:
             type_check_program(program, {proc.addr: proc for proc in parse_context.procs.values()})
         if not silent:
