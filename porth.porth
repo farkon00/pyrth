@@ -1,4 +1,4 @@
-// In progress rewrite of ./porth.py in Porth
+// The reference implementation of the Porth Programming language in itself
 
 include "std.porth"
 
