@@ -4,10 +4,7 @@
 :i returncode 1
 :b stdout 0
 
-:b stderr 377
-./tests/while-alter.porth:1:20: ERROR: Loops are not allowed to alter types and amount of elements on the stack between iterations!
-./tests/while-alter.porth:1:20: NOTE: -- Stack BEFORE a single iteration --
-./tests/while-alter.porth:1:20: NOTE: <empty>
-./tests/while-alter.porth:1:20: NOTE: -- Stack AFTER a single iteration --
+:b stderr 298
+./tests/while-alter.porth:1:1: ERROR: Unhandled data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations. Here are the elements currently on the stack:
 ./tests/while-alter.porth:2:3: NOTE: type `int`
 

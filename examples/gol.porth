@@ -155,8 +155,11 @@ proc main in
     swap_boards
 
     NULL delta_time 0 CLOCK_MONOTONIC clock_nanosleep drop
-    "\033[" puts ROWS putu "A" puts
-    "\033[" puts COLS putu "D" puts
+    // TODO: support for these kind of escape characters
+    // "\033[" puts ROWS putu "A" puts
+    // "\033[" puts COLS putu "D" puts
+    27 putch "[" puts ROWS putu "A" puts
+    27 putch "[" puts COLS putu "D" puts
   end
 end
 

@@ -2,7 +2,7 @@
 
 **WARNING! THIS LANGUAGE IS A WORK IN PROGRESS! ANYTHING CAN CHANGE AT ANY MOMENT WITHOUT ANY NOTICE! USE THIS LANGUAGE AT YOUR OWN RISK!**
 
-It's like [Forth](https://en.wikipedia.org/wiki/Forth_(programming_language)) but written in [Python](https://www.python.org/). But I don't actually know for sure since I never programmed in Forth, I only heard that it's some sort of stack-based programming language. Porth is also stack-based programming language. Which makes it just like Forth am I rite?
+It's like [Forth](https://en.wikipedia.org/wiki/Forth_(programming_language)) but written in [Porth](https://gitlab.com/tsoding/porth). But I don't actually know for sure since I never programmed in Forth, I only heard that it's some sort of stack-based programming language. Porth is also stack-based programming language. Which makes it just like Forth am I rite?
 
 Porth is planned to be
 - [x] Compiled
@@ -10,7 +10,8 @@ Porth is planned to be
 - [x] Stack-based (just like Forth)
 - [x] [Turing-complete](./examples/rule110.porth)
 - [x] Statically typed (the type checking is similar to [WASM validation](https://binji.github.io/posts/webassembly-type-checking/))
-- [ ] Self-hosted (See [./porth.porth](./porth.porth) for the current progress)
+- [x] Self-hosted (See [./porth.porth](./porth.porth), it is actually written in itself)
+- [ ] More or else close in convenience to C
 - [ ] Optimized
 - [ ] Crossplatform
 
@@ -36,11 +37,35 @@ Simple program that prints numbers from 0 to 99 in an ascending order:
 include "std.porth"
 
 100 0 while 2dup > do
-    dup print 1 +
+  dup print 1 +
 end 2drop
 ```
 
 ## Quick Start
+
+### Bootstrapping
+
+Since Porth is self-hosted you need to bootstrap it first. There are some pre-compiled assembly files in [./bootstrap/] folder that you can use for that.
+
+#### FASM
+
+```console
+$ fasm -m 524288 ./bootstrap/porth-linux-x86_64.fasm
+$ chmod +x ./bootstrap/porth-linux-x86_64
+$ ./bootstrap/porth-linux-x86_64 com -t fasm-linux-x86_64 ./porth.porth
+$ mv -v output porth
+$ ./porth help
+```
+
+#### NASM
+
+```console
+$ nasm -felf64 ./bootstrap/porth-linux-x86_64.nasm
+$ ld -o ./bootstrap/porth-linux-x86_64 ./bootstrap/porth-linux-x86_64.o
+$ ./bootstrap/porth-linux-x86_64 com -t nasm-linux-x86_64 ./porth.porth
+$ mv -v output porth
+$ ./porth help
+```
 
 ### Compilation
 
@@ -49,11 +74,11 @@ Compilation generates assembly code, compiles it with [nasm](https://www.nasm.us
 ```console
 $ cat program.porth
 34 35 + print
-$ ./porth.py com program.porth
-[INFO] Generating ./program.asm
-[CMD] nasm -felf64 ./program.asm
-[CMD] ld -o ./program ./program.o
-$ ./program
+$ ./porth com program.porth
+[INFO] Generating ./output.asm
+[CMD] nasm -felf64 ./output.asm
+[CMD] ld -o ./output ./output.o
+$ ./output
 69
 ```
 
@@ -96,10 +121,10 @@ For more info see `./test.py help`
 ### Usage
 
 If you wanna use the Porth compiler separately from its codebase you only need two things:
-- [./porth.py](./porth.py) - the compiler itself,
+- `./porth` native executable - the compiler itself (see [Bootstrapping](#Bootstrapping) for more info on how to get it),
 - [./std/](./std/) - the standard library.
 
-By default the compiler searches files to include in `./` and `./std/`. You can add more search paths via the `-I` flag before the subcommand: `./porth.py -I <custom-path> com ...`. See `./porth.py help` for more info.
+By default the compiler searches files to include in `./` and `./std/`. ~~You can add more search paths via the `-I` flag before the subcommand: `./porth.py -I <custom-path> com ...`. See `./porth.py help` for more info.~~ (this is currently broken)
 
 ### Editor Support
 
@@ -115,7 +140,7 @@ This is what the language supports so far. **Since the language is a work in pro
 
 #### Integer
 
-Currently an integer is anything that is parsable by [int](https://docs.python.org/3/library/functions.html#int) function of Python. When the compiler encounters an integer it pushes it onto the data stack for processing by the relevant operations.
+Currently an integer is a sequence of decimal digits. Only unsigned integers are supported right now. When an integer is encountered it is pushed onto the data stack for processing by the relevant operations.
 
 Example:
 
@@ -127,7 +152,11 @@ The code above pushes 10 and 20 onto the data stack and sums them up with `+` op
 
 #### String
 
-Currently a string is any sequence of bytes sandwiched between two `"`. No newlines inside of the strings are allowed. Escaping is done by [unicode_escape codec](https://docs.python.org/3/library/codecs.html#text-encodings) of Python. No way to escape `"` themselves for now. No special support for Unicode is provided right now too.
+Currently a string is any sequence of bytes sandwiched between two `"`. No newlines inside of the strings are allowed. No special support for Unicode is provided right now. You can escape only these things for now:
+- `\n` - new line
+- `\\` - back slash
+- `\"` - double quote
+- `\'` - single quote
 
 When the compiler encounters a string:
 1. the size of the string in bytes is pushed onto the data stack,
@@ -161,7 +190,7 @@ include "std.porth"
 //                    |
 //                    postfix that indicates a C-style string
 
-if dup 0 < do
+dup 0 < if
     "ERROR: could not open the file\n" eputs
     1 exit
 else
@@ -175,7 +204,7 @@ Here we are using [openat(2)](https://linux.die.net/man/2/openat) Linux syscall 
 
 #### Character
 
-Currently a character is a single byte sandwiched between two `'`. Escaping is done by [unicode_escape codec](https://docs.python.org/3/library/codecs.html#text-encodings) of Python. No way to escape `'` themselves for now. No special support for Unicode is provided right now too.
+Currently a character is a single byte sandwiched between two `'`. Escaping works the same as in regular strings.
 
 When compiler encounters a character it pushes its value as an integer onto the stack.
 
@@ -235,7 +264,6 @@ This program pushes integer `69` onto the stack (since the ASCII code of letter 
 
 | Name         | Signature                      | Description                                                                                    |
 | ---          | ---                            | ---                                                                                            |
-| `mem`        | `-- [mem: ptr]`                | pushes the address of the beginning of the memory where you can read and write onto the stack. |
 | `!8`         | `[byte: int] [place: ptr] -- ` | store a given byte at the address on the stack.                                                |
 | `@8`         | `[place: ptr] -- [byte: int]`  | load a byte from the address on the stack.                                                     |
 | `!16`        | `[byte: int] [place: ptr] --`  | store an 2-byte word at the address on the stack.                                              |
@@ -329,6 +357,21 @@ proc seq int in
 end
 ```
 
+#### Inline Procedures
+
+```porth
+inline proc ptr+
+  ptr int
+  --
+  ptr
+in
+  swap cast(int)
+  swap cast(int)
+  +
+  cast(ptr)
+end
+```
+
 ### Constants
 
 <!-- TODO: Document Constants Properly -->
@@ -336,7 +379,7 @@ end
 ```porth
 const N 69 end
 const M 420 end
-const K M N / end
+const K M N + end
 ```
 
 ### Memory
@@ -367,7 +410,7 @@ N buffer puts
 ```porth
 include "std.porth"
 
-proc fib // n --
+proc fib int in
   memory a sizeof(u64) end
   memory b sizeof(u64) end
 

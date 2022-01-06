@@ -4,7 +4,7 @@
 :i returncode 1
 :b stdout 0
 
-:b stderr 119
-./tests/if-else-fail.porth:1:31: ERROR: Unhandled data on the stack:
+:b stderr 256
+./tests/if-else-fail.porth:1:31: ERROR: Unhandled data at the end of the program. At the end of the program execution there should be no elements on the stack. Here are the elements currently on the stack:
 ./tests/if-else-fail.porth:1:31: NOTE: type `int`
 

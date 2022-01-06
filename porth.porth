@@ -362,6 +362,8 @@ in
       dup Lexer.content ptr+ ?str-empty lnot
     else
       dup Lexer.line ptr+
+      // TODO: `69//` is recognized as a single word
+      // And not a number plus a comment
       "//" rot @Str str-starts-with
     end
   do dup lexer-next-line end
@@ -758,6 +760,9 @@ end
 /// BEGIN Op //////////////////////////////
 /// "Op" is a single operation within the Porth's Intermediate Representation (IR):
 /// https://en.wikipedia.org/wiki/Intermediate_representation
+
+// TODO: make conditional and unconditional jumps jump by relative address
+// This will make the code more relocatable which will make it easily inlinable
 assert "Exhaustive push IR instructions definition for data types" COUNT_DATATYPES 3 = end
 const OP_START           1 offset end
 const OP_PUSH_INT        1 offset end
@@ -900,6 +905,8 @@ const Const.loc   sizeof(Loc) offset end
 const Const.value sizeof(u64) offset end
 const Const.type  sizeof(u64) offset end
 const sizeof(Const) reset end
+
+// TODO: forbid constant definition inside of proc
 
 const CONST_CAP 1024 end
 memory consts sizeof(Const) CONST_CAP * end
@@ -2758,6 +2765,10 @@ in
           dup Proc.inlinable ptr+ @bool if
             current-proc
               over over ptr= if
+                // TODO: inline recursion prevention mechanism does not detect mutual recursion
+                // Which is fine for now cause we do not even support mutual recursion.
+                // But when we do, this might bite us in the ass. Which it will I'm 100% sure.
+                // So this TODO is kinda pointless. But let's keep it in here just in case.
                 token Token.loc ptr+                           eputloc
                 ": ERROR: no recursion in inline procedures\n" eputs
                 1 exit
@@ -2773,6 +2784,8 @@ in
             push-op
           end
         else drop dup @Str local-memories-lookup dup NULL ptr!= if*
+          // TODO: local memory regions can shadow the global ones
+          // Do we wanna warn the user about that?
           OP_PUSH_LOCAL_MEM
           swap Memory.offset ptr+ @64
           token
