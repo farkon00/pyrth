@@ -121,7 +121,7 @@ For more info see `./test.py help`
 ### Usage
 
 If you wanna use the Porth compiler separately from its codebase you only need two things:
-- `./porth` native executable - the compiler itself (see [Bootstrapping](#Bootstrapping) for more info on how to get it),
+- `./porth` native executable - the compiler itself (see [Bootstrapping](#bootstrapping) for more info on how to get it),
 - [./std/](./std/) - the standard library.
 
 By default the compiler searches files to include in `./` and `./std/`. ~~You can add more search paths via the `-I` flag before the subcommand: `./porth.py -I <custom-path> com ...`. See `./porth.py help` for more info.~~ (this is currently broken)
