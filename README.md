@@ -45,7 +45,7 @@ end 2drop
 
 ### Bootstrapping
 
-Since Porth is self-hosted you need to bootstrap it first. There are some pre-compiled assembly files in [./bootstrap/] folder that you can use for that.
+Since Porth is self-hosted you need to bootstrap it first. There are some pre-compiled assembly files in [./bootstrap/](./bootstrap/) folder that you can use for that.
 
 #### FASM
 
