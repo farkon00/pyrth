@@ -1,3 +1,4 @@
+// In progress rewrite of test.py in porth
 include "std.porth"
 
 proc run-file
