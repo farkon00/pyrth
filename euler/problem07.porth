@@ -22,13 +22,15 @@ proc add-prime int in
   primes-count inc64
 end
 
-2 add-prime
-
-3 while primes-count @64 N < do
-  dup is-prime if
-    dup add-prime
-  end
-  1 +
-end drop
-
-primes N 1 - 8 * ptr+ @64 print
+proc main in
+  2 add-prime
+  
+  3 while primes-count @64 N < do
+    dup is-prime if
+      dup add-prime
+    end
+    1 +
+  end drop
+  
+  primes N 1 - 8 * ptr+ @64 print
+end

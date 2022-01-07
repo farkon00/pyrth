@@ -162,5 +162,3 @@ proc main in
     27 putch "[" puts COLS putu "D" puts
   end
 end
-
-main

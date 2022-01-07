@@ -36,9 +36,9 @@ proc generate-pixels in
 end
 
 memory file-path sizeof(ptr) end
-"thumbnail.ppm"c file-path !ptr
 
 proc main in
+  "thumbnail.ppm"c file-path !ptr
   generate-pixels
 
   memory fd sizeof(u64) end
@@ -90,5 +90,3 @@ proc main in
 
   fd @64 close drop
 end
-
-main

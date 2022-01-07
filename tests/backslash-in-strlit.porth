@@ -1,3 +1,5 @@
 include "std.porth"
 
-"\\" puts
+proc main in
+  "\\" puts
+end

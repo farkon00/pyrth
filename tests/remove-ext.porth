@@ -12,9 +12,11 @@ in
   "\n"                 puts
 end
 
-"/hello/world.porth" check-remove-ext
-"/hello/world"       check-remove-ext
-"/hello.porth/world" check-remove-ext
-"hello.porth"        check-remove-ext
-"/"                  check-remove-ext
-0 NULL               check-remove-ext
+proc main in
+  "/hello/world.porth" check-remove-ext
+  "/hello/world"       check-remove-ext
+  "/hello.porth/world" check-remove-ext
+  "hello.porth"        check-remove-ext
+  "/"                  check-remove-ext
+  0 NULL               check-remove-ext
+end

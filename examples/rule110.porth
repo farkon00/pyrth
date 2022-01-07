@@ -7,34 +7,36 @@ const N 100 end
 memory row N end
 memory display N 1 + end
 
-row N 2 - ptr+ 1 swap !8
-display N ptr+ 10 swap !8
-
-0 while dup N 2 - < do
-   0 while dup N < do
-      dup row +ptr @8 1 = if
-         dup display +ptr '*' swap !8
-      else
-         dup display +ptr ' ' swap !8
-      end
-      1 +
-   end drop
-
-   N 1 + display puts
-
-   row     @8 1 shl
-   row 1 ptr+ @8
-   or
-
-   1 while dup N 2 - < do
-      swap 1 shl 7 and
-      over row +ptr 1 ptr+ @8 or
-      over over 110 swap shr 1 and
-      swap row +ptr !8
-      swap
-
-      1 +
-   end drop drop
-
-   1 +
-end drop
+proc main in
+  row N 2 - ptr+ 1 swap !8
+  display N ptr+ 10 swap !8
+  
+  0 while dup N 2 - < do
+     0 while dup N < do
+        dup row +ptr @8 1 = if
+           dup display +ptr '*' swap !8
+        else
+           dup display +ptr ' ' swap !8
+        end
+        1 +
+     end drop
+  
+     N 1 + display puts
+  
+     row     @8 1 shl
+     row 1 ptr+ @8
+     or
+  
+     1 while dup N 2 - < do
+        swap 1 shl 7 and
+        over row +ptr 1 ptr+ @8 or
+        over over 110 swap shr 1 and
+        swap row +ptr !8
+        swap
+  
+        1 +
+     end drop drop
+  
+     1 +
+  end drop
+end

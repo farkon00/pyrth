@@ -9,12 +9,13 @@ proc test-try-parse-int int ptr in
   end
 end
 
-// // TODO: "./tests/try-parse-int.asm:2291: warning: no operand for data declaration"
-// // TODO: try-parse-int does not fail on empty list
-// ""      test-try-parse-int
-"1234"  test-try-parse-int
-"abcd"  test-try-parse-int
-
-// TODO: try-parse-int does not parse negative numbers
-// "-1234" test-try-parse-int
-
+proc main in
+  // // TODO: "./tests/try-parse-int.asm:2291: warning: no operand for data declaration"
+  // // TODO: try-parse-int does not fail on empty list
+  // ""      test-try-parse-int
+  "1234"  test-try-parse-int
+  "abcd"  test-try-parse-int
+  
+  // TODO: try-parse-int does not parse negative numbers
+  // "-1234" test-try-parse-int
+end

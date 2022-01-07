@@ -20,26 +20,28 @@ proc cat_fd in
   drop
 end
 
-argc 2 < if
-  stdin !fd
-  cat_fd
-else
-  1 while dup argc < do
-    dup nth_argv !file_path_cstr
-
-    0 O_RDONLY @file_path_cstr AT_FDCWD openat
-
-    dup 0 < if
-      "ERROR: could not open file " eputs
-      @file_path_cstr cstr-to-str eputs
-      "\n" eputs
-      drop
-    else
-      fd !64
-      cat_fd
-      fd @64 close drop
-    end
-
-    1 +
-  end drop
+proc main in
+  argc 2 < if
+    stdin !fd
+    cat_fd
+  else
+    1 while dup argc < do
+      dup nth_argv !file_path_cstr
+  
+      0 O_RDONLY @file_path_cstr AT_FDCWD openat
+  
+      dup 0 < if
+        "ERROR: could not open file " eputs
+        @file_path_cstr cstr-to-str eputs
+        "\n" eputs
+        drop
+      else
+        fd !64
+        cat_fd
+        fd @64 close drop
+      end
+  
+      1 +
+    end drop
+  end
 end

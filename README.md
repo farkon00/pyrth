@@ -28,7 +28,9 @@ Hello, World:
 ```porth
 include "std.porth"
 
-"Hello, World\n" puts
+proc main in
+  "Hello, World\n" puts
+end
 ```
 
 Simple program that prints numbers from 0 to 99 in an ascending order:
@@ -36,9 +38,11 @@ Simple program that prints numbers from 0 to 99 in an ascending order:
 ```porth
 include "std.porth"
 
-100 0 while 2dup > do
-  dup print 1 +
-end 2drop
+proc main in
+  100 0 while 2dup > do
+    dup print 1 +
+  end drop drop 
+end
 ```
 
 ## Quick Start
@@ -73,7 +77,9 @@ Compilation generates assembly code, compiles it with [nasm](https://www.nasm.us
 
 ```console
 $ cat program.porth
-34 35 + print
+proc main in
+  34 35 + print
+end
 $ ./porth com program.porth
 [INFO] Generating ./output.asm
 [CMD] nasm -felf64 ./output.asm
