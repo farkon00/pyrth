@@ -1177,31 +1177,6 @@ in
   end
 end
 
-proc dirname
-  int ptr
-  --
-  int ptr
-in
-  while
-    over over swap
-    dup 0 > if
-      1 - ptr+ @8 '/' !=
-    else
-      drop drop false
-    end
-  do
-    swap 1 - swap
-  end
-
-  swap
-    dup 0 > if
-      over over 1 - ptr+ @8 '/' = if
-        1 -
-      end
-    end
-  swap
-end
-
 proc str-rfind
   int ptr
   int
@@ -1232,6 +1207,20 @@ in
   end
 end
 
+proc dirname
+  int ptr
+  --
+  int ptr
+in
+  memory path sizeof(Str) end
+  path !Str
+
+  path @Str '/' str-rfind dup 0 < if drop 0 end
+  path !Str.count
+
+  path @Str
+end
+
 proc putch
   int
 in
@@ -1259,7 +1248,7 @@ in
 end
 
 // # Run external command
-// 
+//
 // Usage example:
 // ```porth
 // tmp-end
@@ -1271,7 +1260,7 @@ end
 // ```
 //
 // This runs external command `echo uwu`
-proc cmd-echoed 
+proc cmd-echoed
   ptr   // array of cstrs reprets the command we are running
   bool  // echo the command to stdout
 in
