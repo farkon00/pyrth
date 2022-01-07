@@ -2584,6 +2584,8 @@ in
             1 exit
           end
 
+          // TODO: ignore the files that were already included
+
           fpb-end
           "./"                        fpb-append drop
           token Token.value ptr+ @Str fpb-append drop
