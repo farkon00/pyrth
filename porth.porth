@@ -764,7 +764,6 @@ end
 // TODO: make conditional and unconditional jumps jump by relative address
 // This will make the code more relocatable which will make it easily inlinable
 assert "Exhaustive push IR instructions definition for data types" COUNT_DATATYPES 3 = end
-const OP_START           1 offset end
 const OP_PUSH_INT        1 offset end
 const OP_PUSH_BOOL       1 offset end
 const OP_PUSH_PTR        1 offset end
@@ -790,9 +789,8 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 19 = end
-       dup OP_START           =  if  "OP_START"
-  else dup OP_PUSH_INT        =  if* "OP_PUSH_INT"
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 18 = end
+       dup OP_PUSH_INT        =  if  "OP_PUSH_INT"
   else dup OP_PUSH_BOOL       =  if* "OP_PUSH_BOOL"
   else dup OP_PUSH_PTR        =  if* "OP_PUSH_PTR"
   else dup OP_PUSH_GLOBAL_MEM =  if* "OP_PUSH_GLOBAL_MEM"
@@ -1310,14 +1308,13 @@ in
 
   dup sizeof(Op) * ops +ptr
 
-  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 19 = end
+  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 18 = end
 
   "addr_" out-fd @64 fputs
   over    out-fd @64 fputu
   ":\n"   out-fd @64 fputs
 
-       dup Op.type ptr+ @64 OP_START = if
-  else dup Op.type ptr+ @64 OP_PUSH_INT = if*
+       dup Op.type ptr+ @64 OP_PUSH_INT = if
      "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
      "    push rax\n"       out-fd @64 fputs
   else dup Op.type ptr+ @64 OP_PUSH_BOOL = if*
@@ -2759,7 +2756,7 @@ in
       end
 
       token Token.value ptr+ // token.value
-        assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 19 = end
+        assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 18 = end
         dup @Str intrinsic-by-name if
           OP_INTRINSIC swap token push-op
         else drop dup @Str const-lookup dup NULL ptr!= if*
@@ -2994,7 +2991,6 @@ proc compile-program-into-ops ptr in
   sizeof(Token) 0 empty-token memset drop
 
   timeit/from-here
-    OP_START 0 empty-token push-op
     0 compile-file-into-ops
   "[INFO] Compilation" silent @bool timeit/to-here
 end
@@ -3327,12 +3323,9 @@ in
       op
       memcpy drop
 
-      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 19 = end
+      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 18 = end
 
-      op Op.type ptr+ @int OP_START = if
-        ip inc64
-        true // continue
-      else op Op.type ptr+ @int OP_PUSH_INT = if*
+      op Op.type ptr+ @int OP_PUSH_INT = if
         DATATYPE_INT
         op Op.token ptr+ Token.loc ptr+
         stack
@@ -3798,10 +3791,7 @@ in
     outs  TypeStack.top ptr+ @ptr TypeFrame.type ptr+ @int
     != if
       start-ip @int sizeof(Op) * ops +ptr
-        dup Op.type ptr+ @int OP_START = if
-          here eputs ": unreachable. You can't have unexpected data on the stack at the end of the program because there should be no data at the end of the program" eputs
-          69 exit
-        else dup Op.type ptr+ @int OP_WHILE = if*
+        dup Op.type ptr+ @int OP_WHILE = if
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
             ": ERROR: Unexpected data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations.\n" eputs
@@ -3842,10 +3832,7 @@ in
   outs  TypeStack.count ptr+ @int
     over over > if
       start-ip @int sizeof(Op) * ops +ptr
-        dup Op.type ptr+ @int OP_START = if
-          stack TypeStack.top ptr+ @ptr TypeFrame.loc ptr+ eputloc
-          ": ERROR: Unhandled data at the end of the program. At the end of the program execution there should be no elements on the stack. Here are the elements currently on the stack:\n" eputs
-        else dup Op.type ptr+ @int OP_WHILE = if*
+        dup Op.type ptr+ @int OP_WHILE = if
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
             ": ERROR: Unhandled data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations. Here are the elements currently on the stack:\n" eputs
@@ -3868,10 +3855,7 @@ in
 
     over over < if
       start-ip @int sizeof(Op) * ops +ptr
-        dup Op.type ptr+ @int OP_START = if
-          here eputs ": unreachable. You can't have insufficient data on the stack at the end of the program because there should be no data at the end of the program" eputs
-          69 exit
-        else dup Op.type ptr+ @int OP_WHILE = if*
+        dup Op.type ptr+ @int OP_WHILE = if
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
             ": ERROR: Insufficient data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations. Here are the elements currently on the stack:\n" eputs
