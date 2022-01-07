@@ -1681,11 +1681,6 @@ in
   "format ELF64 executable 3\n"            out-fd @64 fputs
   "segment readable executable\n"          out-fd @64 fputs
   out-fd @64 generate-print-intel-linux-x86_64
-  "entry start\n"                          out-fd @64 fputs
-  "start:\n"                               out-fd @64 fputs
-  "    mov [args_ptr], rsp\n"              out-fd @64 fputs
-  "    mov rax, ret_stack_end\n"           out-fd @64 fputs
-  "    mov [ret_stack_rsp], rax\n"         out-fd @64 fputs
 
   0 while dup ops-count @64 < do
     dup out-fd @64 generate-op-intel-linux-x86_64
@@ -1695,6 +1690,23 @@ in
   "addr_"    out-fd @64 fputs
   ops-count @64 out-fd @64 fputu
   ":\n"      out-fd @64 fputs
+
+  "entry start\n"                          out-fd @64 fputs
+  "start:\n"                               out-fd @64 fputs
+  "    mov [args_ptr], rsp\n"              out-fd @64 fputs
+  "    mov rax, ret_stack_end\n"           out-fd @64 fputs
+  "    mov [ret_stack_rsp], rax\n"         out-fd @64 fputs
+
+  "main" proc-lookup-by-name
+    dup NULL ptr= if
+      "ERROR: `main` function was not provided\n" eputs
+      1 exit
+    end
+
+    "    call addr_"        out-fd @64 fputs
+    dup Proc.addr ptr+ @int out-fd @64 fputu
+    "\n"                    out-fd @64 fputs
+  drop
 
   "    mov rax, 60\n"        out-fd @64 fputs
   "    mov rdi, 0\n"         out-fd @64 fputs
@@ -1748,12 +1760,6 @@ in
   "BITS 64\n"                              out-fd @64 fputs
   "segment .text\n"                        out-fd @64 fputs
   out-fd @64 generate-print-intel-linux-x86_64
-  "global _start\n"                        out-fd @64 fputs
-  "_start:\n"                              out-fd @64 fputs
-  "    mov [args_ptr], rsp\n"              out-fd @64 fputs
-  "    mov rax, ret_stack_end\n"           out-fd @64 fputs
-  "    mov [ret_stack_rsp], rax\n"         out-fd @64 fputs
-
   0 while dup ops-count @64 < do
     dup out-fd @64 generate-op-intel-linux-x86_64
     1 +
@@ -1762,6 +1768,22 @@ in
   "addr_"    out-fd @64 fputs
   ops-count @64 out-fd @64 fputu
   ":\n"      out-fd @64 fputs
+  "global _start\n"                        out-fd @64 fputs
+  "_start:\n"                              out-fd @64 fputs
+  "    mov [args_ptr], rsp\n"              out-fd @64 fputs
+  "    mov rax, ret_stack_end\n"           out-fd @64 fputs
+  "    mov [ret_stack_rsp], rax\n"         out-fd @64 fputs
+
+  "main" proc-lookup-by-name
+    dup NULL ptr= if
+      "ERROR: `main` function was not provided\n" eputs
+      1 exit
+    end
+
+    "    call addr_"        out-fd @64 fputs
+    dup Proc.addr ptr+ @int out-fd @64 fputu
+    "\n"                    out-fd @64 fputs
+  drop
 
   "    mov rax, 60\n"        out-fd @64 fputs
   "    mov rdi, 0\n"         out-fd @64 fputs
@@ -2419,6 +2441,14 @@ in
     token Token.type ptr+ @64 // token.type
 
     dup TOKEN_INT = if
+      inside-proc @bool lnot if
+        token Token.loc ptr+                                     eputloc
+        ": ERROR: "                                              eputs
+        token Token.type ptr+ @int HUMAN_PLURAL human-token-type eputs
+        " are not allowed at the top level of the program\n"     eputs
+        1 exit
+      end
+
       OP_PUSH_INT
       token Token.value ptr+ @64
       token
@@ -2742,6 +2772,14 @@ in
         end
       drop
     else dup TOKEN_WORD = if*
+      inside-proc @bool lnot if
+        token Token.loc ptr+                                     eputloc
+        ": ERROR: "                                              eputs
+        token Token.type ptr+ @int HUMAN_PLURAL human-token-type eputs
+        " are not allowed at the top level of the program\n"     eputs
+        1 exit
+      end
+
       token Token.value ptr+ // token.value
         assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 20 = end
         dup @Str intrinsic-by-name if
@@ -2806,16 +2844,40 @@ in
         end
       drop // token.value
     else dup TOKEN_STR = if*
+      inside-proc @bool lnot if
+        token Token.loc ptr+                                     eputloc
+        ": ERROR: "                                              eputs
+        token Token.type ptr+ @int HUMAN_PLURAL human-token-type eputs
+        " are not allowed at the top level of the program\n"     eputs
+        1 exit
+      end
+
       OP_PUSH_STR
       token Token.value ptr+ @Str strlit-define
       token
       push-op
     else dup TOKEN_CSTR = if*
+      inside-proc @bool lnot if
+        token Token.loc ptr+                                     eputloc
+        ": ERROR: "                                              eputs
+        token Token.type ptr+ @int HUMAN_PLURAL human-token-type eputs
+        " are not allowed at the top level of the program\n"     eputs
+        1 exit
+      end
+
       OP_PUSH_CSTR
       token Token.value ptr+ @Str strlit-define
       token
       push-op
     else dup TOKEN_CHAR = if*
+      inside-proc @bool lnot if
+        token Token.loc ptr+                                     eputloc
+        ": ERROR: "                                              eputs
+        token Token.type ptr+ @int HUMAN_PLURAL human-token-type eputs
+        " are not allowed at the top level of the program\n"     eputs
+        1 exit
+      end
+
       OP_PUSH_INT
       token Token.value ptr+ @int
       token
@@ -3963,9 +4025,10 @@ proc target-by-name int ptr -- int bool in
 end
 
 memory args sizeof(ptr) end
-argv args !ptr
 
 proc main in
+  argv args !ptr
+
   memory program sizeof(ptr) end
   args @@ptr program !ptr
 
@@ -4047,7 +4110,12 @@ proc main in
 
     file-path-cstr @ptr NULL ptr= if
       program @ptr stderr usage
-      "[ERROR] no input file is provided for the compilation\n" eputs
+      "[ERROR] no input file is provided for the compilation.\n" eputs
+      1 exit
+    end
+
+    args @@ptr NULL ptr!= if
+      "[ERROR]: compiling several files is not supported yet. Make sure to put all the compilation flags before the compiled file\n" eputs
       1 exit
     end
 
@@ -4152,4 +4220,4 @@ proc main in
   end
 end
 
-main
+//main
