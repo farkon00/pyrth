@@ -5,5 +5,5 @@
 :b stdout 0
 
 :b stderr 110
-./tests/if-else-less-fail.porth:1:24: ERROR: Not enough arguments provided for `print`. Expected 1 but got 0.
+./tests/if-else-less-fail.porth:2:26: ERROR: Not enough arguments provided for `print`. Expected 1 but got 0.
 

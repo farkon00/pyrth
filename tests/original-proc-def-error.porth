@@ -8,4 +8,6 @@ proc hello in
   "Foo, Bar"
 end
 
-hello
+proc main in
+  hello
+end

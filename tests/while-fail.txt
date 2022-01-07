@@ -5,6 +5,6 @@
 :b stdout 0
 
 :b stderr 296
-./tests/while-fail.porth:1:4: ERROR: Unhandled data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations. Here are the elements currently on the stack:
-./tests/while-fail.porth:1:1: NOTE: type `int`
+./tests/while-fail.porth:2:6: ERROR: Unhandled data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations. Here are the elements currently on the stack:
+./tests/while-fail.porth:2:3: NOTE: type `int`
 

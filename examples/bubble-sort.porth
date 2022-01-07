@@ -40,8 +40,10 @@ proc sort-xs in
   end
 end
 
-"-- Bubble Sort --\n" puts
-init-xs
-"Unsorted: " puts dump-xs "\n" puts
-sort-xs
-"Sorted:   " puts dump-xs "\n" puts
+proc main in
+  "-- Bubble Sort --\n" puts
+  init-xs
+  "Unsorted: " puts dump-xs "\n" puts
+  sort-xs
+  "Sorted:   " puts dump-xs "\n" puts
+end

@@ -4,9 +4,6 @@ proc check_less int int in
   < if "YES\n" else "NO\n" end puts
 end
 
-1 2 check_less
-2 1 check_less
-
 proc even_fibs in
   0 1 while over 1000000 < do
     over 2 mod 0 = if
@@ -17,6 +14,9 @@ proc even_fibs in
   drop drop
 end
 
-"------------------------------\n" puts
-
-even_fibs
+proc main in
+  1 2 check_less
+  2 1 check_less
+  "------------------------------\n" puts
+  even_fibs
+end

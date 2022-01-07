@@ -6,8 +6,10 @@ in
   over over puts " => " puts dirname puts "\n" puts
 end
 
-"hello/world"  check-dirname
-"hello/world/" check-dirname
-"hello"        check-dirname
-"/hello"       check-dirname
-"/"            check-dirname
+proc main in
+  "hello/world"  check-dirname
+  "hello/world/" check-dirname
+  "hello"        check-dirname
+  "/hello"       check-dirname
+  "/"            check-dirname
+end

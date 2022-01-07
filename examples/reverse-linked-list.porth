@@ -32,18 +32,20 @@ proc pop_node ptr -- int in
   dup @64 cast(ptr) @Node.prev swap !64
 end
 
-// initialize list_a
-0 while dup 5 < do
-  list_a over push_node
-  1 +
-end drop
-
-// reverse list_a into list_b
-while list_a @64 0 != do
-  list_a pop_node list_b swap push_node
-end
-
-// print list_b
-while list_b @64 0 != do
-  list_b pop_node print
+proc main in
+  // initialize list_a
+  0 while dup 5 < do
+    list_a over push_node
+    1 +
+  end drop
+  
+  // reverse list_a into list_b
+  while list_a @64 0 != do
+    list_a pop_node list_b swap push_node
+  end
+  
+  // print list_b
+  while list_b @64 0 != do
+    list_b pop_node print
+  end
 end

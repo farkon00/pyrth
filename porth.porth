@@ -4069,11 +4069,6 @@ proc main in
       1 exit
     end
 
-    args @@ptr NULL ptr!= if
-      "[ERROR]: compiling several files is not supported yet. Make sure to put all the compilation flags before the compiled file\n" eputs
-      1 exit
-    end
-
     file-path-cstr @ptr compile-program-into-ops
     unsafe @bool lnot if type-check-program end
 

@@ -1,1 +1,3 @@
-abcdefg
+proc main in
+  abcdefg
+end

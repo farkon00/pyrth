@@ -22,5 +22,7 @@ in
   end
 end
 
-"Hello, World" ',' check-str-rfind
-"Hello, World" '*' check-str-rfind
+proc main in
+  "Hello, World" ',' check-str-rfind
+  "Hello, World" '*' check-str-rfind
+end

@@ -13,4 +13,6 @@ assert "You have a weird week, buddy"
   COUNT_DAYS 8 =
 end
 
-COUNT_DAYS print
+proc main in
+  COUNT_DAYS print
+end

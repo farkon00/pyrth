@@ -2,15 +2,17 @@ include "std.porth"
 
 const N 100 end
 
-0 1 while dup N <= do
-  swap over dup * + swap
-  1 + 
-end drop
-
-0 1 while dup N <= do
-  swap over + swap
-  1 + 
-end drop
-dup *
-
-swap - print
+proc main in
+  0 1 while dup N <= do
+    swap over dup * + swap
+    1 + 
+  end drop
+  
+  0 1 while dup N <= do
+    swap over + swap
+    1 + 
+  end drop
+  dup *
+  
+  swap - print
+end

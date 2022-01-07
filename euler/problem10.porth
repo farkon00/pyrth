@@ -1,6 +1,5 @@
 include "std.porth"
 
-memory ans sizeof(u64) end
 memory primes-count sizeof(u64) end
 memory primes sizeof(u32) 1000000 * end
 
@@ -18,15 +17,18 @@ proc is-prime int -- bool in // [value: int] -> [ret: bool]
   sizeof(u32) * primes +ptr @32 dup * <
 end
 
-2 push-prime
-2 ans !64
-
-3 while dup 2000000 < do
-  dup is-prime if
-    dup push-prime
-    dup ans @64 + ans !64
-  end
-  1 +
-end drop
-
-ans @64 print
+proc main in
+  memory ans sizeof(u64) end
+  2 push-prime
+  2 ans !64
+  
+  3 while dup 2000000 < do
+    dup is-prime if
+      dup push-prime
+      dup ans @64 + ans !64
+    end
+    1 +
+  end drop
+  
+  ans @64 print
+end

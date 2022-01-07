@@ -7,8 +7,10 @@ proc fibs in
   end drop drop
 end
 
-fibs
-1
-"------------------------------\n" puts
-fibs
-drop
+proc main in
+  fibs
+  1
+  "------------------------------\n" puts
+  fibs
+  drop
+end
