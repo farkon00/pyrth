@@ -776,7 +776,6 @@ const OP_IF              1 offset end
 const OP_IFSTAR          1 offset end
 const OP_ELSE            1 offset end
 const OP_END             1 offset end
-const OP_SKIP_PROC       1 offset end
 const OP_PREP_PROC       1 offset end
 const OP_RET             1 offset end
 const OP_CALL            1 offset end
@@ -791,7 +790,7 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 20 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 19 = end
        dup OP_START           =  if  "OP_START"
   else dup OP_PUSH_INT        =  if* "OP_PUSH_INT"
   else dup OP_PUSH_BOOL       =  if* "OP_PUSH_BOOL"
@@ -804,7 +803,6 @@ in
   else dup OP_IFSTAR          =  if* "OP_IFSTAR"
   else dup OP_ELSE            =  if* "OP_ELSE"
   else dup OP_END             =  if* "OP_END"
-  else dup OP_SKIP_PROC       =  if* "OP_SKIP_PROC"
   else dup OP_PREP_PROC       =  if* "OP_PREP_PROC"
   else dup OP_RET             =  if* "OP_RET"
   else dup OP_CALL            =  if* "OP_CALL"
@@ -1312,7 +1310,7 @@ in
 
   dup sizeof(Op) * ops +ptr
 
-  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 20 = end
+  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 19 = end
 
   "addr_" out-fd @64 fputs
   over    out-fd @64 fputu
@@ -1373,10 +1371,6 @@ in
      "    pop rax\n"       out-fd @64 fputs
      "    test rax, rax\n" out-fd @64 fputs
      "    jz addr_" out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n" out-fd @64 fputs
-  else dup Op.type ptr+ @64 OP_SKIP_PROC = if*
-     "    jmp addr_"      out-fd @64 fputs
-     dup Op.operand ptr+ @64 out-fd @64 fputu
-     "\n"                 out-fd @64 fputs
   else dup Op.type ptr+ @64 OP_PREP_PROC = if*
      "    sub rsp, "      out-fd @64 fputs
      dup Op.operand ptr+ @64 out-fd @64 fputu
@@ -2352,9 +2346,6 @@ in
 
   sizeof(Str) token Token.value ptr+ prok Proc.name ptr+ memcpy drop
 
-  ops-count @64 parse-block-stack-push
-  OP_SKIP_PROC 0 token push-op
-
   ops-count @64
   dup prok Proc.addr ptr+ !64
       parse-block-stack-push
@@ -2554,15 +2545,7 @@ in
               1 exit
             end
 
-            parse-block-stack-pop
-            sizeof(Op) *
-            ops +ptr
-
-            dup Op.type ptr+ @64 OP_SKIP_PROC != if
-              here eputs ": Assertion failed: Expected OP_SKIP_PROC before OP_PREP_PROC\n" eputs
-              1 exit
-            end
-
+            // Compute the size of the procedure
             procs-count @int 1 - sizeof(Proc) * procs +ptr
               ops-count @int
               over Proc.addr ptr+ @int -
@@ -2576,13 +2559,8 @@ in
             token
             push-op
 
-            Op.operand ptr+ ops-count @64 swap !64
-
             local-memories-clean
             false inside-proc !bool
-          else dup Op.type ptr+ @64 OP_SKIP_PROC = if*
-            here eputs ": unreachable\n" eputs
-            1 exit
           else
             token Token.loc ptr+ eputloc ": ERROR: `end` can only close `if`, `if*`, `else`, `do`, or `proc` blocks\n" eputs
             dup Op.token ptr+ Token.loc ptr+ eputloc ": NOTE: found `" eputs dup Op.token ptr+ Token.text ptr+ @Str eputs "` instead\n" eputs
@@ -2781,7 +2759,7 @@ in
       end
 
       token Token.value ptr+ // token.value
-        assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 20 = end
+        assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 19 = end
         dup @Str intrinsic-by-name if
           OP_INTRINSIC swap token push-op
         else drop dup @Str const-lookup dup NULL ptr!= if*
@@ -3349,7 +3327,7 @@ in
       op
       memcpy drop
 
-      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 20 = end
+      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 19 = end
 
       op Op.type ptr+ @int OP_START = if
         ip inc64
@@ -3446,9 +3424,6 @@ in
         op Op.operand ptr+ @int ip !int
         true // continue
       else op Op.type ptr+ @int OP_END = if*
-        op Op.operand ptr+ @int ip !int
-        true // continue
-      else op Op.type ptr+ @int OP_SKIP_PROC = if*
         op Op.operand ptr+ @int ip !int
         true // continue
       else op Op.type ptr+ @int OP_PREP_PROC = if*
@@ -3939,10 +3914,6 @@ proc type-check-program in
 
     1 +
   end drop
-
-  memory empty-stack sizeof(TypeStack) end
-  sizeof(TypeStack) 0 empty-stack memset drop
-  empty-stack 0 empty-stack 0 type-check-program-from
 
   "[INFO] Type checking" silent @bool timeit/to-here
 end
