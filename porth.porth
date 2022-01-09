@@ -1690,7 +1690,7 @@ in
 
   "main" proc-lookup-by-name
     dup NULL ptr= if
-      "ERROR: `main` function was not provided\n" eputs
+      here eputs ": Assertion Failed: type checking phase did not check the existence of `main` procedure" eputs
       1 exit
     end
 
@@ -1767,7 +1767,7 @@ in
 
   "main" proc-lookup-by-name
     dup NULL ptr= if
-      "ERROR: `main` function was not provided\n" eputs
+      here eputs ": Assertion Failed: type checking phase did not check the existence of `main` procedure" eputs
       1 exit
     end
 
@@ -3885,6 +3885,25 @@ proc type-check-program in
   memory prok sizeof(ptr) end
 
   timeit/from-here
+
+  "main" proc-lookup-by-name
+    dup NULL ptr= if
+      "ERROR: `main` procedure was not provided\n" eputs
+      1 exit
+    end
+
+    dup Proc.ins ptr+ ?type-stack-empty lnot if
+      dup Proc.loc ptr+                                           eputloc
+      ": ERROR: `main` procedure must not accept any arguments\n" eputs
+      1 exit
+    end
+
+    dup Proc.outs ptr+ ?type-stack-empty lnot if
+      dup Proc.loc ptr+                                      eputloc
+      ": ERROR: `main` procedure must not return any data\n" eputs
+      1 exit
+    end
+  drop
 
   0 while dup procs-count @int < do
     dup sizeof(Proc) * procs +ptr
