@@ -794,6 +794,7 @@ in
   else dup OP_PUSH_BOOL       =  if* "OP_PUSH_BOOL"
   else dup OP_PUSH_PTR        =  if* "OP_PUSH_PTR"
   else dup OP_PUSH_GLOBAL_MEM =  if* "OP_PUSH_GLOBAL_MEM"
+  else dup OP_PUSH_LOCAL_MEM  =  if* "OP_PUSH_LOCAL_MEM"
   else dup OP_PUSH_STR        =  if* "OP_PUSH_STR"
   else dup OP_PUSH_CSTR       =  if* "OP_PUSH_CSTR"
   else dup OP_INTRINSIC       =  if* "OP_INTRINSIC"
