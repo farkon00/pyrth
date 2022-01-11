@@ -479,176 +479,11 @@ proc lex-file ptr in
 end
 /// END Lexer //////////////////////////////
 
-/// BEGIN Intrinsics //////////////////////////////
-/// Intrinsics are built-in function of the language with the hardcoded implementation.
-const INTRINSIC_PLUS      1 offset end
-const INTRINSIC_MINUS     1 offset end
-const INTRINSIC_MUL       1 offset end
-const INTRINSIC_DIVMOD    1 offset end
-const INTRINSIC_MAX       1 offset end
-const INTRINSIC_EQ        1 offset end
-const INTRINSIC_GT        1 offset end
-const INTRINSIC_LT        1 offset end
-const INTRINSIC_GE        1 offset end
-const INTRINSIC_LE        1 offset end
-const INTRINSIC_NE        1 offset end
-const INTRINSIC_SHR       1 offset end
-const INTRINSIC_SHL       1 offset end
-const INTRINSIC_OR        1 offset end
-const INTRINSIC_AND       1 offset end
-const INTRINSIC_NOT       1 offset end
-const INTRINSIC_PRINT     1 offset end
-const INTRINSIC_DUP       1 offset end
-const INTRINSIC_SWAP      1 offset end
-const INTRINSIC_DROP      1 offset end
-const INTRINSIC_OVER      1 offset end
-const INTRINSIC_ROT       1 offset end
-const INTRINSIC_LOAD8     1 offset end
-const INTRINSIC_STORE8    1 offset end
-const INTRINSIC_LOAD16    1 offset end
-const INTRINSIC_STORE16   1 offset end
-const INTRINSIC_LOAD32    1 offset end
-const INTRINSIC_STORE32   1 offset end
-const INTRINSIC_LOAD64    1 offset end
-const INTRINSIC_STORE64   1 offset end
-const INTRINSIC_CAST_PTR  1 offset end
-const INTRINSIC_CAST_INT  1 offset end
-const INTRINSIC_CAST_BOOL 1 offset end
-const INTRINSIC_ARGC      1 offset end
-const INTRINSIC_ARGV      1 offset end
-const INTRINSIC_ENVP      1 offset end
-const INTRINSIC_SYSCALL0  1 offset end
-const INTRINSIC_SYSCALL1  1 offset end
-const INTRINSIC_SYSCALL2  1 offset end
-const INTRINSIC_SYSCALL3  1 offset end
-const INTRINSIC_SYSCALL4  1 offset end
-const INTRINSIC_SYSCALL5  1 offset end
-const INTRINSIC_SYSCALL6  1 offset end
-const INTRINSIC_???       1 offset end
-const COUNT_INTRINSICS       reset end
-
-proc intrinsic-name
-  int // intrinsic
-  --
-  int ptr // name
-in
-  assert "Exhaustive handling of Intrinsics in intrinsic-name" COUNT_INTRINSICS 44 = end
-       dup INTRINSIC_PLUS      = if  drop "ptr+"
-  else dup INTRINSIC_MINUS     = if* drop "-"
-  else dup INTRINSIC_MUL       = if* drop "*"
-  else dup INTRINSIC_DIVMOD    = if* drop "divmod"
-  else dup INTRINSIC_MAX       = if* drop "max"
-  else dup INTRINSIC_PRINT     = if* drop "print"
-  else dup INTRINSIC_EQ        = if* drop "="
-  else dup INTRINSIC_GT        = if* drop ">"
-  else dup INTRINSIC_LT        = if* drop "<"
-  else dup INTRINSIC_GE        = if* drop ">="
-  else dup INTRINSIC_LE        = if* drop "<="
-  else dup INTRINSIC_NE        = if* drop "!="
-  else dup INTRINSIC_SHR       = if* drop "shr"
-  else dup INTRINSIC_SHL       = if* drop "shl"
-  else dup INTRINSIC_OR        = if* drop "or"
-  else dup INTRINSIC_AND       = if* drop "and"
-  else dup INTRINSIC_NOT       = if* drop "not"
-  else dup INTRINSIC_DUP       = if* drop "dup"
-  else dup INTRINSIC_SWAP      = if* drop "swap"
-  else dup INTRINSIC_DROP      = if* drop "drop"
-  else dup INTRINSIC_OVER      = if* drop "over"
-  else dup INTRINSIC_ROT       = if* drop "rot"
-  else dup INTRINSIC_STORE8    = if* drop "!8"
-  else dup INTRINSIC_LOAD8     = if* drop "@8"
-  else dup INTRINSIC_STORE16   = if* drop "!16"
-  else dup INTRINSIC_LOAD16    = if* drop "@16"
-  else dup INTRINSIC_STORE32   = if* drop "!32"
-  else dup INTRINSIC_LOAD32    = if* drop "@32"
-  else dup INTRINSIC_STORE64   = if* drop "!64"
-  else dup INTRINSIC_LOAD64    = if* drop "@64"
-  else dup INTRINSIC_CAST_PTR  = if* drop "cast(ptr)"
-  else dup INTRINSIC_CAST_INT  = if* drop "cast(int)"
-  else dup INTRINSIC_CAST_BOOL = if* drop "cast(bool)"
-  else dup INTRINSIC_ARGC      = if* drop "argc"
-  else dup INTRINSIC_ARGV      = if* drop "argv"
-  else dup INTRINSIC_ENVP      = if* drop "envp"
-  else dup INTRINSIC_SYSCALL0  = if* drop "syscall0"
-  else dup INTRINSIC_SYSCALL1  = if* drop "syscall1"
-  else dup INTRINSIC_SYSCALL2  = if* drop "syscall2"
-  else dup INTRINSIC_SYSCALL3  = if* drop "syscall3"
-  else dup INTRINSIC_SYSCALL4  = if* drop "syscall4"
-  else dup INTRINSIC_SYSCALL5  = if* drop "syscall5"
-  else dup INTRINSIC_SYSCALL6  = if* drop "syscall6"
-  else dup INTRINSIC_???       = if* drop "???"
-  else
-    drop 0 NULL
-    here eputs ": unreachable\n" eputs
-    1 exit
-  end
-end
-
-proc intrinsic-by-name
-  int ptr // name
-  --
-  int     // intrinsic
-  bool    // found
-in
-  memory name sizeof(Str) end
-  name !Str
-  true
-  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 44 = end
-       name @Str "+"          streq if  INTRINSIC_PLUS
-  else name @Str "-"          streq if* INTRINSIC_MINUS
-  else name @Str "*"          streq if* INTRINSIC_MUL
-  else name @Str "divmod"     streq if* INTRINSIC_DIVMOD
-  else name @Str "max"        streq if* INTRINSIC_MAX
-  else name @Str "print"      streq if* INTRINSIC_PRINT
-  else name @Str "="          streq if* INTRINSIC_EQ
-  else name @Str ">"          streq if* INTRINSIC_GT
-  else name @Str "<"          streq if* INTRINSIC_LT
-  else name @Str ">="         streq if* INTRINSIC_GE
-  else name @Str "<="         streq if* INTRINSIC_LE
-  else name @Str "!="         streq if* INTRINSIC_NE
-  else name @Str "shr"        streq if* INTRINSIC_SHR
-  else name @Str "shl"        streq if* INTRINSIC_SHL
-  else name @Str "or"         streq if* INTRINSIC_OR
-  else name @Str "and"        streq if* INTRINSIC_AND
-  else name @Str "not"        streq if* INTRINSIC_NOT
-  else name @Str "dup"        streq if* INTRINSIC_DUP
-  else name @Str "swap"       streq if* INTRINSIC_SWAP
-  else name @Str "drop"       streq if* INTRINSIC_DROP
-  else name @Str "over"       streq if* INTRINSIC_OVER
-  else name @Str "rot"        streq if* INTRINSIC_ROT
-  else name @Str "!8"         streq if* INTRINSIC_STORE8
-  else name @Str "@8"         streq if* INTRINSIC_LOAD8
-  else name @Str "!16"        streq if* INTRINSIC_STORE16
-  else name @Str "@16"        streq if* INTRINSIC_LOAD16
-  else name @Str "!32"        streq if* INTRINSIC_STORE32
-  else name @Str "@32"        streq if* INTRINSIC_LOAD32
-  else name @Str "!64"        streq if* INTRINSIC_STORE64
-  else name @Str "@64"        streq if* INTRINSIC_LOAD64
-  else name @Str "cast(ptr)"  streq if* INTRINSIC_CAST_PTR
-  else name @Str "cast(int)"  streq if* INTRINSIC_CAST_INT
-  else name @Str "cast(bool)" streq if* INTRINSIC_CAST_BOOL
-  else name @Str "argc"       streq if* INTRINSIC_ARGC
-  else name @Str "argv"       streq if* INTRINSIC_ARGV
-  else name @Str "envp"       streq if* INTRINSIC_ENVP
-  else name @Str "syscall0"   streq if* INTRINSIC_SYSCALL0
-  else name @Str "syscall1"   streq if* INTRINSIC_SYSCALL1
-  else name @Str "syscall2"   streq if* INTRINSIC_SYSCALL2
-  else name @Str "syscall3"   streq if* INTRINSIC_SYSCALL3
-  else name @Str "syscall4"   streq if* INTRINSIC_SYSCALL4
-  else name @Str "syscall5"   streq if* INTRINSIC_SYSCALL5
-  else name @Str "syscall6"   streq if* INTRINSIC_SYSCALL6
-  else name @Str "???"        streq if* INTRINSIC_???
-  else
-    drop false 0
-  end
-  swap
-end
-/// END Intrinsics //////////////////////////////
-
 /// BEGIN DataType //////////////////////////////
 const DATATYPE_INT  1 offset end
 const DATATYPE_PTR  1 offset end
 const DATATYPE_BOOL 1 offset end
+const DATATYPE_ADDR 1 offset end
 const COUNT_DATATYPES  reset end
 
 const HUMAN_SINGULAR 1 offset end
@@ -732,10 +567,11 @@ proc datatype-by-name
 in
   memory name sizeof(Str) end
   name !Str
-  assert "Exhaustive handling of data types in datatype-by-name" COUNT_DATATYPES 3 = end
+  assert "Exhaustive handling of data types in datatype-by-name" COUNT_DATATYPES 4 = end
        name @Str "ptr"  streq if  DATATYPE_PTR  true
   else name @Str "bool" streq if* DATATYPE_BOOL true
   else name @Str "int"  streq if* DATATYPE_INT  true
+  else name @Str "addr" streq if* DATATYPE_ADDR true
   else 0 false end
 end
 
@@ -744,10 +580,11 @@ proc datatype-name
   --
   int ptr
 in
-  assert "Exhaustive handling of data types in datatype-name" COUNT_DATATYPES 3 = end
+  assert "Exhaustive handling of data types in datatype-name" COUNT_DATATYPES 4 = end
        dup DATATYPE_INT  = if  drop "int"
   else dup DATATYPE_BOOL = if* drop "bool"
   else dup DATATYPE_PTR  = if* drop "ptr"
+  else dup DATATYPE_ADDR = if* drop "addr"
   else
     drop
     0 NULL
@@ -757,16 +594,187 @@ in
 end
 /// END DataType //////////////////////////////
 
+/// BEGIN Intrinsics //////////////////////////////
+/// Intrinsics are built-in function of the language with the hardcoded implementation.
+const INTRINSIC_PLUS      1 offset end
+const INTRINSIC_MINUS     1 offset end
+const INTRINSIC_MUL       1 offset end
+const INTRINSIC_DIVMOD    1 offset end
+const INTRINSIC_MAX       1 offset end
+const INTRINSIC_EQ        1 offset end
+const INTRINSIC_GT        1 offset end
+const INTRINSIC_LT        1 offset end
+const INTRINSIC_GE        1 offset end
+const INTRINSIC_LE        1 offset end
+const INTRINSIC_NE        1 offset end
+const INTRINSIC_SHR       1 offset end
+const INTRINSIC_SHL       1 offset end
+const INTRINSIC_OR        1 offset end
+const INTRINSIC_AND       1 offset end
+const INTRINSIC_NOT       1 offset end
+const INTRINSIC_PRINT     1 offset end
+const INTRINSIC_DUP       1 offset end
+const INTRINSIC_SWAP      1 offset end
+const INTRINSIC_DROP      1 offset end
+const INTRINSIC_OVER      1 offset end
+const INTRINSIC_ROT       1 offset end
+const INTRINSIC_LOAD8     1 offset end
+const INTRINSIC_STORE8    1 offset end
+const INTRINSIC_LOAD16    1 offset end
+const INTRINSIC_STORE16   1 offset end
+const INTRINSIC_LOAD32    1 offset end
+const INTRINSIC_STORE32   1 offset end
+const INTRINSIC_LOAD64    1 offset end
+const INTRINSIC_STORE64   1 offset end
+assert "Exhaustive cast intrinsic definition" COUNT_DATATYPES 4 = end
+const INTRINSIC_CAST_PTR  1 offset end
+const INTRINSIC_CAST_INT  1 offset end
+const INTRINSIC_CAST_BOOL 1 offset end
+const INTRINSIC_CAST_ADDR 1 offset end
+const INTRINSIC_ARGC      1 offset end
+const INTRINSIC_ARGV      1 offset end
+const INTRINSIC_ENVP      1 offset end
+const INTRINSIC_SYSCALL0  1 offset end
+const INTRINSIC_SYSCALL1  1 offset end
+const INTRINSIC_SYSCALL2  1 offset end
+const INTRINSIC_SYSCALL3  1 offset end
+const INTRINSIC_SYSCALL4  1 offset end
+const INTRINSIC_SYSCALL5  1 offset end
+const INTRINSIC_SYSCALL6  1 offset end
+const INTRINSIC_???       1 offset end
+const COUNT_INTRINSICS       reset end
+
+proc intrinsic-name
+  int // intrinsic
+  --
+  int ptr // name
+in
+  assert "Exhaustive handling of Intrinsics in intrinsic-name" COUNT_INTRINSICS 45 = end
+       dup INTRINSIC_PLUS      = if  drop "ptr+"
+  else dup INTRINSIC_MINUS     = if* drop "-"
+  else dup INTRINSIC_MUL       = if* drop "*"
+  else dup INTRINSIC_DIVMOD    = if* drop "divmod"
+  else dup INTRINSIC_MAX       = if* drop "max"
+  else dup INTRINSIC_PRINT     = if* drop "print"
+  else dup INTRINSIC_EQ        = if* drop "="
+  else dup INTRINSIC_GT        = if* drop ">"
+  else dup INTRINSIC_LT        = if* drop "<"
+  else dup INTRINSIC_GE        = if* drop ">="
+  else dup INTRINSIC_LE        = if* drop "<="
+  else dup INTRINSIC_NE        = if* drop "!="
+  else dup INTRINSIC_SHR       = if* drop "shr"
+  else dup INTRINSIC_SHL       = if* drop "shl"
+  else dup INTRINSIC_OR        = if* drop "or"
+  else dup INTRINSIC_AND       = if* drop "and"
+  else dup INTRINSIC_NOT       = if* drop "not"
+  else dup INTRINSIC_DUP       = if* drop "dup"
+  else dup INTRINSIC_SWAP      = if* drop "swap"
+  else dup INTRINSIC_DROP      = if* drop "drop"
+  else dup INTRINSIC_OVER      = if* drop "over"
+  else dup INTRINSIC_ROT       = if* drop "rot"
+  else dup INTRINSIC_STORE8    = if* drop "!8"
+  else dup INTRINSIC_LOAD8     = if* drop "@8"
+  else dup INTRINSIC_STORE16   = if* drop "!16"
+  else dup INTRINSIC_LOAD16    = if* drop "@16"
+  else dup INTRINSIC_STORE32   = if* drop "!32"
+  else dup INTRINSIC_LOAD32    = if* drop "@32"
+  else dup INTRINSIC_STORE64   = if* drop "!64"
+  else dup INTRINSIC_LOAD64    = if* drop "@64"
+  else dup INTRINSIC_CAST_PTR  = if* drop "cast(ptr)"
+  else dup INTRINSIC_CAST_INT  = if* drop "cast(int)"
+  else dup INTRINSIC_CAST_BOOL = if* drop "cast(bool)"
+  else dup INTRINSIC_CAST_ADDR = if* drop "cast(addr)"
+  else dup INTRINSIC_ARGC      = if* drop "argc"
+  else dup INTRINSIC_ARGV      = if* drop "argv"
+  else dup INTRINSIC_ENVP      = if* drop "envp"
+  else dup INTRINSIC_SYSCALL0  = if* drop "syscall0"
+  else dup INTRINSIC_SYSCALL1  = if* drop "syscall1"
+  else dup INTRINSIC_SYSCALL2  = if* drop "syscall2"
+  else dup INTRINSIC_SYSCALL3  = if* drop "syscall3"
+  else dup INTRINSIC_SYSCALL4  = if* drop "syscall4"
+  else dup INTRINSIC_SYSCALL5  = if* drop "syscall5"
+  else dup INTRINSIC_SYSCALL6  = if* drop "syscall6"
+  else dup INTRINSIC_???       = if* drop "???"
+  else
+    drop 0 NULL
+    here eputs ": unreachable\n" eputs
+    1 exit
+  end
+end
+
+proc intrinsic-by-name
+  int ptr // name
+  --
+  int     // intrinsic
+  bool    // found
+in
+  memory name sizeof(Str) end
+  name !Str
+  true
+  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 45 = end
+       name @Str "+"          streq if  INTRINSIC_PLUS
+  else name @Str "-"          streq if* INTRINSIC_MINUS
+  else name @Str "*"          streq if* INTRINSIC_MUL
+  else name @Str "divmod"     streq if* INTRINSIC_DIVMOD
+  else name @Str "max"        streq if* INTRINSIC_MAX
+  else name @Str "print"      streq if* INTRINSIC_PRINT
+  else name @Str "="          streq if* INTRINSIC_EQ
+  else name @Str ">"          streq if* INTRINSIC_GT
+  else name @Str "<"          streq if* INTRINSIC_LT
+  else name @Str ">="         streq if* INTRINSIC_GE
+  else name @Str "<="         streq if* INTRINSIC_LE
+  else name @Str "!="         streq if* INTRINSIC_NE
+  else name @Str "shr"        streq if* INTRINSIC_SHR
+  else name @Str "shl"        streq if* INTRINSIC_SHL
+  else name @Str "or"         streq if* INTRINSIC_OR
+  else name @Str "and"        streq if* INTRINSIC_AND
+  else name @Str "not"        streq if* INTRINSIC_NOT
+  else name @Str "dup"        streq if* INTRINSIC_DUP
+  else name @Str "swap"       streq if* INTRINSIC_SWAP
+  else name @Str "drop"       streq if* INTRINSIC_DROP
+  else name @Str "over"       streq if* INTRINSIC_OVER
+  else name @Str "rot"        streq if* INTRINSIC_ROT
+  else name @Str "!8"         streq if* INTRINSIC_STORE8
+  else name @Str "@8"         streq if* INTRINSIC_LOAD8
+  else name @Str "!16"        streq if* INTRINSIC_STORE16
+  else name @Str "@16"        streq if* INTRINSIC_LOAD16
+  else name @Str "!32"        streq if* INTRINSIC_STORE32
+  else name @Str "@32"        streq if* INTRINSIC_LOAD32
+  else name @Str "!64"        streq if* INTRINSIC_STORE64
+  else name @Str "@64"        streq if* INTRINSIC_LOAD64
+  else name @Str "cast(ptr)"  streq if* INTRINSIC_CAST_PTR
+  else name @Str "cast(int)"  streq if* INTRINSIC_CAST_INT
+  else name @Str "cast(bool)" streq if* INTRINSIC_CAST_BOOL
+  else name @Str "cast(addr)" streq if* INTRINSIC_CAST_ADDR
+  else name @Str "argc"       streq if* INTRINSIC_ARGC
+  else name @Str "argv"       streq if* INTRINSIC_ARGV
+  else name @Str "envp"       streq if* INTRINSIC_ENVP
+  else name @Str "syscall0"   streq if* INTRINSIC_SYSCALL0
+  else name @Str "syscall1"   streq if* INTRINSIC_SYSCALL1
+  else name @Str "syscall2"   streq if* INTRINSIC_SYSCALL2
+  else name @Str "syscall3"   streq if* INTRINSIC_SYSCALL3
+  else name @Str "syscall4"   streq if* INTRINSIC_SYSCALL4
+  else name @Str "syscall5"   streq if* INTRINSIC_SYSCALL5
+  else name @Str "syscall6"   streq if* INTRINSIC_SYSCALL6
+  else name @Str "???"        streq if* INTRINSIC_???
+  else
+    drop false 0
+  end
+  swap
+end
+/// END Intrinsics //////////////////////////////
+
 /// BEGIN Op //////////////////////////////
 /// "Op" is a single operation within the Porth's Intermediate Representation (IR):
 /// https://en.wikipedia.org/wiki/Intermediate_representation
 
 // TODO: make conditional and unconditional jumps jump by relative address
 // This will make the code more relocatable which will make it easily inlinable
-assert "Exhaustive push IR instructions definition for data types" COUNT_DATATYPES 3 = end
+assert "Exhaustive push IR instructions definition for data types" COUNT_DATATYPES 4 = end
 const OP_PUSH_INT        1 offset end
 const OP_PUSH_BOOL       1 offset end
 const OP_PUSH_PTR        1 offset end
+const OP_PUSH_ADDR       1 offset end
 const OP_PUSH_LOCAL_MEM  1 offset end
 const OP_PUSH_GLOBAL_MEM 1 offset end
 const OP_PUSH_STR        1 offset end
@@ -789,10 +797,11 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 18 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 19 = end
        dup OP_PUSH_INT        =  if  "OP_PUSH_INT"
   else dup OP_PUSH_BOOL       =  if* "OP_PUSH_BOOL"
   else dup OP_PUSH_PTR        =  if* "OP_PUSH_PTR"
+  else dup OP_PUSH_ADDR       =  if* "OP_PUSH_ADDR"
   else dup OP_PUSH_GLOBAL_MEM =  if* "OP_PUSH_GLOBAL_MEM"
   else dup OP_PUSH_LOCAL_MEM  =  if* "OP_PUSH_LOCAL_MEM"
   else dup OP_PUSH_STR        =  if* "OP_PUSH_STR"
@@ -1309,7 +1318,7 @@ in
 
   dup sizeof(Op) * ops +ptr
 
-  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 18 = end
+  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 19 = end
 
   "addr_" out-fd @64 fputs
   over    out-fd @64 fputu
@@ -1322,6 +1331,9 @@ in
      "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
      "    push rax\n"       out-fd @64 fputs
   else dup Op.type ptr+ @64 OP_PUSH_PTR = if*
+     "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
+     "    push rax\n"       out-fd @64 fputs
+  else dup Op.type ptr+ @64 OP_PUSH_ADDR = if*
      "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
      "    push rax\n"       out-fd @64 fputs
   else dup Op.type ptr+ @64 OP_PUSH_LOCAL_MEM = if*
@@ -1395,7 +1407,7 @@ in
      // ignored
   else dup Op.type ptr+ @64 OP_INTRINSIC = if*
       assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
-        COUNT_INTRINSICS 44 =
+        COUNT_INTRINSICS 45 =
       end
 
       dup Op.operand ptr+ @64
@@ -1581,6 +1593,7 @@ in
       else dup INTRINSIC_CAST_PTR = if*
       else dup INTRINSIC_CAST_INT = if*
       else dup INTRINSIC_CAST_BOOL = if*
+      else dup INTRINSIC_CAST_ADDR = if*
       else dup INTRINSIC_SYSCALL0 = if*
           "    pop rax\n"             out-fd @64 fputs
           "    syscall\n"             out-fd @64 fputs
@@ -1941,6 +1954,7 @@ in
       DATATYPE_INT token Token.value ptr+ @64 const-stack-push
     else token Token.type ptr+ @64 TOKEN_WORD = if*
       token Token.value ptr+ @Str intrinsic-by-name if
+        assert "Exhaustive handling of casts in eval-const-value" COUNT_DATATYPES 4 = end
         dup INTRINSIC_CAST_PTR = if
           1 token const-expect-arity
           const-stack-pop
@@ -1952,6 +1966,18 @@ in
           const-stack-pop
           swap drop
           DATATYPE_BOOL swap
+          const-stack-push
+        else dup INTRINSIC_CAST_ADDR = if*
+          1 token const-expect-arity
+          const-stack-pop
+          swap drop
+          DATATYPE_ADDR swap
+          const-stack-push
+        else dup INTRINSIC_CAST_INT = if*
+          1 token const-expect-arity
+          const-stack-pop
+          swap drop
+          DATATYPE_INT swap
           const-stack-push
         else dup INTRINSIC_MINUS = if*
           2 token const-expect-arity
@@ -2757,18 +2783,20 @@ in
       end
 
       token Token.value ptr+ // token.value
-        assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 18 = end
+        assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 19 = end
         dup @Str intrinsic-by-name if
           OP_INTRINSIC swap token push-op
         else drop dup @Str const-lookup dup NULL ptr!= if*
           dup Const.type ptr+ @int
-          assert "Exhaustive handling of data types in Const compilation\n" COUNT_DATATYPES 3 = end
+          assert "Exhaustive handling of data types in Const compilation\n" COUNT_DATATYPES 4 = end
           dup DATATYPE_INT = if
             drop OP_PUSH_INT
           else dup DATATYPE_BOOL = if*
             drop OP_PUSH_BOOL
           else dup DATATYPE_PTR = if*
             drop OP_PUSH_PTR
+          else dup DATATYPE_ADDR = if*
+            drop OP_PUSH_ADDR
           else
             drop 0
             here eputs ": unreachable\n" eputs
@@ -3324,7 +3352,7 @@ in
       op
       memcpy drop
 
-      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 18 = end
+      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 19 = end
 
       op Op.type ptr+ @int OP_PUSH_INT = if
         DATATYPE_INT
@@ -3346,6 +3374,15 @@ in
         true // continue
       else op Op.type ptr+ @int OP_PUSH_PTR = if*
         DATATYPE_PTR
+        op Op.token ptr+ Token.loc ptr+
+        stack
+        type-stack-push
+
+        ip inc64
+
+        true // continue
+      else op Op.type ptr+ @int OP_PUSH_ADDR = if*
+        DATATYPE_ADDR
         op Op.token ptr+ Token.loc ptr+
         stack
         type-stack-push
@@ -3489,7 +3526,7 @@ in
         // else branch
         false // break
       else op Op.type ptr+ @int OP_INTRINSIC = if*
-        assert "Exhaustive handling of Intrinsics in type-check-program-from" COUNT_INTRINSICS 44 = end
+        assert "Exhaustive handling of Intrinsics in type-check-program-from" COUNT_INTRINSICS 45 = end
 
         op Op.operand ptr+ @int
           dup INTRINSIC_PLUS = if
@@ -3598,6 +3635,17 @@ in
             1 expect-arity
             sizeof(TypeStack) tmp-alloc
               dup  DATATYPE_BOOL
+              swap op Op.token ptr+ Token.loc ptr+
+              swap type-stack-push
+            type-check-stack
+          else dup INTRINSIC_CAST_ADDR = if*
+            op Op.token ptr+
+            stack
+            over
+            over
+            1 expect-arity
+            sizeof(TypeStack) tmp-alloc
+              dup  DATATYPE_ADDR
               swap op Op.token ptr+ Token.loc ptr+
               swap type-stack-push
             type-check-stack
