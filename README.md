@@ -41,7 +41,7 @@ include "std.porth"
 proc main in
   100 0 while 2dup > do
     dup print 1 +
-  end drop drop 
+  end drop drop
 end
 ```
 
