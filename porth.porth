@@ -51,6 +51,7 @@ const KEYWORD_IN          1 offset end
 const KEYWORD_BIKESHEDDER 1 offset end
 const KEYWORD_INLINE      1 offset end
 const KEYWORD_HERE        1 offset end
+const KEYWORD_ADDR_OF     1 offset end
 const COUNT_KEYWORDS         reset end
 
 proc keyword-by-name
@@ -61,7 +62,7 @@ in
   memory name sizeof(Str) end
   name !Str
   true
-  assert "Exhaustive keyword handling" COUNT_KEYWORDS 17 = end
+  assert "Exhaustive keyword handling" COUNT_KEYWORDS 18 = end
        name @Str "if"      streq if  KEYWORD_IF
   else name @Str "if*"     streq if* KEYWORD_IFSTAR
   else name @Str "else"    streq if* KEYWORD_ELSE
@@ -79,6 +80,7 @@ in
   else name @Str "--"      streq if* KEYWORD_BIKESHEDDER
   else name @Str "inline"  streq if* KEYWORD_INLINE
   else name @Str "here"    streq if* KEYWORD_HERE
+  else name @Str "addr-of" streq if* KEYWORD_ADDR_OF
   else
     drop false 0
   end
@@ -91,7 +93,7 @@ proc keyword-name
   --
   int ptr
 in
-  assert "Exhaustive keyword handling" COUNT_KEYWORDS 17 = end
+  assert "Exhaustive keyword handling" COUNT_KEYWORDS 18 = end
        dup KEYWORD_IF          = if  "if"
   else dup KEYWORD_IFSTAR      = if* "if*"
   else dup KEYWORD_ELSE        = if* "else"
@@ -109,6 +111,7 @@ in
   else dup KEYWORD_BIKESHEDDER = if* "--"
   else dup KEYWORD_INLINE      = if* "inline"
   else dup KEYWORD_HERE        = if* "here"
+  else dup KEYWORD_ADDR_OF     = if* "addr-of"
   else
     0 NULL
     here eputs ": unreachable\n" eputs
@@ -122,7 +125,8 @@ const Token.loc  sizeof(Loc) offset end
 const Token.text sizeof(Str) offset end
 const Token.value
    sizeof(u64)
-   sizeof(Str) max
+   sizeof(Str)
+   max
    offset
 end
 const sizeof(Token) reset end
@@ -1334,7 +1338,7 @@ in
      "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
      "    push rax\n"       out-fd @64 fputs
   else dup Op.type ptr+ @64 OP_PUSH_ADDR = if*
-     "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
+     "    mov rax, addr_"   out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
      "    push rax\n"       out-fd @64 fputs
   else dup Op.type ptr+ @64 OP_PUSH_LOCAL_MEM = if*
      "    mov rax, [ret_stack_rsp]\n" out-fd @64 fputs
@@ -1933,12 +1937,64 @@ in
   end
 end
 
+proc parse-after-addr-of
+  ptr // lexer
+  --
+  int
+in
+  memory lexer sizeof(ptr) end
+  lexer !ptr
+  memory token sizeof(Token) end
+
+  token lexer @ptr lexer-next-token lnot if
+    token Token.loc ptr+                               eputloc
+    ": ERROR: expected procedure name after keyword `" eputs
+    KEYWORD_ADDR_OF keyword-name                       eputs
+    "`. But got nothing."                              eputs
+    1 exit
+  end
+
+  token Token.type ptr+ @int
+    dup TOKEN_WORD != if
+      token Token.loc ptr+                       eputloc
+      ": ERROR: expected "                       eputs
+      TOKEN_WORD HUMAN_SINGULAR human-token-type eputs
+      " after keyword `"                         eputs
+      KEYWORD_ADDR_OF keyword-name               eputs
+      "` but got "                               eputs
+      dup HUMAN_SINGULAR human-token-type        eputs
+      1 exit
+    end
+  drop
+
+  memory result sizeof(int) end
+
+  token Token.value ptr+
+    dup @Str proc-lookup-by-name
+      dup NULL ptr= if
+        token Token.loc ptr+   eputloc
+        ": ERROR: procedure `" eputs
+        over @Str              eputs
+        "` does not exist\n"   eputs
+        1 exit
+      end
+
+      dup Proc.addr ptr+ @int result !int
+    drop
+  drop
+
+  result @int
+end
+
 proc eval-const-value
   ptr // ptr to lexer
   --
   int // type
   int // value
 in
+  memory lexer sizeof(ptr) end
+  lexer !ptr
+
   memory token sizeof(Token) end
   memory done sizeof(bool) end
   false done !64
@@ -1947,7 +2003,7 @@ in
 
   while
     done @bool lnot if
-      token over lexer-next-token
+      token lexer @ptr lexer-next-token
     else false end
   do
     token Token.type ptr+ @64 TOKEN_INT = if
@@ -2054,7 +2110,7 @@ in
       end
       drop // intrinsic
     else token Token.type ptr+ @64 TOKEN_KEYWORD = if*
-      assert "Exhaustive handling of keywords in eval-const-value" COUNT_KEYWORDS 17 = end
+      assert "Exhaustive handling of keywords in eval-const-value" COUNT_KEYWORDS 18 = end
       token Token.value ptr+ @64
         dup KEYWORD_END = if
           true done !64
@@ -2066,6 +2122,10 @@ in
         else dup KEYWORD_RESET = if*
           DATATYPE_INT iota @int const-stack-push
           0 iota !int
+        else dup KEYWORD_ADDR_OF = if*
+          DATATYPE_ADDR
+          lexer @ptr parse-after-addr-of
+          const-stack-push
         else
           token Token.loc ptr+             eputloc
           ": ERROR: unsupported keyword `" eputs
@@ -2081,7 +2141,7 @@ in
       " are not supported in compile time evaluation\n"       eputs
       1 exit
     end
-  end drop
+  end
 
   done @bool if
     const-stack-count @64 1 != if
@@ -2470,6 +2530,7 @@ in
       push-op
     else dup TOKEN_KEYWORD = if*
       token Token.value ptr+ @64
+        assert "Exhaustive handling of keywords in compile-file-into-ops" COUNT_KEYWORDS 18 = end
         dup KEYWORD_IF = if
           ops-count @64 parse-block-stack-push
           OP_IF 0 token push-op
@@ -2764,6 +2825,12 @@ in
           OP_PUSH_STR
           token Token.loc ptr+ strbuf-loc strlit-define
           token
+          push-op
+        else dup KEYWORD_ADDR_OF = if*
+          OP_PUSH_ADDR
+          lexer parse-after-addr-of
+          token // TODO: the token refers to `addr-of` keyword, but not the name of the procedure the address
+                // of which we are taking.
           push-op
         else
           token Token.loc ptr+ eputloc
