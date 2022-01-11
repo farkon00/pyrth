@@ -4,6 +4,6 @@
 :i returncode 1
 :b stdout 0
 
-:b stderr 40
-ERROR: `main` function was not provided
+:b stderr 41
+ERROR: `main` procedure was not provided
 

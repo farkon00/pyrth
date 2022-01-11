@@ -52,6 +52,7 @@ const KEYWORD_BIKESHEDDER 1 offset end
 const KEYWORD_INLINE      1 offset end
 const KEYWORD_HERE        1 offset end
 const KEYWORD_ADDR_OF     1 offset end
+const KEYWORD_CALL_LIKE   1 offset end
 const COUNT_KEYWORDS         reset end
 
 proc keyword-by-name
@@ -62,25 +63,26 @@ in
   memory name sizeof(Str) end
   name !Str
   true
-  assert "Exhaustive keyword handling" COUNT_KEYWORDS 18 = end
-       name @Str "if"      streq if  KEYWORD_IF
-  else name @Str "if*"     streq if* KEYWORD_IFSTAR
-  else name @Str "else"    streq if* KEYWORD_ELSE
-  else name @Str "end"     streq if* KEYWORD_END
-  else name @Str "while"   streq if* KEYWORD_WHILE
-  else name @Str "do"      streq if* KEYWORD_DO
-  else name @Str "include" streq if* KEYWORD_INCLUDE
-  else name @Str "memory"  streq if* KEYWORD_MEMORY
-  else name @Str "proc"    streq if* KEYWORD_PROC
-  else name @Str "const"   streq if* KEYWORD_CONST
-  else name @Str "offset"  streq if* KEYWORD_OFFSET
-  else name @Str "reset"   streq if* KEYWORD_RESET
-  else name @Str "assert"  streq if* KEYWORD_ASSERT
-  else name @Str "in"      streq if* KEYWORD_IN
-  else name @Str "--"      streq if* KEYWORD_BIKESHEDDER
-  else name @Str "inline"  streq if* KEYWORD_INLINE
-  else name @Str "here"    streq if* KEYWORD_HERE
-  else name @Str "addr-of" streq if* KEYWORD_ADDR_OF
+  assert "Exhaustive keyword handling" COUNT_KEYWORDS 19 = end
+       name @Str "if"        streq if  KEYWORD_IF
+  else name @Str "if*"       streq if* KEYWORD_IFSTAR
+  else name @Str "else"      streq if* KEYWORD_ELSE
+  else name @Str "end"       streq if* KEYWORD_END
+  else name @Str "while"     streq if* KEYWORD_WHILE
+  else name @Str "do"        streq if* KEYWORD_DO
+  else name @Str "include"   streq if* KEYWORD_INCLUDE
+  else name @Str "memory"    streq if* KEYWORD_MEMORY
+  else name @Str "proc"      streq if* KEYWORD_PROC
+  else name @Str "const"     streq if* KEYWORD_CONST
+  else name @Str "offset"    streq if* KEYWORD_OFFSET
+  else name @Str "reset"     streq if* KEYWORD_RESET
+  else name @Str "assert"    streq if* KEYWORD_ASSERT
+  else name @Str "in"        streq if* KEYWORD_IN
+  else name @Str "--"        streq if* KEYWORD_BIKESHEDDER
+  else name @Str "inline"    streq if* KEYWORD_INLINE
+  else name @Str "here"      streq if* KEYWORD_HERE
+  else name @Str "addr-of"   streq if* KEYWORD_ADDR_OF
+  else name @Str "call-like" streq if* KEYWORD_CALL_LIKE
   else
     drop false 0
   end
@@ -93,7 +95,7 @@ proc keyword-name
   --
   int ptr
 in
-  assert "Exhaustive keyword handling" COUNT_KEYWORDS 18 = end
+  assert "Exhaustive keyword handling" COUNT_KEYWORDS 19 = end
        dup KEYWORD_IF          = if  "if"
   else dup KEYWORD_IFSTAR      = if* "if*"
   else dup KEYWORD_ELSE        = if* "else"
@@ -112,6 +114,7 @@ in
   else dup KEYWORD_INLINE      = if* "inline"
   else dup KEYWORD_HERE        = if* "here"
   else dup KEYWORD_ADDR_OF     = if* "addr-of"
+  else dup KEYWORD_CALL_LIKE   = if* "call-like"
   else
     0 NULL
     here eputs ": unreachable\n" eputs
@@ -794,6 +797,7 @@ const OP_INLINED         1 offset end
 const OP_WHILE           1 offset end
 const OP_DO              1 offset end
 const OP_INTRINSIC       1 offset end
+const OP_CALL_LIKE       1 offset end
 const COUNT_OPS             reset end
 
 proc op-type-as-str
@@ -801,7 +805,7 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 19 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 20 = end
        dup OP_PUSH_INT        =  if  "OP_PUSH_INT"
   else dup OP_PUSH_BOOL       =  if* "OP_PUSH_BOOL"
   else dup OP_PUSH_PTR        =  if* "OP_PUSH_PTR"
@@ -821,6 +825,7 @@ in
   else dup OP_INLINED         =  if* "OP_INLINED"
   else dup OP_WHILE           =  if* "OP_WHILE"
   else dup OP_DO              =  if* "OP_DO"
+  else dup OP_CALL_LIKE       =  if* "OP_CALL_LIKE"
   else
     here eputs ": Unknown op type\n" eputs 1 exit
     0 NULL
@@ -1322,7 +1327,7 @@ in
 
   dup sizeof(Op) * ops +ptr
 
-  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 19 = end
+  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 20 = end
 
   "addr_" out-fd @64 fputs
   over    out-fd @64 fputu
@@ -1340,6 +1345,13 @@ in
   else dup Op.type ptr+ @64 OP_PUSH_ADDR = if*
      "    mov rax, addr_"   out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
      "    push rax\n"       out-fd @64 fputs
+  else dup Op.type ptr+ @64 OP_CALL_LIKE = if*
+     "    pop rbx\n"                  out-fd @64 fputs
+     "    mov rax, rsp\n"             out-fd @64 fputs
+     "    mov rsp, [ret_stack_rsp]\n" out-fd @64 fputs
+     "    call rbx\n"                 out-fd @64 fputs
+     "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
+     "    mov rsp, rax\n"             out-fd @64 fputs
   else dup Op.type ptr+ @64 OP_PUSH_LOCAL_MEM = if*
      "    mov rax, [ret_stack_rsp]\n" out-fd @64 fputs
      "    add rax, "                  out-fd @64 fputs
@@ -1937,6 +1949,55 @@ in
   end
 end
 
+proc parse-after-call-like
+  ptr // lexer
+  --
+  int
+in
+  memory lexer sizeof(ptr) end
+  lexer !ptr
+  memory token sizeof(Token) end
+
+  token lexer @ptr lexer-next-token lnot if
+    token Token.loc ptr+                               eputloc
+    ": ERROR: expected procedure name after keyword `" eputs
+    KEYWORD_CALL_LIKE keyword-name                     eputs
+    "`. But got nothing."                              eputs
+    1 exit
+  end
+
+  token Token.type ptr+ @int
+    dup TOKEN_WORD != if
+      token Token.loc ptr+                       eputloc
+      ": ERROR: expected "                       eputs
+      TOKEN_WORD HUMAN_SINGULAR human-token-type eputs
+      " after keyword `"                         eputs
+      KEYWORD_CALL_LIKE keyword-name             eputs
+      "` but got "                               eputs
+      dup HUMAN_SINGULAR human-token-type        eputs
+      1 exit
+    end
+  drop
+
+  memory result sizeof(int) end
+
+  token Token.value ptr+
+    dup @Str proc-lookup-by-name
+      dup NULL ptr= if
+        token Token.loc ptr+   eputloc
+        ": ERROR: procedure `" eputs
+        over @Str              eputs
+        "` does not exist\n"   eputs
+        1 exit
+      end
+
+      dup procs ptr-diff sizeof(Proc) / result !int
+    drop
+  drop
+
+  result @int
+end
+
 proc parse-after-addr-of
   ptr // lexer
   --
@@ -2110,7 +2171,7 @@ in
       end
       drop // intrinsic
     else token Token.type ptr+ @64 TOKEN_KEYWORD = if*
-      assert "Exhaustive handling of keywords in eval-const-value" COUNT_KEYWORDS 18 = end
+      assert "Exhaustive handling of keywords in eval-const-value" COUNT_KEYWORDS 19 = end
       token Token.value ptr+ @64
         dup KEYWORD_END = if
           true done !64
@@ -2530,7 +2591,7 @@ in
       push-op
     else dup TOKEN_KEYWORD = if*
       token Token.value ptr+ @64
-        assert "Exhaustive handling of keywords in compile-file-into-ops" COUNT_KEYWORDS 18 = end
+        assert "Exhaustive handling of keywords in compile-file-into-ops" COUNT_KEYWORDS 19 = end
         dup KEYWORD_IF = if
           ops-count @64 parse-block-stack-push
           OP_IF 0 token push-op
@@ -2832,6 +2893,12 @@ in
           token // TODO: the token refers to `addr-of` keyword, but not the name of the procedure the address
                 // of which we are taking.
           push-op
+        else dup KEYWORD_CALL_LIKE = if*
+          OP_CALL_LIKE
+          lexer parse-after-call-like
+          token // TODO: the token refers to `call-like` keyword, but not the name of the procedure the address
+                // of which we are taking.
+          push-op
         else
           token Token.loc ptr+ eputloc
           ": ERROR: unexpected keyword `" eputs
@@ -2850,7 +2917,7 @@ in
       end
 
       token Token.value ptr+ // token.value
-        assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 19 = end
+        assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 20 = end
         dup @Str intrinsic-by-name if
           OP_INTRINSIC swap token push-op
         else drop dup @Str const-lookup dup NULL ptr!= if*
@@ -3389,6 +3456,35 @@ in
   ins outs type-check-stack
 end
 
+proc type-check-call-like
+  ptr // op
+  ptr // stack
+in
+  memory stack sizeof(ptr) end
+  stack !ptr
+  memory op sizeof(ptr) end
+  op !ptr
+  memory ins sizeof(TypeStack) end
+  memory outs sizeof(TypeStack) end
+
+  // TODO: check if the index to the procedure valid
+  op @ptr Op.operand ptr+ @int sizeof(Proc) * procs +ptr
+    sizeof(TypeStack) over Proc.ins  ptr+ ins  memcpy drop
+    sizeof(TypeStack) over Proc.outs ptr+ outs memcpy drop
+  drop
+
+  DATATYPE_ADDR
+  op @ptr Op.token ptr+ Token.loc ptr+
+  ins
+  type-stack-push
+
+  op @ptr Op.token ptr+
+  stack @ptr
+  ins
+  outs
+  type-check-stack
+end
+
 proc type-check-program-from
   ptr // stack
   int // ip
@@ -3419,7 +3515,7 @@ in
       op
       memcpy drop
 
-      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 19 = end
+      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 20 = end
 
       op Op.type ptr+ @int OP_PUSH_INT = if
         DATATYPE_INT
@@ -3541,6 +3637,11 @@ in
           swap Proc.outs ptr+
         type-check-stack
 
+        ip inc64
+
+        true // continue
+      else op Op.type ptr+ @int OP_CALL_LIKE = if*
+        op stack type-check-call-like
         ip inc64
 
         true // continue

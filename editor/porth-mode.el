@@ -49,7 +49,7 @@
   (defconst porth-keywords
     '("if" "else" "while" "do" "include" "memory" "proc"
       "const" "end" "offset" "reset" "assert" "in" "inline"
-      "here" "addr-of")))
+      "here" "addr-of" "call-like")))
 
 (defconst porth-highlights
   `((,(regexp-opt porth-keywords 'symbols) . font-lock-keyword-face)))
