@@ -1210,6 +1210,7 @@ in
   end
 end
 
+// TODO: `"/" dirname` removes the last slash
 proc dirname
   int ptr
   --
