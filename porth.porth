@@ -3485,6 +3485,7 @@ in
   type-check-stack
 end
 
+// TODO: factor out the args of type-check-program-from into structure
 proc type-check-program-from
   ptr // stack
   int // ip
