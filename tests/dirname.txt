@@ -2,12 +2,15 @@
 :b stdin 0
 
 :i returncode 0
-:b stdout 76
+:b stdout 110
 hello/world => hello
 hello/world/ => hello/world
-hello => 
-/hello => 
-/ => 
+hello => .
+./hello => .
+/hello => /
+/ => /
+// => /
+/// => //
 
 :b stderr 0
 

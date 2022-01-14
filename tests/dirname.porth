@@ -10,6 +10,11 @@ proc main in
   "hello/world"  check-dirname
   "hello/world/" check-dirname
   "hello"        check-dirname
+  "./hello"      check-dirname
+  // TODO: empty strings generate garbage assembly
+  // ""             check-dirname
   "/hello"       check-dirname
   "/"            check-dirname
+  "//"           check-dirname
+  "///"          check-dirname
 end

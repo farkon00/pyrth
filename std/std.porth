@@ -560,6 +560,10 @@ inline proc str-chop-one-left ptr in
        Str.data inc64
 end
 
+inline proc str-chop-one-right ptr in
+  Str.count dec64
+end
+
 proc str-trim-left ptr in // input --
   while
     dup @Str.count 0 > if
@@ -1219,8 +1223,14 @@ in
   memory path sizeof(Str) end
   path !Str
 
-  path @Str '/' str-rfind dup 0 < if drop 0 end
+  path @Str '/' str-rfind 1 +
   path !Str.count
+
+  path ?str-empty if
+    "." path !Str
+  else path @Str "/" streq lnot if*
+    path str-chop-one-right
+  end
 
   path @Str
 end
