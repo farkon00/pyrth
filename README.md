@@ -57,18 +57,18 @@ Since Porth is self-hosted you need to bootstrap it first. There are some pre-co
 $ fasm -m 524288 ./bootstrap/porth-linux-x86_64.fasm
 $ chmod +x ./bootstrap/porth-linux-x86_64
 $ ./bootstrap/porth-linux-x86_64 com -t fasm-linux-x86_64 ./porth.porth
-$ mv -v output porth
-$ ./porth help
+$ ./porth com -t fasm-linux-x86_64 ./porth.porth
 ```
 
 #### NASM
+
+*Keeping in mind that nasm is significantly slower than fasm.*
 
 ```console
 $ nasm -felf64 ./bootstrap/porth-linux-x86_64.nasm
 $ ld -o ./bootstrap/porth-linux-x86_64 ./bootstrap/porth-linux-x86_64.o
 $ ./bootstrap/porth-linux-x86_64 com -t nasm-linux-x86_64 ./porth.porth
-$ mv -v output porth
-$ ./porth help
+$ ./porth com ./porth.porth
 ```
 
 ### Compilation

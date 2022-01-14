@@ -8,7 +8,6 @@ proc bar in
   "bar\n" puts
 end
 
-
 const N 5 end
 memory funcs sizeof(addr) N * end
 

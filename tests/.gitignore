@@ -36,3 +36,4 @@ shell-escape
 dirname
 str-rfind
 remove-ext
+polymorphism

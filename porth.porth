@@ -1681,7 +1681,9 @@ in
   file-path !ptr
 
   silent @bool lnot if
-    "[INFO] Generating output.asm\n" puts
+    "[INFO] Generating "       puts
+    file-path @ptr cstr-to-str puts
+    "\n"                       puts
   end
 
   memory out-fd sizeof(u64) end
@@ -1760,7 +1762,9 @@ in
   file-path !ptr
 
   silent @bool lnot if
-    "[INFO] Generating output.asm\n" puts
+    "[INFO] Generating "       puts
+    file-path @ptr cstr-to-str puts
+    "\n"                       puts
   end
 
   memory out-fd sizeof(u64) end
@@ -4167,6 +4171,7 @@ in
   "  SUBCOMMANDS:\n"                                                                         fd @64 fputs
   "    com [OPTIONS] <file>  Compile the program\n"                                          fd @64 fputs
   "      OPTIONS:\n"                                                                         fd @64 fputs
+  // TODO: implement -o flag for com subcommand
   "        -t                  Specify the target for generation.\n"                         fd @64 fputs
   "                            Default: nasm-linux-x86_64.\n"                                fd @64 fputs
   "                            Specify `-t list` to list all available targets.\n"           fd @64 fputs
@@ -4232,8 +4237,10 @@ proc main in
     1 exit
   end
 
-  memory file-path-cstr sizeof(ptr) end
-  NULL file-path-cstr !ptr
+  memory input-file-path-cstr sizeof(ptr) end
+  NULL input-file-path-cstr !ptr
+  memory base-file-path sizeof(Str) end
+  0 NULL base-file-path !Str
   memory run sizeof(bool) end
   false run !bool
 
@@ -4278,59 +4285,123 @@ proc main in
 
         true  // continue
       else
-        args @@ptr file-path-cstr !ptr
+        args @@ptr input-file-path-cstr !ptr
         args sizeof(ptr) inc64-by
         false // break
       end
     do end
 
-    file-path-cstr @ptr NULL ptr= if
+    input-file-path-cstr @ptr NULL ptr= if
       program @ptr stderr usage
       "[ERROR] no input file is provided for the compilation.\n" eputs
       1 exit
     end
 
-    file-path-cstr @ptr compile-program-into-ops
+    input-file-path-cstr @ptr cstr-to-str remove-ext base-file-path !Str
+
+    input-file-path-cstr @ptr compile-program-into-ops
     type-check-program
 
     timeit/from-here
 
     assert "Exhaustive target handling in main" COUNT_TARGETS 2 = end
     target @int TARGET_NASM_LINUX_X86_64 = if
-      // TODOOO: the output file path should be based on the input file path
-      "output.asm"c generate-nasm-linux-x86_64
+      fpb-end
+        base-file-path @Str fpb-append drop
+        ".asm"              fpb-append drop
+        1                   fpb-alloc  drop
+        dup generate-nasm-linux-x86_64
+      fpb-rewind
 
-      tmp-end
-      "nasm"c       tmp-append-ptr
-      "-felf64"c    tmp-append-ptr
-      "output.asm"c tmp-append-ptr
-      NULL          tmp-append-ptr
-      silent @bool lnot cmd-echoed
+      fpb-end
+        tmp-end
+        "nasm"c       tmp-append-ptr
+        "-felf64"c    tmp-append-ptr
+        fpb-end
+          base-file-path @Str fpb-append drop
+          ".asm"              fpb-append drop
+          1                   fpb-alloc  drop
+          tmp-append-ptr
+        NULL          tmp-append-ptr
+        silent @bool lnot cmd-echoed
+      fpb-rewind
 
-      tmp-end
-      "ld"c         tmp-append-ptr
-      "-o"c         tmp-append-ptr
-      "output"c     tmp-append-ptr
-      "output.o"c   tmp-append-ptr
-      NULL          tmp-append-ptr
-      silent @bool lnot cmd-echoed
+      fpb-end
+        tmp-end
+        "ld"c         tmp-append-ptr
+        "-o"c         tmp-append-ptr
+        fpb-end
+          base-file-path @Str fpb-append drop
+          1                   fpb-alloc  drop
+          tmp-append-ptr
+        fpb-end
+          base-file-path @Str fpb-append drop
+          ".o"                fpb-append drop
+          1                   fpb-alloc  drop
+          tmp-append-ptr
+        NULL          tmp-append-ptr
+        silent @bool lnot cmd-echoed
+      fpb-rewind
     else target @int TARGET_FASM_LINUX_X86_64 = if*
-      "output.asm"c generate-fasm-linux-x86_64
+      fpb-end
+        base-file-path @Str fpb-append drop
+        ".asm"              fpb-append drop
+        1                   fpb-alloc  drop
+        dup generate-fasm-linux-x86_64
+      fpb-rewind
 
-      tmp-end
-      "fasm"c       tmp-append-ptr
-      "-m"c         tmp-append-ptr
-      "524288"c     tmp-append-ptr
-      "output.asm"c tmp-append-ptr
-      NULL          tmp-append-ptr
-      silent @bool lnot cmd-echoed
+      fpb-end
+        tmp-end
+        "fasm"c       tmp-append-ptr
+        "-m"c         tmp-append-ptr
+        "524288"c     tmp-append-ptr
+        fpb-end
+          base-file-path @Str fpb-append drop
+          ".asm"              fpb-append drop
+          1                   fpb-alloc  drop
+          tmp-append-ptr
+        fpb-end
+          base-file-path @Str fpb-append drop
+          ".tmp"              fpb-append drop
+          1                   fpb-alloc  drop
+          tmp-append-ptr
+        NULL          tmp-append-ptr
+        silent @bool lnot cmd-echoed
+      fpb-rewind
 
-      tmp-end
-      "chmod"c      tmp-append-ptr
-      "+x"c         tmp-append-ptr
-      "output"c     tmp-append-ptr
-      NULL          tmp-append-ptr
-      silent @bool lnot cmd-echoed
+      fpb-end
+        fpb-end
+          base-file-path @Str fpb-append drop
+          1                   fpb-alloc  drop
+
+        fpb-end
+          base-file-path @Str fpb-append drop
+          ".tmp"              fpb-append drop
+          1                   fpb-alloc  drop
+
+        "[INFO] renaming " puts
+        dup cstr-to-str    puts
+        " -> "             puts
+        over cstr-to-str   puts
+        "\n"               puts
+
+        rename 0 < if
+          "ERROR: could not rename the file\n" eputs
+          1 exit
+        end
+      fpb-rewind
+
+      fpb-end
+        tmp-end
+        "chmod"c      tmp-append-ptr
+        "+x"c         tmp-append-ptr
+        fpb-end
+          base-file-path @Str fpb-append drop
+          1                   fpb-alloc  drop
+          tmp-append-ptr
+        NULL          tmp-append-ptr
+        silent @bool lnot cmd-echoed
+      fpb-rewind
     else
       here eputs ": Assertion Failed: unreachable\n" eputs
       1 exit
@@ -4340,7 +4411,10 @@ proc main in
 
     run @bool if
       tmp-end
-      "./output"c tmp-append-ptr
+      fpb-end
+        base-file-path @Str fpb-append drop
+        1 fpb-alloc drop
+        tmp-append-ptr
       while args @@ptr NULL ptr!= do
         args @@ptr tmp-append-ptr
         args sizeof(ptr) inc64-by
