@@ -5,19 +5,13 @@ proc run-file
   ptr // file-name
 in
   tmp-end
-    "./porth.py"c   tmp-append-ptr
-    "com"c          tmp-append-ptr
-    over            tmp-append-ptr
-    NULL            tmp-append-ptr
+    "./porth"c   tmp-append-ptr
+    "com"c       tmp-append-ptr
+    "-s"c        tmp-append-ptr
+    "-r"c        tmp-append-ptr
+    over         tmp-append-ptr
+    NULL         tmp-append-ptr
     dup true cmd-echoed
-
-    over cstr-to-str remove-ext tmp-str-to-cstr
-      tmp-end
-        over         tmp-append-ptr
-        NULL         tmp-append-ptr
-        dup true cmd-echoed
-      tmp-rewind
-    drop
   tmp-rewind
   drop
 
@@ -61,5 +55,3 @@ proc main in
   drop
 
 end
-
-main
