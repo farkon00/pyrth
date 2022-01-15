@@ -282,6 +282,11 @@ in
             dup str-chop-one-left
             count inc64
             true
+          else dup @Str.data @8 'r' = if*
+            '\r' strbuf-append-char
+            dup str-chop-one-left
+            count inc64
+            true
           else dup @Str.data @8 '\\' = if*
             '\\' strbuf-append-char
             dup str-chop-one-left
@@ -416,10 +421,10 @@ in
     else
        // Word or integer literal
 
-       ' '               // delim
-       word              // word
-       rot Lexer.line ptr+  // line
-       str-chop-by-delim
+       addr-of ?space
+       word
+       rot Lexer.line ptr+
+       str-chop-by-predicate
 
        word @Str try-parse-int if
          token @ptr Token.value ptr+ !64
@@ -2294,6 +2299,8 @@ in
             drop
             token Token.loc ptr+          eputloc
             ": ERROR: unknown type `"     eputs
+            // TODO: everything that's coming from the user (a.k.a. source code) must be escaped before being printed on the screen
+            // Otherwise if the name of the type (in this specific case) contains any special control characters (like '\r') for example. The entire diagnostic is gonna be corrupted rendering it useless
             dup @Str                      eputs
             "` in procedure definition\n" eputs
             1 exit
