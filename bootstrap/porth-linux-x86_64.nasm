@@ -87695,7 +87695,7 @@ addr_27666:
     add rsp, 0
     ret
 addr_27667:
-    sub rsp, 48
+    sub rsp, 56
     mov [ret_stack_rsp], rsp
     mov rsp, rax
 addr_27668:
@@ -87703,8 +87703,8 @@ addr_27668:
     add rax, 8
     push rax
 addr_27669:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27670:
 addr_27671:
@@ -87712,8 +87712,8 @@ addr_27671:
     pop rbx
     mov [rax], rbx
 addr_27672:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27673:
 addr_27674:
@@ -87732,7 +87732,7 @@ addr_27678:
 addr_27679:
 addr_27680:
     mov rax, [ret_stack_rsp]
-    add rax, 0
+    add rax, 8
     push rax
 addr_27681:
 addr_27682:
@@ -87744,7 +87744,7 @@ addr_27683:
     push rax
 addr_27684:
     mov rax, [ret_stack_rsp]
-    add rax, 8
+    add rax, 16
     push rax
 addr_27685:
 addr_27686:
@@ -87752,8 +87752,8 @@ addr_27686:
     pop rbx
     mov [rax], rbx
 addr_27687:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27688:
     mov rax, 8
@@ -87785,8 +87785,8 @@ addr_27694:
     pop rbx
     mov [rax], rbx
 addr_27695:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27696:
 addr_27697:
@@ -87833,7 +87833,7 @@ addr_27710:
     jz addr_27730
 addr_27711:
     mov rax, [ret_stack_rsp]
-    add rax, 0
+    add rax, 8
     push rax
 addr_27712:
 addr_27713:
@@ -87894,7 +87894,7 @@ addr_27731:
     push rax
 addr_27732:
     mov rax, [ret_stack_rsp]
-    add rax, 16
+    add rax, 24
     push rax
 addr_27733:
 addr_27734:
@@ -87909,7 +87909,7 @@ addr_27736:
     push rax
 addr_27737:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_27738:
 addr_27739:
@@ -87989,7 +87989,7 @@ addr_27764:
     push rax
 addr_27765:
     mov rax, [ret_stack_rsp]
-    add rax, 40
+    add rax, 48
     push rax
 addr_27766:
 addr_27767:
@@ -87997,8 +87997,8 @@ addr_27767:
     pop rbx
     mov [rax], rbx
 addr_27768:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27769:
 addr_27770:
@@ -88029,8 +88029,8 @@ addr_27778:
     jz addr_29185
 addr_27779:
 addr_27780:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27781:
     mov rax, 8
@@ -88062,8 +88062,8 @@ addr_27787:
     pop rbx
     mov [rax], rbx
 addr_27788:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27789:
 addr_27790:
@@ -88114,8 +88114,8 @@ addr_27804:
 addr_27805:
     jmp addr_27822
 addr_27806:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27807:
 addr_27808:
@@ -88149,7 +88149,7 @@ addr_27817:
     push rax
 addr_27818:
     mov rax, [ret_stack_rsp]
-    add rax, 40
+    add rax, 48
     push rax
 addr_27819:
 addr_27820:
@@ -88162,8 +88162,8 @@ addr_27821:
 addr_27822:
     jmp addr_27839
 addr_27823:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27824:
 addr_27825:
@@ -88210,8 +88210,8 @@ addr_27838:
 addr_27839:
     jmp addr_28022
 addr_27840:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27841:
 addr_27842:
@@ -88241,8 +88241,8 @@ addr_27850:
     test rax, rax
     jz addr_28023
 addr_27851:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27852:
     mov rax, 8
@@ -88274,8 +88274,8 @@ addr_27858:
     pop rbx
     mov [rax], rbx
 addr_27859:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27860:
 addr_27861:
@@ -88322,7 +88322,7 @@ addr_27874:
     jz addr_27894
 addr_27875:
     mov rax, [ret_stack_rsp]
-    add rax, 0
+    add rax, 8
     push rax
 addr_27876:
 addr_27877:
@@ -88379,8 +88379,8 @@ addr_27893:
 addr_27894:
     jmp addr_27895
 addr_27895:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27896:
 addr_27897:
@@ -88555,8 +88555,8 @@ addr_27953:
 addr_27954:
     jmp addr_27955
 addr_27955:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27956:
 addr_27957:
@@ -88601,7 +88601,7 @@ addr_27968:
     jz addr_27973
 addr_27969:
     mov rax, [ret_stack_rsp]
-    add rax, 8
+    add rax, 16
     push rax
 addr_27970:
 addr_27971:
@@ -88614,7 +88614,7 @@ addr_27973:
     pop rax
 addr_27974:
     mov rax, [ret_stack_rsp]
-    add rax, 0
+    add rax, 8
     push rax
 addr_27975:
 addr_27976:
@@ -88655,8 +88655,8 @@ addr_27986:
 addr_27987:
     pop rax
 addr_27988:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_27989:
 addr_27990:
@@ -88751,8 +88751,8 @@ addr_28021:
 addr_28022:
     jmp addr_28043
 addr_28023:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_28024:
 addr_28025:
@@ -88771,7 +88771,7 @@ addr_28029:
 addr_28030:
 addr_28031:
     mov rax, [ret_stack_rsp]
-    add rax, 16
+    add rax, 24
     push rax
 addr_28032:
 addr_28033:
@@ -88779,8 +88779,8 @@ addr_28033:
     pop rbx
     mov [rax], rbx
 addr_28034:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_28035:
     mov rax, 8
@@ -88824,7 +88824,7 @@ addr_28045:
     jmp addr_27779
 addr_28046:
     mov rax, [ret_stack_rsp]
-    add rax, 16
+    add rax, 24
     push rax
 addr_28047:
 addr_28048:
@@ -88863,7 +88863,7 @@ addr_28057:
     jz addr_28077
 addr_28058:
     mov rax, [ret_stack_rsp]
-    add rax, 0
+    add rax, 8
     push rax
 addr_28059:
 addr_28060:
@@ -88921,7 +88921,7 @@ addr_28077:
     jmp addr_28078
 addr_28078:
     mov rax, [ret_stack_rsp]
-    add rax, 16
+    add rax, 24
     push rax
 addr_28079:
 addr_28080:
@@ -88954,7 +88954,7 @@ addr_28086:
     mov rsp, rax
 addr_28087:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_28088:
 addr_28089:
@@ -89031,7 +89031,7 @@ addr_28113:
     mov [rax], rbx
 addr_28114:
     mov rax, [ret_stack_rsp]
-    add rax, 16
+    add rax, 24
     push rax
 addr_28115:
 addr_28116:
@@ -89060,7 +89060,7 @@ addr_28120:
     mov rsp, rax
 addr_28121:
     mov rax, [ret_stack_rsp]
-    add rax, 8
+    add rax, 16
     push rax
 addr_28122:
 addr_28123:
@@ -89118,7 +89118,7 @@ addr_28136:
 addr_28137:
 addr_28138:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_28139:
 addr_28140:
@@ -89423,7 +89423,7 @@ addr_28235:
 addr_28236:
 addr_28237:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_28238:
 addr_28239:
@@ -89779,7 +89779,7 @@ addr_28353:
 addr_28354:
 addr_28355:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_28356:
 addr_28357:
@@ -89932,7 +89932,7 @@ addr_28404:
 addr_28405:
 addr_28406:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_28407:
 addr_28408:
@@ -90157,7 +90157,7 @@ addr_28479:
     jmp addr_29032
 addr_28480:
     mov rax, [ret_stack_rsp]
-    add rax, 8
+    add rax, 16
     push rax
 addr_28481:
 addr_28482:
@@ -90215,7 +90215,7 @@ addr_28495:
 addr_28496:
 addr_28497:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_28498:
 addr_28499:
@@ -90537,7 +90537,7 @@ addr_28600:
 addr_28601:
 addr_28602:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_28603:
 addr_28604:
@@ -90715,7 +90715,7 @@ addr_28657:
 addr_28658:
 addr_28659:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_28660:
 addr_28661:
@@ -91004,7 +91004,7 @@ addr_28752:
 addr_28753:
 addr_28754:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_28755:
 addr_28756:
@@ -91142,7 +91142,7 @@ addr_28798:
 addr_28799:
 addr_28800:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_28801:
 addr_28802:
@@ -91644,7 +91644,7 @@ addr_28963:
 addr_28964:
 addr_28965:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_28966:
 addr_28967:
@@ -91925,7 +91925,7 @@ addr_29060:
     mov rsp, rax
 addr_29061:
     mov rax, [ret_stack_rsp]
-    add rax, 40
+    add rax, 48
     push rax
 addr_29062:
 addr_29063:
@@ -92006,7 +92006,7 @@ addr_29086:
 addr_29087:
 addr_29088:
     mov rax, [ret_stack_rsp]
-    add rax, 24
+    add rax, 32
     push rax
 addr_29089:
 addr_29090:
@@ -92126,8 +92126,8 @@ addr_29127:
     mov [rax], rbx
 addr_29128:
 addr_29129:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29130:
 addr_29131:
@@ -92173,8 +92173,8 @@ addr_29144:
     test rax, rax
     jz addr_29167
 addr_29145:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29146:
 addr_29147:
@@ -92207,8 +92207,8 @@ addr_29157:
     pop rbx
     mov [rax], rbx
 addr_29158:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29159:
     mov rax, 8
@@ -92292,8 +92292,8 @@ addr_29183:
 addr_29184:
     jmp addr_29207
 addr_29185:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29186:
 addr_29187:
@@ -92324,7 +92324,7 @@ addr_29195:
     jz addr_29208
 addr_29196:
     mov rax, [ret_stack_rsp]
-    add rax, 0
+    add rax, 8
     push rax
 addr_29197:
 addr_29198:
@@ -92359,8 +92359,8 @@ addr_29206:
 addr_29207:
     jmp addr_29274
 addr_29208:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29209:
 addr_29210:
@@ -92390,8 +92390,8 @@ addr_29218:
     test rax, rax
     jz addr_29275
 addr_29219:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29220:
     mov rax, 8
@@ -92423,8 +92423,8 @@ addr_29226:
     pop rbx
     mov [rax], rbx
 addr_29227:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29228:
 addr_29229:
@@ -92471,7 +92471,7 @@ addr_29242:
     jz addr_29262
 addr_29243:
     mov rax, [ret_stack_rsp]
-    add rax, 0
+    add rax, 8
     push rax
 addr_29244:
 addr_29245:
@@ -92528,8 +92528,8 @@ addr_29261:
 addr_29262:
     jmp addr_29263
 addr_29263:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29264:
 addr_29265:
@@ -92567,8 +92567,8 @@ addr_29273:
 addr_29274:
     jmp addr_29339
 addr_29275:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29276:
 addr_29277:
@@ -92598,8 +92598,8 @@ addr_29285:
     test rax, rax
     jz addr_29340
 addr_29286:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29287:
     mov rax, 8
@@ -92631,8 +92631,8 @@ addr_29293:
     pop rbx
     mov [rax], rbx
 addr_29294:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29295:
 addr_29296:
@@ -92679,7 +92679,7 @@ addr_29309:
     jz addr_29329
 addr_29310:
     mov rax, [ret_stack_rsp]
-    add rax, 0
+    add rax, 8
     push rax
 addr_29311:
 addr_29312:
@@ -92736,8 +92736,8 @@ addr_29328:
 addr_29329:
     jmp addr_29330
 addr_29330:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29331:
 addr_29332:
@@ -92763,8 +92763,8 @@ addr_29338:
 addr_29339:
     jmp addr_29406
 addr_29340:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29341:
 addr_29342:
@@ -92794,8 +92794,8 @@ addr_29350:
     test rax, rax
     jz addr_29407
 addr_29351:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29352:
     mov rax, 8
@@ -92827,8 +92827,8 @@ addr_29358:
     pop rbx
     mov [rax], rbx
 addr_29359:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29360:
 addr_29361:
@@ -92875,7 +92875,7 @@ addr_29374:
     jz addr_29394
 addr_29375:
     mov rax, [ret_stack_rsp]
-    add rax, 0
+    add rax, 8
     push rax
 addr_29376:
 addr_29377:
@@ -92932,8 +92932,8 @@ addr_29393:
 addr_29394:
     jmp addr_29395
 addr_29395:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29396:
 addr_29397:
@@ -92972,7 +92972,7 @@ addr_29406:
     jmp addr_29453
 addr_29407:
     mov rax, [ret_stack_rsp]
-    add rax, 0
+    add rax, 8
     push rax
 addr_29408:
 addr_29409:
@@ -93013,8 +93013,8 @@ addr_29419:
 addr_29420:
     pop rax
 addr_29421:
-    mov rax, mem
-    add rax, 12468384
+    mov rax, [ret_stack_rsp]
+    add rax, 0
     push rax
 addr_29422:
 addr_29423:
@@ -93106,7 +93106,7 @@ addr_29453:
 addr_29454:
     mov rax, rsp
     mov rsp, [ret_stack_rsp]
-    add rsp, 48
+    add rsp, 56
     ret
 addr_29455:
 global _start
@@ -94005,7 +94005,7 @@ str_882: db 10
 str_883: db 69,82,82,79,82,58,32,99,111,117,108,100,32,110,111,116,32,114,101,110,97,109,101,32,116,104,101,32,102,105,108,101,10
 str_884: db 99,104,109,111,100,0
 str_885: db 43,120,0
-str_886: db 46,47,112,111,114,116,104,46,112,111,114,116,104,58,52,52,48,54,58,55
+str_886: db 46,47,112,111,114,116,104,46,112,111,114,116,104,58,52,52,48,53,58,55
 str_887: db 58,32,65,115,115,101,114,116,105,111,110,32,70,97,105,108,101,100,58,32,117,110,114,101,97,99,104,97,98,108,101,10
 str_888: db 91,73,78,70,79,93,32,71,101,110,101,114,97,116,105,111,110
 str_889: db 104,101,108,112,0
@@ -94022,4 +94022,4 @@ args_ptr: resq 1
 ret_stack_rsp: resq 1
 ret_stack: resb 65536
 ret_stack_end:
-mem: resb 12468392
+mem: resb 12468384

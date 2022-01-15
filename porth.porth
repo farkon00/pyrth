@@ -4219,9 +4219,8 @@ proc target-by-name int ptr -- int bool in
   end
 end
 
-memory args sizeof(ptr) end
-
 proc main in
+  memory args sizeof(ptr) end
   argv args !ptr
 
   memory program sizeof(ptr) end
