@@ -3489,7 +3489,7 @@ in
   type-check-stack
 end
 
-// TODO: factor out the args of type-check-program-from into structure
+// TODOOOO: factor out the args of type-check-program-from into structure
 proc type-check-program-from
   ptr // stack
   int // ip
@@ -4183,7 +4183,7 @@ in
   "    help                  Print this help to stdout and exit with 0 code\n"               fd @64 fputs
 end
 
-// TODOO: split "target" into "format" and "platform"
+// TODOOOO: split "target" into "format" and "platform"
 const TARGET_NASM_LINUX_X86_64 1 offset end
 const TARGET_FASM_LINUX_X86_64 1 offset end
 const COUNT_TARGETS               reset end
