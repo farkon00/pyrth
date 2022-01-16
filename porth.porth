@@ -2561,6 +2561,10 @@ end
 
 const INCLUDE_LIMIT 100 end
 
+// TODO: consider merging the process of compilation and type checking
+// - Helps to catch type errors earlier
+// - Allows `???` to show the type stack even if the programming is not fully compilable
+
 proc compile-file-into-ops
   ptr  // file path cstr
   int  // include level
@@ -4190,7 +4194,7 @@ in
   "    help                  Print this help to stdout and exit with 0 code\n"               fd @64 fputs
 end
 
-// TODOOOO: split "target" into "format" and "platform"
+// TODO: split "target" into "format" and "platform"
 const TARGET_NASM_LINUX_X86_64 1 offset end
 const TARGET_FASM_LINUX_X86_64 1 offset end
 const COUNT_TARGETS               reset end
