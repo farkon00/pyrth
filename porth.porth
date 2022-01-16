@@ -3505,10 +3505,10 @@ proc type-check-program-from
   ptr // stack
   int // ip
   ptr // outs
-  int // start of the loop
+  int // ip beginning of the type checking block
 in
-  memory start-ip sizeof(int) end
-  start-ip !int
+  memory block-start-ip sizeof(int) end
+  block-start-ip !int
 
   memory outs sizeof(TypeStack) end
   sizeof(TypeStack) swap outs memcpy drop
@@ -3611,7 +3611,7 @@ in
         stack
         ip @int 1 +
         outs
-        start-ip @int
+        block-start-ip @int
         type-check-program-from
 
         // else branch
@@ -3624,7 +3624,7 @@ in
         stack
         ip @int 1 +
         outs
-        start-ip @int
+        block-start-ip @int
         type-check-program-from
 
         // else branch
@@ -3685,7 +3685,7 @@ in
 
         true // continue
       else op Op.type ptr+ @int OP_WHILE = if*
-        ip @int start-ip @int != if
+        ip @int block-start-ip @int != if
           stack
           ip @int 1 +
           stack
@@ -3704,7 +3704,7 @@ in
         stack
         ip @int 1 +
         outs
-        start-ip @int
+        block-start-ip @int
         type-check-program-from
 
         // else branch
@@ -4023,7 +4023,7 @@ in
     stack TypeStack.top ptr+ @ptr TypeFrame.type ptr+ @int
     outs  TypeStack.top ptr+ @ptr TypeFrame.type ptr+ @int
     != if
-      start-ip @int sizeof(Op) * ops +ptr
+      block-start-ip @int sizeof(Op) * ops +ptr
         dup Op.type ptr+ @int OP_WHILE = if
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
@@ -4064,7 +4064,7 @@ in
   stack TypeStack.count ptr+ @int
   outs  TypeStack.count ptr+ @int
     over over > if
-      start-ip @int sizeof(Op) * ops +ptr
+      block-start-ip @int sizeof(Op) * ops +ptr
         dup Op.type ptr+ @int OP_WHILE = if
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
@@ -4087,7 +4087,7 @@ in
     end
 
     over over < if
-      start-ip @int sizeof(Op) * ops +ptr
+      block-start-ip @int sizeof(Op) * ops +ptr
         dup Op.type ptr+ @int OP_WHILE = if
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
