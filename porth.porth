@@ -1336,7 +1336,15 @@ in
 
   "addr_" out-fd @64 fputs
   over    out-fd @64 fputu
-  ":\n"   out-fd @64 fputs
+  ":"     out-fd @64 fputs
+
+  " ;; "                               out-fd @64 fputs
+  dup Op.token ptr+ Token.loc ptr+     out-fd @64 fputloc
+  ": "                                 out-fd @64 fputs
+  dup Op.type ptr+ @int op-type-as-str out-fd @64 fputs
+  " "                                  out-fd @64 fputs
+  dup Op.operand ptr+ @int             out-fd @64 fputu
+  "\n"                                 out-fd @64 fputs
 
        dup Op.type ptr+ @64 OP_PUSH_INT = if
      "    mov rax, "        out-fd @64 fputs dup Op.operand ptr+ @64 out-fd @64 fputu "\n"    out-fd @64 fputs
