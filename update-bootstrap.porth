@@ -1,0 +1,28 @@
+include "std.porth"
+
+inline proc shell -- ptr in tmp-end end
+inline proc : ptr in tmp-append-ptr end
+inline proc run ptr ptr in 
+  tmp-append-ptr 
+  NULL tmp-append-ptr
+  dup true cmd-echoed 
+  tmp-rewind 
+end
+
+proc main in
+  shell 
+    "./porth"c : "com"c : "-s"c : "-t"c : "nasm-linux-x86_64"c : "./porth.porth"c 
+  run
+
+  shell 
+    "cp"c : "-v"c : "./porth.asm"c : "./bootstrap/porth-linux-x86_64.nasm"c 
+  run
+
+  shell 
+    "./porth"c : "com"c : "-s"c : "-t"c : "fasm-linux-x86_64"c : "./porth.porth"c 
+  run
+
+  shell 
+    "cp"c : "-v"c : "./porth.asm"c : "./bootstrap/porth-linux-x86_64.fasm"c 
+  run
+end
