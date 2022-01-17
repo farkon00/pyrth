@@ -3508,24 +3508,39 @@ in
   type-check-stack
 end
 
-// TODOOOO: factor out the args of type-check-program-from into structure
-proc type-check-program-from
+const TypeContext.stack sizeof(TypeStack) offset end
+const TypeContext.ip sizeof(int) offset end
+const TypeContext.outs sizeof(TypeStack) offset end
+const TypeContext.block-start-ip sizeof(int) offset end
+const sizeof(TypeContext) reset end
+
+proc type-context-from-parts
   ptr // stack
   int // ip
   ptr // outs
   int // ip beginning of the type checking block
+  ptr // the type context
+  --
+  ptr // the type context
 in
-  memory block-start-ip sizeof(int) end
-  block-start-ip !int
+  memory context sizeof(ptr) end
+  context !ptr
 
-  memory outs sizeof(TypeStack) end
-  sizeof(TypeStack) swap outs memcpy drop
+  context @ptr TypeContext.block-start-ip ptr+ !int
+  sizeof(TypeStack) swap context @ptr TypeContext.outs ptr+ memcpy drop
+  context @ptr TypeContext.ip ptr+ !int
+  sizeof(TypeStack) swap context @ptr TypeContext.stack ptr+ memcpy drop
 
-  memory ip sizeof(int) end
-  ip !int
+  context @ptr
+end
 
-  memory stack sizeof(TypeStack) end
-  sizeof(TypeStack) swap stack memcpy drop
+proc type-check-program-from
+  ptr // the type context
+in
+  memory context sizeof(TypeContext) end
+  sizeof(TypeContext) swap context memcpy drop
+
+  memory while-context sizeof(TypeContext) end
 
   memory op sizeof(Op) end
 
@@ -3533,9 +3548,9 @@ in
 
   while
     tmp-end
-    ip @int ops-count @int < if
+    context TypeContext.ip ptr+ @int ops-count @int < if
       sizeof(Op)
-      ip @int sizeof(Op) * ops +ptr
+      context TypeContext.ip ptr+ @int sizeof(Op) * ops +ptr
       op
       memcpy drop
 
@@ -3544,114 +3559,110 @@ in
       op Op.type ptr+ @int OP_PUSH_INT = if
         DATATYPE_INT
         op Op.token ptr+ Token.loc ptr+
-        stack
+        context TypeContext.stack ptr+
         type-stack-push
 
-        ip inc64
+        context TypeContext.ip ptr+ inc64
 
         true // continue
       else op Op.type ptr+ @int OP_PUSH_BOOL = if*
         DATATYPE_BOOL
         op Op.token ptr+ Token.loc ptr+
-        stack
+        context TypeContext.stack ptr+
         type-stack-push
 
-        ip inc64
+        context TypeContext.ip ptr+ inc64
 
         true // continue
       else op Op.type ptr+ @int OP_PUSH_PTR = if*
         DATATYPE_PTR
         op Op.token ptr+ Token.loc ptr+
-        stack
+        context TypeContext.stack ptr+
         type-stack-push
 
-        ip inc64
+        context TypeContext.ip ptr+ inc64
 
         true // continue
       else op Op.type ptr+ @int OP_PUSH_ADDR = if*
         DATATYPE_ADDR
         op Op.token ptr+ Token.loc ptr+
-        stack
+        context TypeContext.stack ptr+
         type-stack-push
 
-        ip inc64
+        context TypeContext.ip ptr+ inc64
 
         true // continue
       else op Op.type ptr+ @int OP_PUSH_LOCAL_MEM = if*
         DATATYPE_PTR
         op Op.token ptr+ Token.loc ptr+
-        stack
+        context TypeContext.stack ptr+
         type-stack-push
 
-        ip inc64
+        context TypeContext.ip ptr+ inc64
 
         true // continue
       else op Op.type ptr+ @int OP_PUSH_GLOBAL_MEM = if*
         DATATYPE_PTR
         op Op.token ptr+ Token.loc ptr+
-        stack
+        context TypeContext.stack ptr+
         type-stack-push
 
-        ip inc64
+        context TypeContext.ip ptr+ inc64
 
         true // continue
       else op Op.type ptr+ @int OP_PUSH_STR = if*
         op Op.token ptr+ Token.loc ptr+
-          DATATYPE_INT over stack type-stack-push
-          DATATYPE_PTR over stack type-stack-push
+          DATATYPE_INT over context TypeContext.stack ptr+ type-stack-push
+          DATATYPE_PTR over context TypeContext.stack ptr+ type-stack-push
         drop
 
-        ip inc64
+        context TypeContext.ip ptr+ inc64
 
         true // continue
       else op Op.type ptr+ @int OP_PUSH_CSTR = if*
         op Op.token ptr+ Token.loc ptr+
-          DATATYPE_PTR over stack type-stack-push
+          DATATYPE_PTR over context TypeContext.stack ptr+ type-stack-push
         drop
 
-        ip inc64
+        context TypeContext.ip ptr+ inc64
 
         true  // continue
       else op Op.type ptr+ @int OP_IF = if*
-        op Op.token ptr+ stack type-check-if-op
+        op Op.token ptr+ context TypeContext.stack ptr+ type-check-if-op
 
         // then branch
-        stack
-        ip @int 1 +
-        outs
-        block-start-ip @int
-        type-check-program-from
+        context TypeContext.ip ptr+ inc64
+        context type-check-program-from
+        context TypeContext.ip ptr+ dec64
 
         // else branch
-        op Op.operand ptr+ @int ip !int
+        op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
         true // continue
       else op Op.type ptr+ @int OP_IFSTAR = if*
-        op Op.token ptr+ stack type-check-if-op
+        op Op.token ptr+ context TypeContext.stack ptr+ type-check-if-op
 
         // then branch
-        stack
-        ip @int 1 +
-        outs
-        block-start-ip @int
-        type-check-program-from
+        context TypeContext.ip ptr+ inc64
+        context type-check-program-from
+        context TypeContext.ip ptr+ dec64
 
         // else branch
-        op Op.operand ptr+ @int ip !int
+        op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
         true // continue
       else op Op.type ptr+ @int OP_ELSE = if*
-        op Op.operand ptr+ @int ip !int
+        op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
         true // continue
       else op Op.type ptr+ @int OP_END = if*
-        op Op.operand ptr+ @int ip !int
+        op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
         true // continue
       else op Op.type ptr+ @int OP_PREP_PROC = if*
-        ip inc64
+        context TypeContext.ip ptr+ inc64
         true // continue
       else op Op.type ptr+ @int OP_RET = if*
         false // break, end of the procedure
       else op Op.type ptr+ @int OP_CALL = if*
         op Op.token ptr+
-        stack
+        context TypeContext.stack ptr+
         op Op.operand ptr+ @int proc-lookup-by-addr
           dup NULL ptr= if
             here eputs ": Assertion Failed: expect proc always exist with this specific address. Something went wrong during the compilation process\n" eputs
@@ -3661,17 +3672,17 @@ in
           swap Proc.outs ptr+
         type-check-stack
 
-        ip inc64
+        context TypeContext.ip ptr+ inc64
 
         true // continue
       else op Op.type ptr+ @int OP_CALL_LIKE = if*
-        op stack type-check-call-like
-        ip inc64
+        op context TypeContext.stack ptr+ type-check-call-like
+        context TypeContext.ip ptr+ inc64
 
         true // continue
       else op Op.type ptr+ @int OP_INLINED = if*
         op Op.token ptr+
-        stack
+        context TypeContext.stack ptr+
         op Op.operand ptr+ @int proc-lookup-by-addr
           dup NULL ptr= if
             here eputs ": Assertion Failed: expect proc always exist with this specific address. Something went wrong during the compilation process\n" eputs
@@ -3681,7 +3692,7 @@ in
           swap Proc.outs ptr+
         type-check-stack
 
-        ip @int
+        context TypeContext.ip ptr+ @int
         op Op.operand ptr+ @int proc-lookup-by-addr
         dup NULL ptr= if
           here eputs ": Assertion Failed: expect proc always exist with this specific address. Something went wrong during the compilation process\n" eputs
@@ -3689,31 +3700,32 @@ in
         end
         Proc.size ptr+ @int +
         1 +
-        ip !int
+        context TypeContext.ip ptr+ !int
 
         true // continue
       else op Op.type ptr+ @int OP_WHILE = if*
-        ip @int block-start-ip @int != if
-          stack
-          ip @int 1 +
-          stack
-          ip @int
+        context TypeContext.ip ptr+ @int
+        context TypeContext.block-start-ip ptr+ @int != if
+          context TypeContext.stack ptr+
+          context TypeContext.ip ptr+ @int 1 +
+          context TypeContext.stack ptr+
+          context TypeContext.ip ptr+ @int
+          while-context
+          type-context-from-parts
           type-check-program-from
 
-          op Op.operand ptr+ @int ip !int
+          op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
           true // continue
         else
           false // break, we repeated the loop
         end
       else op Op.type ptr+ @int OP_DO = if*
-        op Op.token ptr+ stack type-check-if-op
+        op Op.token ptr+ context TypeContext.stack ptr+ type-check-if-op
 
         // then branch
-        stack
-        ip @int 1 +
-        outs
-        block-start-ip @int
-        type-check-program-from
+        context TypeContext.ip ptr+ inc64
+        context type-check-program-from
+        context TypeContext.ip ptr+ dec64
 
         // else branch
         false // break
@@ -3722,50 +3734,50 @@ in
 
         op Op.operand ptr+ @int
           dup INTRINSIC_PLUS = if
-            op Op.token ptr+ stack type-check-binary-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-binary-int-operator
           else dup INTRINSIC_MINUS = if*
-            op Op.token ptr+ stack type-check-binary-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-binary-int-operator
           else dup INTRINSIC_MUL = if*
-            op Op.token ptr+ stack type-check-binary-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-binary-int-operator
           else dup INTRINSIC_DIVMOD = if*
-            op Op.token ptr+ stack type-check-divmod-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-divmod-operator
           else dup INTRINSIC_MAX = if*
-            op Op.token ptr+ stack type-check-binary-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-binary-int-operator
           else dup INTRINSIC_EQ = if*
-            op Op.token ptr+ stack type-check-cmp-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-cmp-int-operator
           else dup INTRINSIC_GT = if*
-            op Op.token ptr+ stack type-check-cmp-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-cmp-int-operator
           else dup INTRINSIC_LT = if*
-            op Op.token ptr+ stack type-check-cmp-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-cmp-int-operator
           else dup INTRINSIC_GE = if*
-            op Op.token ptr+ stack type-check-cmp-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-cmp-int-operator
           else dup INTRINSIC_LE = if*
-            op Op.token ptr+ stack type-check-cmp-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-cmp-int-operator
           else dup INTRINSIC_NE = if*
-            op Op.token ptr+ stack type-check-cmp-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-cmp-int-operator
           else dup INTRINSIC_SHR = if*
-            op Op.token ptr+ stack type-check-binary-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-binary-int-operator
           else dup INTRINSIC_SHL = if*
-            op Op.token ptr+ stack type-check-binary-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-binary-int-operator
           else dup INTRINSIC_OR = if*
-            op Op.token ptr+ stack type-check-binary-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-binary-int-operator
           else dup INTRINSIC_AND = if*
-            op Op.token ptr+ stack type-check-binary-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-binary-int-operator
           else dup INTRINSIC_NOT = if*
-            op Op.token ptr+ stack type-check-unary-int-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-unary-int-operator
           else dup INTRINSIC_PRINT = if*
             op Op.token ptr+
-            stack
+            context TypeContext.stack ptr+
             over over 1 expect-arity
             sizeof(TypeStack) tmp-alloc
             type-check-stack
           else dup INTRINSIC_DUP = if*
-            op Op.token ptr+ stack type-check-dup
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-dup
           else dup INTRINSIC_SWAP = if*
             // token
             op Op.token ptr+
             // stack
-            stack
+            context TypeContext.stack ptr+
             // ins
             over over 2 expect-arity
             // outs
@@ -3773,33 +3785,33 @@ in
             type-check-stack
           else dup INTRINSIC_DROP = if*
             op Op.token ptr+
-            stack
+            context TypeContext.stack ptr+
             over over 1 expect-arity
             sizeof(TypeStack) tmp-alloc
             type-check-stack
           else dup INTRINSIC_OVER = if*
-            op Op.token ptr+ stack type-check-over
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-over
           else dup INTRINSIC_ROT = if*
-            op Op.token ptr+ stack type-check-rot
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-rot
           else dup INTRINSIC_LOAD8 = if*
-            op Op.token ptr+ stack type-check-load-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-load-operator
           else dup INTRINSIC_STORE8 = if*
-            op Op.token ptr+ stack type-check-store-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-store-operator
           else dup INTRINSIC_LOAD16 = if*
-            op Op.token ptr+ stack type-check-load-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-load-operator
           else dup INTRINSIC_STORE16 = if*
-            op Op.token ptr+ stack type-check-store-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-store-operator
           else dup INTRINSIC_LOAD32 = if*
-            op Op.token ptr+ stack type-check-load-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-load-operator
           else dup INTRINSIC_STORE32 = if*
-            op Op.token ptr+ stack type-check-store-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-store-operator
           else dup INTRINSIC_LOAD64 = if*
-            op Op.token ptr+ stack type-check-load-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-load-operator
           else dup INTRINSIC_STORE64 = if*
-            op Op.token ptr+ stack type-check-store-operator
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-store-operator
           else dup INTRINSIC_CAST_PTR = if*
             op Op.token ptr+
-            stack
+            context TypeContext.stack ptr+
             over
             over
             1 expect-arity
@@ -3810,7 +3822,7 @@ in
             type-check-stack
           else dup INTRINSIC_CAST_INT = if*
             op Op.token ptr+
-            stack
+            context TypeContext.stack ptr+
             over
             over
             1 expect-arity
@@ -3821,7 +3833,7 @@ in
             type-check-stack
           else dup INTRINSIC_CAST_BOOL = if*
             op Op.token ptr+
-            stack
+            context TypeContext.stack ptr+
             over
             over
             1 expect-arity
@@ -3832,7 +3844,7 @@ in
             type-check-stack
           else dup INTRINSIC_CAST_ADDR = if*
             op Op.token ptr+
-            stack
+            context TypeContext.stack ptr+
             over
             over
             1 expect-arity
@@ -3844,23 +3856,23 @@ in
           else dup INTRINSIC_ARGC = if*
             DATATYPE_INT
             op Op.token ptr+ Token.loc ptr+
-            stack
+            context TypeContext.stack ptr+
             type-stack-push
           else dup INTRINSIC_ARGV = if*
             DATATYPE_PTR
             op Op.token ptr+ Token.loc ptr+
-            stack
+            context TypeContext.stack ptr+
             type-stack-push
           else dup INTRINSIC_ENVP = if*
             DATATYPE_PTR
             op Op.token ptr+ Token.loc ptr+
-            stack
+            context TypeContext.stack ptr+
             type-stack-push
           else dup INTRINSIC_SYSCALL0 = if*
             // token
             op Op.token ptr+
             // stack
-            stack
+            context TypeContext.stack ptr+
             // ins
             over
             over
@@ -3880,7 +3892,7 @@ in
             // token
             op Op.token ptr+
             // stack
-            stack
+            context TypeContext.stack ptr+
             // ins
             over
             over
@@ -3900,7 +3912,7 @@ in
             // token
             op Op.token ptr+
             // stack
-            stack
+            context TypeContext.stack ptr+
             // ins
             over
             over
@@ -3920,7 +3932,7 @@ in
             // token
             op Op.token ptr+
             // stack
-            stack
+            context TypeContext.stack ptr+
             // ins
             over
             over
@@ -3940,7 +3952,7 @@ in
             // token
             op Op.token ptr+
             // stack
-            stack
+            context TypeContext.stack ptr+
             // ins
             over
             over
@@ -3960,7 +3972,7 @@ in
             // token
             op Op.token ptr+
             // stack
-            stack
+            context TypeContext.stack ptr+
             // ins
             over
             over
@@ -3980,7 +3992,7 @@ in
             // token
             op Op.token ptr+
             // stack
-            stack
+            context TypeContext.stack ptr+
             // ins
             over
             over
@@ -3999,7 +4011,7 @@ in
           else dup INTRINSIC_??? = if*
             op Op.token ptr+ Token.loc ptr+                             eputloc
             ": DEBUG: Stopping the compilation. Current stack state:\n" eputs
-            stack stderr type-stack-dump
+            context TypeContext.stack ptr+ stderr type-stack-dump
             1 exit
           else
             here eputs ": unreachable\n" eputs
@@ -4007,7 +4019,7 @@ in
           end
         drop
 
-        ip inc64
+        context TypeContext.ip ptr+ inc64
 
         true // continue
       else
@@ -4023,15 +4035,15 @@ in
   do end
 
   while
-    stack ?type-stack-empty
-    outs  ?type-stack-empty
+    context TypeContext.stack ptr+ ?type-stack-empty
+    context TypeContext.outs ptr+  ?type-stack-empty
     lor
     lnot
   do
-    stack TypeStack.top ptr+ @ptr TypeFrame.type ptr+ @int
-    outs  TypeStack.top ptr+ @ptr TypeFrame.type ptr+ @int
+    context TypeContext.stack ptr+ TypeStack.top ptr+ @ptr TypeFrame.type ptr+ @int
+    context TypeContext.outs ptr+  TypeStack.top ptr+ @ptr TypeFrame.type ptr+ @int
     != if
-      block-start-ip @int sizeof(Op) * ops +ptr
+      context TypeContext.block-start-ip ptr+ @int sizeof(Op) * ops +ptr
         dup Op.type ptr+ @int OP_WHILE = if
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
@@ -4049,14 +4061,14 @@ in
         end
       drop
 
-      stack TypeStack.top ptr+ @ptr
+      context TypeContext.stack ptr+ TypeStack.top ptr+ @ptr
         dup TypeFrame.loc ptr+                     eputloc
         ": NOTE: Unexpected type `"                eputs
         dup TypeFrame.type ptr+ @int datatype-name eputs
         "`\n"                                      eputs
       drop
 
-      outs TypeStack.top ptr+ @ptr
+      context TypeContext.outs ptr+ TypeStack.top ptr+ @ptr
         dup TypeFrame.loc ptr+                       eputloc
         ": NOTE: Expected type `"                    eputs
         dup TypeFrame.type ptr+ @int datatype-name   eputs
@@ -4065,14 +4077,14 @@ in
 
       1 exit
     end
-    stack type-stack-pop
-    outs  type-stack-pop
+    context TypeContext.stack ptr+ type-stack-pop
+    context TypeContext.outs ptr+  type-stack-pop
   end
 
-  stack TypeStack.count ptr+ @int
-  outs  TypeStack.count ptr+ @int
+  context TypeContext.stack ptr+ TypeStack.count ptr+ @int
+  context TypeContext.outs ptr+  TypeStack.count ptr+ @int
     over over > if
-      block-start-ip @int sizeof(Op) * ops +ptr
+      context TypeContext.block-start-ip ptr+ @int sizeof(Op) * ops +ptr
         dup Op.type ptr+ @int OP_WHILE = if
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
@@ -4089,13 +4101,13 @@ in
           69 exit
         end
       drop
-      stack stderr type-stack-dump
+      context TypeContext.stack ptr+ stderr type-stack-dump
 
       1 exit
     end
 
     over over < if
-      block-start-ip @int sizeof(Op) * ops +ptr
+      context TypeContext.block-start-ip ptr+ @int sizeof(Op) * ops +ptr
         dup Op.type ptr+ @int OP_WHILE = if
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
@@ -4112,7 +4124,7 @@ in
           69 exit
         end
       drop
-      outs stderr type-stack-dump
+      context TypeContext.outs ptr+ stderr type-stack-dump
 
       1 exit
     end
@@ -4146,6 +4158,8 @@ proc type-check-program in
     end
   drop
 
+  memory context sizeof(TypeContext) end
+
   0 while dup procs-count @int < do
     dup sizeof(Proc) * procs +ptr
     prok !ptr
@@ -4154,6 +4168,9 @@ proc type-check-program in
     prok @ptr Proc.addr ptr+ @int
     prok @ptr Proc.outs ptr+
     over
+    context
+    type-context-from-parts
+
     type-check-program-from
 
     1 +
