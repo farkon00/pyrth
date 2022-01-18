@@ -520,6 +520,29 @@ inline proc fputs int ptr int in write drop end
 inline proc puts int ptr in stdout fputs end
 inline proc eputs int ptr in stderr fputs end
 
+inline proc WIFSTOPPED int -- bool in
+  // (((x) & 0xff) == 0x7f)
+  here eputs ": TODO: WIFSTOPPED is not implemented\n" eputs
+  1 exit
+  cast(bool)
+end
+
+inline proc WIFCONTINUED int -- bool in
+  // ((x) == 0xffff)
+
+  here eputs ": TODO: WIFCONTINUED is not implemented\n" eputs
+  1 exit
+  cast(bool)
+end
+
+inline proc WIFSIGNALED int -- bool in
+  // (((signed char) (((x) & 0x7f) + 1) >> 1) > 0)
+  127 and // 0x7f
+  1 +
+  1 shr
+  0 >
+end
+
 inline proc WIFEXITED int -- bool in
   // (((x) & 0x7f) == 0)
   127 // 0x7f
@@ -1335,25 +1358,43 @@ in
   else dup 0 > if*
     // parent process
     drop drop
-    NULL
-    0
-    wstatus
-    0 1 - // TODO: replace this with -1 when we support negative numbers
-    wait4 0 < if
-      "[ERROR] could not wait until the child process has finished executing\n" eputs
-      1 exit
-    end
 
-    wstatus @int
-      dup WIFEXITED if
-        dup WEXITSTATUS
-          dup 0 > if
-            dup exit
-          end
-        drop
+    while
+      NULL
+      0
+      wstatus
+      0 1 - // TODO: replace this with -1 when we support negative numbers
+      wait4 0 < if
+        "[ERROR] could not wait until the child process has finished executing\n" eputs
+        1 exit
       end
-    drop
 
+      wstatus @int
+        dup WIFEXITED if
+          dup WEXITSTATUS
+            dup 0 > if
+              dup exit
+            end
+          drop
+
+          false // break
+        else dup WIFSIGNALED if*
+          // TODO: print the signal that terminated the child
+          "ERROR: the child process was terminated by a signal\n" eputs
+          255 exit
+
+          false // break
+        else dup WIFSTOPPED if*
+          true  // continue
+        else dup WIFCONTINUED if*
+          true  // continue
+        else
+          here eputs ": unreachable\n" eputs
+          1 exit
+          false // break
+        end
+      swap drop
+    do end
   else
     drop drop
     "[ERROR] could not fork a child\n" eputs

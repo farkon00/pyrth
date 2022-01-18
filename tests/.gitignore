@@ -38,3 +38,4 @@ str-rfind
 remove-ext
 polymorphism
 dos-newlines
+segfault
