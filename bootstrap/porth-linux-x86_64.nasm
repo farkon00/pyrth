@@ -32059,8 +32059,8 @@ addr_10220: ;; ./porth.porth:860:14: OP_PUSH_LOCAL_MEM 0
     mov rax, [ret_stack_rsp]
     add rax, 0
     push rax
-addr_10221: ;; ./porth.porth:860:17: OP_PUSH_INT 32768
-    mov rax, 32768
+addr_10221: ;; ./porth.porth:860:17: OP_PUSH_INT 65536
+    mov rax, 65536
     push rax
 addr_10222: ;; ./porth.porth:860:25: OP_PUSH_GLOBAL_MEM 8421424
     mov rax, mem
@@ -32810,13 +32810,13 @@ addr_10464: ;; ./porth.porth:911:15: OP_PUSH_LOCAL_MEM 0
 addr_10465: ;; ./porth.porth:912:3: OP_PUSH_INT 2048
     mov rax, 2048
     push rax
-addr_10466: ;; ./porth.porth:912:15: OP_PUSH_GLOBAL_MEM 11305016
+addr_10466: ;; ./porth.porth:912:15: OP_PUSH_GLOBAL_MEM 14188600
     mov rax, mem
-    add rax, 11305016
+    add rax, 14188600
     push rax
-addr_10467: ;; ./porth.porth:913:3: OP_PUSH_GLOBAL_MEM 11305008
+addr_10467: ;; ./porth.porth:913:3: OP_PUSH_GLOBAL_MEM 14188592
     mov rax, mem
-    add rax, 11305008
+    add rax, 14188592
     push rax
 addr_10468: ;; ./porth.porth:914:3: OP_CALL 2634
     mov rax, rsp
@@ -32993,9 +32993,9 @@ addr_10528: ;; ./porth.porth:944:5: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_10529: ;; ./porth.porth:944:9: OP_PUSH_GLOBAL_MEM 11403320
+addr_10529: ;; ./porth.porth:944:9: OP_PUSH_GLOBAL_MEM 14286904
     mov rax, mem
-    add rax, 11403320
+    add rax, 14286904
     push rax
 addr_10530: ;; ./porth.porth:944:22: OP_INTRINSIC 28
     pop rax
@@ -33026,9 +33026,9 @@ addr_10535: ;; ./porth.porth:945:25: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_10536: ;; ./porth.porth:945:27: OP_PUSH_GLOBAL_MEM 11337784
+addr_10536: ;; ./porth.porth:945:27: OP_PUSH_GLOBAL_MEM 14221368
     mov rax, mem
-    add rax, 11337784
+    add rax, 14221368
     push rax
 addr_10537: ;; ./porth.porth:945:34: OP_INLINED 73
 addr_10538: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -33244,9 +33244,9 @@ addr_10615: ;; ./porth.porth:952:3: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_10616: ;; ./porth.porth:952:7: OP_PUSH_GLOBAL_MEM 11403320
+addr_10616: ;; ./porth.porth:952:7: OP_PUSH_GLOBAL_MEM 14286904
     mov rax, mem
-    add rax, 11403320
+    add rax, 14286904
     push rax
 addr_10617: ;; ./porth.porth:952:20: OP_INTRINSIC 28
     pop rax
@@ -33273,9 +33273,9 @@ addr_10621: ;; ./porth.porth:953:19: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_10622: ;; ./porth.porth:953:21: OP_PUSH_GLOBAL_MEM 11337784
+addr_10622: ;; ./porth.porth:953:21: OP_PUSH_GLOBAL_MEM 14221368
     mov rax, mem
-    add rax, 11337784
+    add rax, 14221368
     push rax
 addr_10623: ;; ./porth.porth:953:28: OP_INLINED 73
 addr_10624: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -33314,13 +33314,13 @@ addr_10634: ;; ./porth.porth:962:17: OP_INTRINSIC 18
 addr_10635: ;; ./porth.porth:962:22: OP_PUSH_INT 1024
     mov rax, 1024
     push rax
-addr_10636: ;; ./porth.porth:962:32: OP_PUSH_GLOBAL_MEM 11337784
+addr_10636: ;; ./porth.porth:962:32: OP_PUSH_GLOBAL_MEM 14221368
     mov rax, mem
-    add rax, 11337784
+    add rax, 14221368
     push rax
-addr_10637: ;; ./porth.porth:962:39: OP_PUSH_GLOBAL_MEM 11403320
+addr_10637: ;; ./porth.porth:962:39: OP_PUSH_GLOBAL_MEM 14286904
     mov rax, mem
-    add rax, 11403320
+    add rax, 14286904
     push rax
 addr_10638: ;; ./porth.porth:962:52: OP_CALL 2634
     mov rax, rsp
@@ -33414,9 +33414,9 @@ addr_10669: ;; ./porth.porth:984:6: OP_PREP_PROC 0
     sub rsp, 0
     mov [ret_stack_rsp], rsp
     mov rsp, rax
-addr_10670: ;; ./porth.porth:985:3: OP_PUSH_GLOBAL_MEM 12189760
+addr_10670: ;; ./porth.porth:985:3: OP_PUSH_GLOBAL_MEM 15073344
     mov rax, mem
-    add rax, 12189760
+    add rax, 15073344
     push rax
 addr_10671: ;; ./porth.porth:985:25: OP_INLINED 16
 addr_10672: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -33499,9 +33499,9 @@ addr_10696: ;; ./std/std.porth:441:43: OP_INTRINSIC 19
     pop rax
 addr_10697: ;; ./porth.porth:988:3: OP_END 10698
     jmp addr_10698
-addr_10698: ;; ./porth.porth:990:3: OP_PUSH_GLOBAL_MEM 12189760
+addr_10698: ;; ./porth.porth:990:3: OP_PUSH_GLOBAL_MEM 15073344
     mov rax, mem
-    add rax, 12189760
+    add rax, 15073344
     push rax
 addr_10699: ;; ./porth.porth:990:25: OP_INLINED 16
 addr_10700: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -33517,9 +33517,9 @@ addr_10702: ;; ./porth.porth:991:21: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_10703: ;; ./porth.porth:992:3: OP_PUSH_GLOBAL_MEM 11403328
+addr_10703: ;; ./porth.porth:992:3: OP_PUSH_GLOBAL_MEM 14286912
     mov rax, mem
-    add rax, 11403328
+    add rax, 14286912
     push rax
 addr_10704: ;; ./porth.porth:992:19: OP_INLINED 73
 addr_10705: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -33529,9 +33529,9 @@ addr_10706: ;; ./std/std.porth:396:13: OP_INTRINSIC 0
     add rax, rbx
     push rax
 addr_10707: ;; ./std/std.porth:396:15: OP_INTRINSIC 30
-addr_10708: ;; ./porth.porth:994:3: OP_PUSH_GLOBAL_MEM 12189760
+addr_10708: ;; ./porth.porth:994:3: OP_PUSH_GLOBAL_MEM 15073344
     mov rax, mem
-    add rax, 12189760
+    add rax, 15073344
     push rax
 addr_10709: ;; ./porth.porth:994:25: OP_INLINED 348
 addr_10710: ;; ./std/std.porth:479:26: OP_INTRINSIC 17
@@ -34771,9 +34771,9 @@ addr_11116: ;; ./porth.porth:1111:5: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_11117: ;; ./porth.porth:1111:9: OP_PUSH_GLOBAL_MEM 12189768
+addr_11117: ;; ./porth.porth:1111:9: OP_PUSH_GLOBAL_MEM 15073352
     mov rax, mem
-    add rax, 12189768
+    add rax, 15073352
     push rax
 addr_11118: ;; ./porth.porth:1111:21: OP_INTRINSIC 28
     pop rax
@@ -34804,9 +34804,9 @@ addr_11123: ;; ./porth.porth:1112:24: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_11124: ;; ./porth.porth:1112:26: OP_PUSH_GLOBAL_MEM 12189776
+addr_11124: ;; ./porth.porth:1112:26: OP_PUSH_GLOBAL_MEM 15073360
     mov rax, mem
-    add rax, 12189776
+    add rax, 15073360
     push rax
 addr_11125: ;; ./porth.porth:1112:32: OP_INLINED 73
 addr_11126: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -35022,9 +35022,9 @@ addr_11203: ;; ./porth.porth:1119:3: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_11204: ;; ./porth.porth:1119:7: OP_PUSH_GLOBAL_MEM 12189768
+addr_11204: ;; ./porth.porth:1119:7: OP_PUSH_GLOBAL_MEM 15073352
     mov rax, mem
-    add rax, 12189768
+    add rax, 15073352
     push rax
 addr_11205: ;; ./porth.porth:1119:19: OP_INTRINSIC 28
     pop rax
@@ -35051,9 +35051,9 @@ addr_11209: ;; ./porth.porth:1120:18: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_11210: ;; ./porth.porth:1120:20: OP_PUSH_GLOBAL_MEM 12189776
+addr_11210: ;; ./porth.porth:1120:20: OP_PUSH_GLOBAL_MEM 15073360
     mov rax, mem
-    add rax, 12189776
+    add rax, 15073360
     push rax
 addr_11211: ;; ./porth.porth:1120:26: OP_INLINED 73
 addr_11212: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -35098,9 +35098,9 @@ addr_11226: ;; ./porth.porth:1135:5: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_11227: ;; ./porth.porth:1135:9: OP_PUSH_GLOBAL_MEM 12189768
+addr_11227: ;; ./porth.porth:1135:9: OP_PUSH_GLOBAL_MEM 15073352
     mov rax, mem
-    add rax, 12189768
+    add rax, 15073352
     push rax
 addr_11228: ;; ./porth.porth:1135:21: OP_INTRINSIC 28
     pop rax
@@ -35131,9 +35131,9 @@ addr_11233: ;; ./porth.porth:1136:24: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_11234: ;; ./porth.porth:1136:26: OP_PUSH_GLOBAL_MEM 12189776
+addr_11234: ;; ./porth.porth:1136:26: OP_PUSH_GLOBAL_MEM 15073360
     mov rax, mem
-    add rax, 12189776
+    add rax, 15073360
     push rax
 addr_11235: ;; ./porth.porth:1136:32: OP_INLINED 73
 addr_11236: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -35214,9 +35214,9 @@ addr_11260: ;; ./porth.porth:1142:3: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_11261: ;; ./porth.porth:1142:7: OP_PUSH_GLOBAL_MEM 12189768
+addr_11261: ;; ./porth.porth:1142:7: OP_PUSH_GLOBAL_MEM 15073352
     mov rax, mem
-    add rax, 12189768
+    add rax, 15073352
     push rax
 addr_11262: ;; ./porth.porth:1142:19: OP_INTRINSIC 28
     pop rax
@@ -35243,9 +35243,9 @@ addr_11266: ;; ./porth.porth:1143:18: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_11267: ;; ./porth.porth:1143:20: OP_PUSH_GLOBAL_MEM 12189776
+addr_11267: ;; ./porth.porth:1143:20: OP_PUSH_GLOBAL_MEM 15073360
     mov rax, mem
-    add rax, 12189776
+    add rax, 15073360
     push rax
 addr_11268: ;; ./porth.porth:1143:26: OP_INLINED 73
 addr_11269: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -35284,13 +35284,13 @@ addr_11279: ;; ./porth.porth:1153:16: OP_INTRINSIC 18
 addr_11280: ;; ./porth.porth:1153:21: OP_PUSH_INT 1024
     mov rax, 1024
     push rax
-addr_11281: ;; ./porth.porth:1153:31: OP_PUSH_GLOBAL_MEM 12189776
+addr_11281: ;; ./porth.porth:1153:31: OP_PUSH_GLOBAL_MEM 15073360
     mov rax, mem
-    add rax, 12189776
+    add rax, 15073360
     push rax
-addr_11282: ;; ./porth.porth:1153:37: OP_PUSH_GLOBAL_MEM 12189768
+addr_11282: ;; ./porth.porth:1153:37: OP_PUSH_GLOBAL_MEM 15073352
     mov rax, mem
-    add rax, 12189768
+    add rax, 15073352
     push rax
 addr_11283: ;; ./porth.porth:1153:49: OP_CALL 2634
     mov rax, rsp
@@ -35387,9 +35387,9 @@ addr_11314: ;; ./porth.porth:1177:13: OP_PREP_PROC 0
 addr_11315: ;; ./porth.porth:1178:3: OP_PUSH_INT 0
     mov rax, 0
     push rax
-addr_11316: ;; ./porth.porth:1178:5: OP_PUSH_GLOBAL_MEM 12353640
+addr_11316: ;; ./porth.porth:1178:5: OP_PUSH_GLOBAL_MEM 15237224
     mov rax, mem
-    add rax, 12353640
+    add rax, 15237224
     push rax
 addr_11317: ;; ./porth.porth:1178:26: OP_INTRINSIC 29
     pop rax
@@ -35398,9 +35398,9 @@ addr_11317: ;; ./porth.porth:1178:26: OP_INTRINSIC 29
 addr_11318: ;; ./porth.porth:1179:3: OP_PUSH_INT 0
     mov rax, 0
     push rax
-addr_11319: ;; ./porth.porth:1179:5: OP_PUSH_GLOBAL_MEM 12410992
+addr_11319: ;; ./porth.porth:1179:5: OP_PUSH_GLOBAL_MEM 15294576
     mov rax, mem
-    add rax, 12410992
+    add rax, 15294576
     push rax
 addr_11320: ;; ./porth.porth:1179:27: OP_INTRINSIC 29
     pop rax
@@ -35500,9 +35500,9 @@ addr_11352: ;; ./porth.porth:1191:5: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_11353: ;; ./porth.porth:1191:9: OP_PUSH_GLOBAL_MEM 12353640
+addr_11353: ;; ./porth.porth:1191:9: OP_PUSH_GLOBAL_MEM 15237224
     mov rax, mem
-    add rax, 12353640
+    add rax, 15237224
     push rax
 addr_11354: ;; ./porth.porth:1191:30: OP_INTRINSIC 28
     pop rax
@@ -35533,9 +35533,9 @@ addr_11359: ;; ./porth.porth:1192:26: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_11360: ;; ./porth.porth:1192:28: OP_PUSH_GLOBAL_MEM 12353648
+addr_11360: ;; ./porth.porth:1192:28: OP_PUSH_GLOBAL_MEM 15237232
     mov rax, mem
-    add rax, 12353648
+    add rax, 15237232
     push rax
 addr_11361: ;; ./porth.porth:1192:43: OP_INLINED 73
 addr_11362: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -35751,9 +35751,9 @@ addr_11439: ;; ./porth.porth:1199:3: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_11440: ;; ./porth.porth:1199:7: OP_PUSH_GLOBAL_MEM 12353640
+addr_11440: ;; ./porth.porth:1199:7: OP_PUSH_GLOBAL_MEM 15237224
     mov rax, mem
-    add rax, 12353640
+    add rax, 15237224
     push rax
 addr_11441: ;; ./porth.porth:1199:28: OP_INTRINSIC 28
     pop rax
@@ -35780,9 +35780,9 @@ addr_11445: ;; ./porth.porth:1200:20: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_11446: ;; ./porth.porth:1200:22: OP_PUSH_GLOBAL_MEM 12353648
+addr_11446: ;; ./porth.porth:1200:22: OP_PUSH_GLOBAL_MEM 15237232
     mov rax, mem
-    add rax, 12353648
+    add rax, 15237232
     push rax
 addr_11447: ;; ./porth.porth:1200:37: OP_INLINED 73
 addr_11448: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -35895,9 +35895,9 @@ addr_11486: ;; ./porth.porth:1215:5: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_11487: ;; ./porth.porth:1215:9: OP_PUSH_GLOBAL_MEM 12296280
+addr_11487: ;; ./porth.porth:1215:9: OP_PUSH_GLOBAL_MEM 15179864
     mov rax, mem
-    add rax, 12296280
+    add rax, 15179864
     push rax
 addr_11488: ;; ./porth.porth:1215:31: OP_INTRINSIC 28
     pop rax
@@ -35928,9 +35928,9 @@ addr_11493: ;; ./porth.porth:1216:26: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_11494: ;; ./porth.porth:1216:28: OP_PUSH_GLOBAL_MEM 12296288
+addr_11494: ;; ./porth.porth:1216:28: OP_PUSH_GLOBAL_MEM 15179872
     mov rax, mem
-    add rax, 12296288
+    add rax, 15179872
     push rax
 addr_11495: ;; ./porth.porth:1216:44: OP_INLINED 73
 addr_11496: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -36146,9 +36146,9 @@ addr_11573: ;; ./porth.porth:1223:3: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_11574: ;; ./porth.porth:1223:7: OP_PUSH_GLOBAL_MEM 12296280
+addr_11574: ;; ./porth.porth:1223:7: OP_PUSH_GLOBAL_MEM 15179864
     mov rax, mem
-    add rax, 12296280
+    add rax, 15179864
     push rax
 addr_11575: ;; ./porth.porth:1223:29: OP_INTRINSIC 28
     pop rax
@@ -36175,9 +36175,9 @@ addr_11579: ;; ./porth.porth:1224:20: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_11580: ;; ./porth.porth:1224:22: OP_PUSH_GLOBAL_MEM 12296288
+addr_11580: ;; ./porth.porth:1224:22: OP_PUSH_GLOBAL_MEM 15179872
     mov rax, mem
-    add rax, 12296288
+    add rax, 15179872
     push rax
 addr_11581: ;; ./porth.porth:1224:38: OP_INLINED 73
 addr_11582: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -36216,13 +36216,13 @@ addr_11592: ;; ./porth.porth:1233:18: OP_INTRINSIC 18
 addr_11593: ;; ./porth.porth:1233:23: OP_PUSH_INT 1024
     mov rax, 1024
     push rax
-addr_11594: ;; ./porth.porth:1233:42: OP_PUSH_GLOBAL_MEM 12353648
+addr_11594: ;; ./porth.porth:1233:42: OP_PUSH_GLOBAL_MEM 15237232
     mov rax, mem
-    add rax, 12353648
+    add rax, 15237232
     push rax
-addr_11595: ;; ./porth.porth:1233:57: OP_PUSH_GLOBAL_MEM 12353640
+addr_11595: ;; ./porth.porth:1233:57: OP_PUSH_GLOBAL_MEM 15237224
     mov rax, mem
-    add rax, 12353640
+    add rax, 15237224
     push rax
 addr_11596: ;; ./porth.porth:1233:78: OP_CALL 2634
     mov rax, rsp
@@ -36327,13 +36327,13 @@ addr_11629: ;; ./porth.porth:1243:18: OP_INTRINSIC 18
 addr_11630: ;; ./porth.porth:1243:23: OP_PUSH_INT 1024
     mov rax, 1024
     push rax
-addr_11631: ;; ./porth.porth:1243:43: OP_PUSH_GLOBAL_MEM 12296288
+addr_11631: ;; ./porth.porth:1243:43: OP_PUSH_GLOBAL_MEM 15179872
     mov rax, mem
-    add rax, 12296288
+    add rax, 15179872
     push rax
-addr_11632: ;; ./porth.porth:1243:59: OP_PUSH_GLOBAL_MEM 12296280
+addr_11632: ;; ./porth.porth:1243:59: OP_PUSH_GLOBAL_MEM 15179864
     mov rax, mem
-    add rax, 12296280
+    add rax, 15179864
     push rax
 addr_11633: ;; ./porth.porth:1243:81: OP_CALL 2634
     mov rax, rsp
@@ -39568,9 +39568,9 @@ addr_12602: ;; ./porth.porth:1381:20: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_12603: ;; ./porth.porth:1382:8: OP_PUSH_GLOBAL_MEM 11305016
+addr_12603: ;; ./porth.porth:1382:8: OP_PUSH_GLOBAL_MEM 14188600
     mov rax, mem
-    add rax, 11305016
+    add rax, 14188600
     push rax
 addr_12604: ;; ./porth.porth:1382:16: OP_INLINED 73
 addr_12605: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -47857,9 +47857,9 @@ addr_15007: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_15008: ;; ./porth.porth:1696:3: OP_PUSH_GLOBAL_MEM 12411000
+addr_15008: ;; ./porth.porth:1696:3: OP_PUSH_GLOBAL_MEM 15294584
     mov rax, mem
-    add rax, 12411000
+    add rax, 15294584
     push rax
 addr_15009: ;; ./porth.porth:1696:10: OP_INLINED 12
 addr_15010: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -48763,9 +48763,9 @@ addr_15280: ;; ./porth.porth:1751:11: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_15281: ;; ./porth.porth:1751:15: OP_PUSH_GLOBAL_MEM 11305008
+addr_15281: ;; ./porth.porth:1751:15: OP_PUSH_GLOBAL_MEM 14188592
     mov rax, mem
-    add rax, 11305008
+    add rax, 14188592
     push rax
 addr_15282: ;; ./porth.porth:1751:29: OP_INTRINSIC 28
     pop rax
@@ -48869,9 +48869,9 @@ addr_15307: ;; ./porth.porth:1755:21: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_15308: ;; ./porth.porth:1755:23: OP_PUSH_GLOBAL_MEM 11305016
+addr_15308: ;; ./porth.porth:1755:23: OP_PUSH_GLOBAL_MEM 14188600
     mov rax, mem
-    add rax, 11305016
+    add rax, 14188600
     push rax
 addr_15309: ;; ./porth.porth:1755:31: OP_INLINED 73
 addr_15310: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -49184,9 +49184,9 @@ addr_15404: ;; ./std/std.porth:435:51: OP_INTRINSIC 40
     push rax
 addr_15405: ;; ./std/std.porth:519:40: OP_INTRINSIC 19
     pop rax
-addr_15406: ;; ./porth.porth:1765:3: OP_PUSH_GLOBAL_MEM 12353632
+addr_15406: ;; ./porth.porth:1765:3: OP_PUSH_GLOBAL_MEM 15237216
     mov rax, mem
-    add rax, 12353632
+    add rax, 15237216
     push rax
 addr_15407: ;; ./porth.porth:1765:26: OP_INTRINSIC 28
     pop rax
@@ -49273,9 +49273,9 @@ addr_15429: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_15430: ;; ./porth.porth:1777:3: OP_PUSH_GLOBAL_MEM 12411000
+addr_15430: ;; ./porth.porth:1777:3: OP_PUSH_GLOBAL_MEM 15294584
     mov rax, mem
-    add rax, 12411000
+    add rax, 15294584
     push rax
 addr_15431: ;; ./porth.porth:1777:10: OP_INLINED 12
 addr_15432: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -50179,9 +50179,9 @@ addr_15702: ;; ./porth.porth:1830:11: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_15703: ;; ./porth.porth:1830:15: OP_PUSH_GLOBAL_MEM 11305008
+addr_15703: ;; ./porth.porth:1830:15: OP_PUSH_GLOBAL_MEM 14188592
     mov rax, mem
-    add rax, 11305008
+    add rax, 14188592
     push rax
 addr_15704: ;; ./porth.porth:1830:29: OP_INTRINSIC 28
     pop rax
@@ -50285,9 +50285,9 @@ addr_15729: ;; ./porth.porth:1834:21: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_15730: ;; ./porth.porth:1834:23: OP_PUSH_GLOBAL_MEM 11305016
+addr_15730: ;; ./porth.porth:1834:23: OP_PUSH_GLOBAL_MEM 14188600
     mov rax, mem
-    add rax, 11305016
+    add rax, 14188600
     push rax
 addr_15731: ;; ./porth.porth:1834:31: OP_INLINED 73
 addr_15732: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -50627,9 +50627,9 @@ addr_15834: ;; ./std/std.porth:435:51: OP_INTRINSIC 40
     push rax
 addr_15835: ;; ./std/std.porth:519:40: OP_INTRINSIC 19
     pop rax
-addr_15836: ;; ./porth.porth:1844:3: OP_PUSH_GLOBAL_MEM 12353632
+addr_15836: ;; ./porth.porth:1844:3: OP_PUSH_GLOBAL_MEM 15237216
     mov rax, mem
-    add rax, 12353632
+    add rax, 15237216
     push rax
 addr_15837: ;; ./porth.porth:1844:26: OP_INTRINSIC 28
     pop rax
@@ -50707,13 +50707,13 @@ addr_15856: ;; ./porth.porth:1859:13: OP_PREP_PROC 0
     sub rsp, 0
     mov [ret_stack_rsp], rsp
     mov rsp, rax
-addr_15857: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_15857: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_15858: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_15858: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_15859: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -50748,9 +50748,9 @@ addr_15868: ;; ./porth.porth:1860:13: OP_PREP_PROC 0
     sub rsp, 0
     mov [ret_stack_rsp], rsp
     mov rsp, rax
-addr_15869: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_15869: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
 addr_15870: ;; ./porth.porth:1860:41: OP_INLINED 78
 addr_15871: ;; ./std/std.porth:400:3: OP_INTRINSIC 18
@@ -50770,9 +50770,9 @@ addr_15875: ;; ./std/std.porth:402:3: OP_INTRINSIC 1
     pop rbx
     sub rbx, rax
     push rbx
-addr_15876: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 12443776
+addr_15876: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_15877: ;; ./porth.porth:1860:59: OP_INLINED 30
 addr_15878: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -50792,9 +50792,9 @@ addr_15881: ;; ./porth.porth:1867:3: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_15882: ;; ./porth.porth:1867:7: OP_PUSH_GLOBAL_MEM 12443776
+addr_15882: ;; ./porth.porth:1867:7: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_15883: ;; ./porth.porth:1867:16: OP_INTRINSIC 28
     pop rax
@@ -50889,13 +50889,13 @@ addr_15911: ;; ./porth.porth:1872:7: OP_PUSH_INT 0
     mov rax, 0
     push rax
 addr_15912: ;; ./porth.porth:1872:9: OP_INLINED 15856
-addr_15913: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_15913: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_15914: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_15914: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_15915: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -50927,9 +50927,9 @@ addr_15923: ;; ./porth.porth:1872:17: OP_CALL 2088
     call addr_2088
     mov [ret_stack_rsp], rsp
     mov rsp, rax
-addr_15924: ;; ./porth.porth:1873:3: OP_PUSH_GLOBAL_MEM 12443776
+addr_15924: ;; ./porth.porth:1873:3: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_15925: ;; ./porth.porth:1873:12: OP_INTRINSIC 28
     pop rax
@@ -50948,9 +50948,9 @@ addr_15927: ;; ./porth.porth:1873:20: OP_INTRINSIC 0
     pop rbx
     add rax, rbx
     push rax
-addr_15928: ;; ./porth.porth:1873:22: OP_PUSH_GLOBAL_MEM 12443776
+addr_15928: ;; ./porth.porth:1873:22: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_15929: ;; ./porth.porth:1873:31: OP_INTRINSIC 29
     pop rax
@@ -50992,9 +50992,9 @@ addr_15936: ;; ./porth.porth:1884:6: OP_PREP_PROC 0
     sub rsp, 0
     mov [ret_stack_rsp], rsp
     mov rsp, rax
-addr_15937: ;; ./porth.porth:1885:3: OP_PUSH_GLOBAL_MEM 12443784
+addr_15937: ;; ./porth.porth:1885:3: OP_PUSH_GLOBAL_MEM 15327368
     mov rax, mem
-    add rax, 12443784
+    add rax, 15327368
     push rax
 addr_15938: ;; ./porth.porth:1885:27: OP_INTRINSIC 28
     pop rax
@@ -51076,13 +51076,13 @@ addr_15962: ;; ./std/std.porth:441:43: OP_INTRINSIC 19
     pop rax
 addr_15963: ;; ./porth.porth:1887:3: OP_END 15964
     jmp addr_15964
-addr_15964: ;; ./porth.porth:1888:3: OP_PUSH_GLOBAL_MEM 12443792
+addr_15964: ;; ./porth.porth:1888:3: OP_PUSH_GLOBAL_MEM 15327376
     mov rax, mem
-    add rax, 12443792
+    add rax, 15327376
     push rax
-addr_15965: ;; ./porth.porth:1888:21: OP_PUSH_GLOBAL_MEM 12443784
+addr_15965: ;; ./porth.porth:1888:21: OP_PUSH_GLOBAL_MEM 15327368
     mov rax, mem
-    add rax, 12443784
+    add rax, 15327368
     push rax
 addr_15966: ;; ./porth.porth:1888:45: OP_INTRINSIC 28
     pop rax
@@ -51120,9 +51120,9 @@ addr_15976: ;; ./porth.porth:1888:68: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_15977: ;; ./porth.porth:1889:3: OP_PUSH_GLOBAL_MEM 12443784
+addr_15977: ;; ./porth.porth:1889:3: OP_PUSH_GLOBAL_MEM 15327368
     mov rax, mem
-    add rax, 12443784
+    add rax, 15327368
     push rax
 addr_15978: ;; ./porth.porth:1889:27: OP_INLINED 348
 addr_15979: ;; ./std/std.porth:479:26: OP_INTRINSIC 17
@@ -51160,9 +51160,9 @@ addr_15986: ;; ./porth.porth:1892:6: OP_PREP_PROC 0
     sub rsp, 0
     mov [ret_stack_rsp], rsp
     mov rsp, rax
-addr_15987: ;; ./porth.porth:1893:3: OP_PUSH_GLOBAL_MEM 12443784
+addr_15987: ;; ./porth.porth:1893:3: OP_PUSH_GLOBAL_MEM 15327368
     mov rax, mem
-    add rax, 12443784
+    add rax, 15327368
     push rax
 addr_15988: ;; ./porth.porth:1893:27: OP_INTRINSIC 28
     pop rax
@@ -51244,9 +51244,9 @@ addr_16012: ;; ./std/std.porth:441:43: OP_INTRINSIC 19
     pop rax
 addr_16013: ;; ./porth.porth:1895:3: OP_END 16014
     jmp addr_16014
-addr_16014: ;; ./porth.porth:1896:3: OP_PUSH_GLOBAL_MEM 12443784
+addr_16014: ;; ./porth.porth:1896:3: OP_PUSH_GLOBAL_MEM 15327368
     mov rax, mem
-    add rax, 12443784
+    add rax, 15327368
     push rax
 addr_16015: ;; ./porth.porth:1896:27: OP_INLINED 356
 addr_16016: ;; ./std/std.porth:480:26: OP_INTRINSIC 17
@@ -51275,13 +51275,13 @@ addr_16021: ;; ./std/std.porth:480:43: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_16022: ;; ./porth.porth:1897:3: OP_PUSH_GLOBAL_MEM 12443792
+addr_16022: ;; ./porth.porth:1897:3: OP_PUSH_GLOBAL_MEM 15327376
     mov rax, mem
-    add rax, 12443792
+    add rax, 15327376
     push rax
-addr_16023: ;; ./porth.porth:1897:21: OP_PUSH_GLOBAL_MEM 12443784
+addr_16023: ;; ./porth.porth:1897:21: OP_PUSH_GLOBAL_MEM 15327368
     mov rax, mem
-    add rax, 12443784
+    add rax, 15327368
     push rax
 addr_16024: ;; ./porth.porth:1897:45: OP_INTRINSIC 28
     pop rax
@@ -51329,9 +51329,9 @@ addr_16036: ;; ./porth.porth:1900:6: OP_PREP_PROC 0
     sub rsp, 0
     mov [ret_stack_rsp], rsp
     mov rsp, rax
-addr_16037: ;; ./porth.porth:1901:3: OP_PUSH_GLOBAL_MEM 12443784
+addr_16037: ;; ./porth.porth:1901:3: OP_PUSH_GLOBAL_MEM 15327368
     mov rax, mem
-    add rax, 12443784
+    add rax, 15327368
     push rax
 addr_16038: ;; ./porth.porth:1901:27: OP_INTRINSIC 28
     pop rax
@@ -51361,13 +51361,13 @@ addr_16043: ;; ./porth.porth:1902:7: OP_PUSH_BOOL 0
     push rax
 addr_16044: ;; ./porth.porth:1903:3: OP_ELSE 16061
     jmp addr_16061
-addr_16045: ;; ./porth.porth:1904:5: OP_PUSH_GLOBAL_MEM 12443792
+addr_16045: ;; ./porth.porth:1904:5: OP_PUSH_GLOBAL_MEM 15327376
     mov rax, mem
-    add rax, 12443792
+    add rax, 15327376
     push rax
-addr_16046: ;; ./porth.porth:1904:23: OP_PUSH_GLOBAL_MEM 12443784
+addr_16046: ;; ./porth.porth:1904:23: OP_PUSH_GLOBAL_MEM 15327368
     mov rax, mem
-    add rax, 12443784
+    add rax, 15327368
     push rax
 addr_16047: ;; ./porth.porth:1904:47: OP_INTRINSIC 28
     pop rax
@@ -51431,9 +51431,9 @@ addr_16063: ;; ./porth.porth:1918:13: OP_PREP_PROC 0
 addr_16064: ;; ./porth.porth:1919:3: OP_PUSH_INT 0
     mov rax, 0
     push rax
-addr_16065: ;; ./porth.porth:1919:5: OP_PUSH_GLOBAL_MEM 12451984
+addr_16065: ;; ./porth.porth:1919:5: OP_PUSH_GLOBAL_MEM 15335568
     mov rax, mem
-    add rax, 12451984
+    add rax, 15335568
     push rax
 addr_16066: ;; ./porth.porth:1919:23: OP_INTRINSIC 29
     pop rax
@@ -51518,13 +51518,13 @@ addr_16090: ;; ./porth.porth:1930:22: OP_PUSH_LOCAL_MEM 0
 addr_16091: ;; ./porth.porth:1930:28: OP_PUSH_INT 1024
     mov rax, 1024
     push rax
-addr_16092: ;; ./porth.porth:1930:44: OP_PUSH_GLOBAL_MEM 12451992
+addr_16092: ;; ./porth.porth:1930:44: OP_PUSH_GLOBAL_MEM 15335576
     mov rax, mem
-    add rax, 12451992
+    add rax, 15335576
     push rax
-addr_16093: ;; ./porth.porth:1930:56: OP_PUSH_GLOBAL_MEM 12451984
+addr_16093: ;; ./porth.porth:1930:56: OP_PUSH_GLOBAL_MEM 15335568
     mov rax, mem
-    add rax, 12451984
+    add rax, 15335568
     push rax
 addr_16094: ;; ./porth.porth:1930:74: OP_CALL 2634
     mov rax, rsp
@@ -51618,9 +51618,9 @@ addr_16125: ;; ./porth.porth:1937:6: OP_PREP_PROC 0
     sub rsp, 0
     mov [ret_stack_rsp], rsp
     mov rsp, rax
-addr_16126: ;; ./porth.porth:1942:3: OP_PUSH_GLOBAL_MEM 12451984
+addr_16126: ;; ./porth.porth:1942:3: OP_PUSH_GLOBAL_MEM 15335568
     mov rax, mem
-    add rax, 12451984
+    add rax, 15335568
     push rax
 addr_16127: ;; ./porth.porth:1942:21: OP_INTRINSIC 28
     pop rax
@@ -51702,9 +51702,9 @@ addr_16151: ;; ./std/std.porth:441:43: OP_INTRINSIC 19
     pop rax
 addr_16152: ;; ./porth.porth:1945:3: OP_END 16153
     jmp addr_16153
-addr_16153: ;; ./porth.porth:1947:3: OP_PUSH_GLOBAL_MEM 12451984
+addr_16153: ;; ./porth.porth:1947:3: OP_PUSH_GLOBAL_MEM 15335568
     mov rax, mem
-    add rax, 12451984
+    add rax, 15335568
     push rax
 addr_16154: ;; ./porth.porth:1947:21: OP_INLINED 356
 addr_16155: ;; ./std/std.porth:480:26: OP_INTRINSIC 17
@@ -51733,9 +51733,9 @@ addr_16160: ;; ./std/std.porth:480:43: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_16161: ;; ./porth.porth:1948:3: OP_PUSH_GLOBAL_MEM 12451984
+addr_16161: ;; ./porth.porth:1948:3: OP_PUSH_GLOBAL_MEM 15335568
     mov rax, mem
-    add rax, 12451984
+    add rax, 15335568
     push rax
 addr_16162: ;; ./porth.porth:1948:21: OP_INTRINSIC 28
     pop rax
@@ -51750,9 +51750,9 @@ addr_16164: ;; ./porth.porth:1948:44: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_16165: ;; ./porth.porth:1948:46: OP_PUSH_GLOBAL_MEM 12451992
+addr_16165: ;; ./porth.porth:1948:46: OP_PUSH_GLOBAL_MEM 15335576
     mov rax, mem
-    add rax, 12451992
+    add rax, 15335576
     push rax
 addr_16166: ;; ./porth.porth:1948:58: OP_INLINED 73
 addr_16167: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -51843,9 +51843,9 @@ addr_16194: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_16195: ;; ./porth.porth:1960:3: OP_PUSH_GLOBAL_MEM 12451984
+addr_16195: ;; ./porth.porth:1960:3: OP_PUSH_GLOBAL_MEM 15335568
     mov rax, mem
-    add rax, 12451984
+    add rax, 15335568
     push rax
 addr_16196: ;; ./porth.porth:1960:21: OP_INTRINSIC 28
     pop rax
@@ -52853,9 +52853,9 @@ addr_16542: ;; ./porth.porth:2011:7: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_16543: ;; ./porth.porth:2011:11: OP_PUSH_GLOBAL_MEM 12189776
+addr_16543: ;; ./porth.porth:2011:11: OP_PUSH_GLOBAL_MEM 15073360
     mov rax, mem
-    add rax, 12189776
+    add rax, 15073360
     push rax
 addr_16544: ;; ./porth.porth:2011:17: OP_INLINED 78
 addr_16545: ;; ./std/std.porth:400:3: OP_INTRINSIC 18
@@ -53761,9 +53761,9 @@ addr_16850: ;; ./porth.porth:2080:3: OP_INLINED 16063
 addr_16851: ;; ./porth.porth:1919:3: OP_PUSH_INT 0
     mov rax, 0
     push rax
-addr_16852: ;; ./porth.porth:1919:5: OP_PUSH_GLOBAL_MEM 12451984
+addr_16852: ;; ./porth.porth:1919:5: OP_PUSH_GLOBAL_MEM 15335568
     mov rax, mem
-    add rax, 12451984
+    add rax, 15335568
     push rax
 addr_16853: ;; ./porth.porth:1919:23: OP_INTRINSIC 29
     pop rax
@@ -55797,9 +55797,9 @@ addr_17443: ;; ./porth.porth:2197:32: OP_INTRINSIC 19
 addr_17444: ;; ./porth.porth:2198:11: OP_PUSH_INT 0
     mov rax, 0
     push rax
-addr_17445: ;; ./porth.porth:2198:24: OP_PUSH_GLOBAL_MEM 12468376
+addr_17445: ;; ./porth.porth:2198:24: OP_PUSH_GLOBAL_MEM 15351960
     mov rax, mem
-    add rax, 12468376
+    add rax, 15351960
     push rax
 addr_17446: ;; ./porth.porth:2198:29: OP_INLINED 16
 addr_17447: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -55813,9 +55813,9 @@ addr_17448: ;; ./porth.porth:2198:34: OP_CALL 16068
     call addr_16068
     mov [ret_stack_rsp], rsp
     mov rsp, rax
-addr_17449: ;; ./porth.porth:2199:11: OP_PUSH_GLOBAL_MEM 12468376
+addr_17449: ;; ./porth.porth:2199:11: OP_PUSH_GLOBAL_MEM 15351960
     mov rax, mem
-    add rax, 12468376
+    add rax, 15351960
     push rax
 addr_17450: ;; ./porth.porth:2199:16: OP_INLINED 16
 addr_17451: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -55828,9 +55828,9 @@ addr_17452: ;; ./porth.porth:2199:21: OP_INTRINSIC 0
     pop rbx
     add rax, rbx
     push rax
-addr_17453: ;; ./porth.porth:2199:23: OP_PUSH_GLOBAL_MEM 12468376
+addr_17453: ;; ./porth.porth:2199:23: OP_PUSH_GLOBAL_MEM 15351960
     mov rax, mem
-    add rax, 12468376
+    add rax, 15351960
     push rax
 addr_17454: ;; ./porth.porth:2199:28: OP_INLINED 30
 addr_17455: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -55861,9 +55861,9 @@ addr_17460: ;; ./porth.porth:2200:34: OP_IFSTAR 17471
 addr_17461: ;; ./porth.porth:2201:11: OP_PUSH_INT 0
     mov rax, 0
     push rax
-addr_17462: ;; ./porth.porth:2201:24: OP_PUSH_GLOBAL_MEM 12468376
+addr_17462: ;; ./porth.porth:2201:24: OP_PUSH_GLOBAL_MEM 15351960
     mov rax, mem
-    add rax, 12468376
+    add rax, 15351960
     push rax
 addr_17463: ;; ./porth.porth:2201:29: OP_INLINED 16
 addr_17464: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -55880,9 +55880,9 @@ addr_17465: ;; ./porth.porth:2201:34: OP_CALL 16068
 addr_17466: ;; ./porth.porth:2202:11: OP_PUSH_INT 0
     mov rax, 0
     push rax
-addr_17467: ;; ./porth.porth:2202:13: OP_PUSH_GLOBAL_MEM 12468376
+addr_17467: ;; ./porth.porth:2202:13: OP_PUSH_GLOBAL_MEM 15351960
     mov rax, mem
-    add rax, 12468376
+    add rax, 15351960
     push rax
 addr_17468: ;; ./porth.porth:2202:18: OP_INLINED 30
 addr_17469: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -56237,9 +56237,9 @@ addr_17586: ;; ./porth.porth:2224:14: OP_IF 17620
     pop rax
     test rax, rax
     jz addr_17620
-addr_17587: ;; ./porth.porth:2225:5: OP_PUSH_GLOBAL_MEM 12451984
+addr_17587: ;; ./porth.porth:2225:5: OP_PUSH_GLOBAL_MEM 15335568
     mov rax, mem
-    add rax, 12451984
+    add rax, 15335568
     push rax
 addr_17588: ;; ./porth.porth:2225:23: OP_INTRINSIC 28
     pop rax
@@ -57773,9 +57773,9 @@ addr_18120: ;; ./porth.porth:2272:3: OP_END 18121
     jmp addr_18121
 addr_18121: ;; ./porth.porth:2272:7: OP_INTRINSIC 19
     pop rax
-addr_18122: ;; ./porth.porth:2274:3: OP_PUSH_GLOBAL_MEM 12296272
+addr_18122: ;; ./porth.porth:2274:3: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_18123: ;; ./porth.porth:2274:15: OP_INLINED 12
 addr_18124: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -60324,9 +60324,9 @@ addr_18971: ;; ./porth.porth:2476:28: OP_CALL 2042
     mov rsp, rax
 addr_18972: ;; ./porth.porth:2476:35: OP_INTRINSIC 19
     pop rax
-addr_18973: ;; ./porth.porth:2479:3: OP_PUSH_GLOBAL_MEM 12296272
+addr_18973: ;; ./porth.porth:2479:3: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_18974: ;; ./porth.porth:2479:15: OP_INLINED 12
 addr_18975: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -60397,9 +60397,9 @@ addr_18996: ;; ./std/std.porth:435:51: OP_INTRINSIC 40
     push rax
 addr_18997: ;; ./std/std.porth:519:40: OP_INTRINSIC 19
     pop rax
-addr_18998: ;; ./porth.porth:2482:5: OP_PUSH_GLOBAL_MEM 12189768
+addr_18998: ;; ./porth.porth:2482:5: OP_PUSH_GLOBAL_MEM 15073352
     mov rax, mem
-    add rax, 12189768
+    add rax, 15073352
     push rax
 addr_18999: ;; ./porth.porth:2482:17: OP_INLINED 16
 addr_19000: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -60423,9 +60423,9 @@ addr_19004: ;; ./porth.porth:2482:39: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_19005: ;; ./porth.porth:2482:41: OP_PUSH_GLOBAL_MEM 12189776
+addr_19005: ;; ./porth.porth:2482:41: OP_PUSH_GLOBAL_MEM 15073360
     mov rax, mem
-    add rax, 12189776
+    add rax, 15073360
     push rax
 addr_19006: ;; ./porth.porth:2482:47: OP_INLINED 73
 addr_19007: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -61300,9 +61300,9 @@ addr_19296: ;; ./porth.porth:2522:3: OP_INTRINSIC 19
 addr_19297: ;; ./porth.porth:2524:3: OP_PUSH_BOOL 1
     mov rax, 1
     push rax
-addr_19298: ;; ./porth.porth:2524:8: OP_PUSH_GLOBAL_MEM 12296272
+addr_19298: ;; ./porth.porth:2524:8: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_19299: ;; ./porth.porth:2524:20: OP_INLINED 24
 addr_19300: ;; ./std/std.porth:24:31: OP_INTRINSIC 29
@@ -61798,9 +61798,9 @@ addr_19459: ;; ./porth.porth:2559:6: OP_PREP_PROC 0
     sub rsp, 0
     mov [ret_stack_rsp], rsp
     mov rsp, rax
-addr_19460: ;; ./porth.porth:2560:3: OP_PUSH_GLOBAL_MEM 12296272
+addr_19460: ;; ./porth.porth:2560:3: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_19461: ;; ./porth.porth:2560:15: OP_INLINED 12
 addr_19462: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -61813,9 +61813,9 @@ addr_19464: ;; ./porth.porth:2560:21: OP_IF 19478
     pop rax
     test rax, rax
     jz addr_19478
-addr_19465: ;; ./porth.porth:2561:5: OP_PUSH_GLOBAL_MEM 12189768
+addr_19465: ;; ./porth.porth:2561:5: OP_PUSH_GLOBAL_MEM 15073352
     mov rax, mem
-    add rax, 12189768
+    add rax, 15073352
     push rax
 addr_19466: ;; ./porth.porth:2561:17: OP_INLINED 16
 addr_19467: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -61839,9 +61839,9 @@ addr_19471: ;; ./porth.porth:2563:18: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_19472: ;; ./porth.porth:2564:5: OP_PUSH_GLOBAL_MEM 12189776
+addr_19472: ;; ./porth.porth:2564:5: OP_PUSH_GLOBAL_MEM 15073360
     mov rax, mem
-    add rax, 12189776
+    add rax, 15073360
     push rax
 addr_19473: ;; ./porth.porth:2564:11: OP_INLINED 73
 addr_19474: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -62147,9 +62147,9 @@ addr_19574: ;; ./std/std.porth:568:45: OP_INTRINSIC 29
 addr_19575: ;; ./porth.porth:2595:3: OP_PUSH_BOOL 0
     mov rax, 0
     push rax
-addr_19576: ;; ./porth.porth:2595:9: OP_PUSH_GLOBAL_MEM 12296272
+addr_19576: ;; ./porth.porth:2595:9: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_19577: ;; ./porth.porth:2595:21: OP_INTRINSIC 29
     pop rax
@@ -62224,9 +62224,9 @@ addr_19596: ;; ./porth.porth:2602:21: OP_IF 19675
     pop rax
     test rax, rax
     jz addr_19675
-addr_19597: ;; ./porth.porth:2603:7: OP_PUSH_GLOBAL_MEM 12296272
+addr_19597: ;; ./porth.porth:2603:7: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_19598: ;; ./porth.porth:2603:19: OP_INLINED 12
 addr_19599: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -62862,9 +62862,9 @@ addr_19797: ;; ./porth.porth:2638:33: OP_IFSTAR 19919
     pop rax
     test rax, rax
     jz addr_19919
-addr_19798: ;; ./porth.porth:2639:11: OP_PUSH_GLOBAL_MEM 12443784
+addr_19798: ;; ./porth.porth:2639:11: OP_PUSH_GLOBAL_MEM 15327368
     mov rax, mem
-    add rax, 12443784
+    add rax, 15327368
     push rax
 addr_19799: ;; ./porth.porth:2639:35: OP_INTRINSIC 28
     pop rax
@@ -63333,9 +63333,9 @@ addr_19934: ;; ./porth.porth:2666:31: OP_IFSTAR 20110
     pop rax
     test rax, rax
     jz addr_20110
-addr_19935: ;; ./porth.porth:2667:11: OP_PUSH_GLOBAL_MEM 12443784
+addr_19935: ;; ./porth.porth:2667:11: OP_PUSH_GLOBAL_MEM 15327368
     mov rax, mem
-    add rax, 12443784
+    add rax, 15327368
     push rax
 addr_19936: ;; ./porth.porth:2667:35: OP_INTRINSIC 28
     pop rax
@@ -63879,9 +63879,9 @@ addr_20113: ;; ./porth.porth:2687:32: OP_IFSTAR 20489
     pop rax
     test rax, rax
     jz addr_20489
-addr_20114: ;; ./porth.porth:2688:11: OP_PUSH_GLOBAL_MEM 12443784
+addr_20114: ;; ./porth.porth:2688:11: OP_PUSH_GLOBAL_MEM 15327368
     mov rax, mem
-    add rax, 12443784
+    add rax, 15327368
     push rax
 addr_20115: ;; ./porth.porth:2688:35: OP_INTRINSIC 28
     pop rax
@@ -64438,9 +64438,9 @@ addr_20271: ;; ./porth.porth:2707:52: OP_IFSTAR 20374
     pop rax
     test rax, rax
     jz addr_20374
-addr_20272: ;; ./porth.porth:2708:13: OP_PUSH_GLOBAL_MEM 12410992
+addr_20272: ;; ./porth.porth:2708:13: OP_PUSH_GLOBAL_MEM 15294576
     mov rax, mem
-    add rax, 12410992
+    add rax, 15294576
     push rax
 addr_20273: ;; ./porth.porth:2708:35: OP_INTRINSIC 28
     pop rax
@@ -64479,9 +64479,9 @@ addr_20283: ;; ./porth.porth:2710:13: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_20284: ;; ./porth.porth:2712:13: OP_PUSH_GLOBAL_MEM 12296272
+addr_20284: ;; ./porth.porth:2712:13: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_20285: ;; ./porth.porth:2712:25: OP_INLINED 12
 addr_20286: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -64565,9 +64565,9 @@ addr_20314: ;; ./std/std.porth:441:43: OP_INTRINSIC 19
     pop rax
 addr_20315: ;; ./porth.porth:2715:13: OP_END 20316
     jmp addr_20316
-addr_20316: ;; ./porth.porth:2718:13: OP_PUSH_GLOBAL_MEM 12189768
+addr_20316: ;; ./porth.porth:2718:13: OP_PUSH_GLOBAL_MEM 15073352
     mov rax, mem
-    add rax, 12189768
+    add rax, 15073352
     push rax
 addr_20317: ;; ./porth.porth:2718:25: OP_INLINED 16
 addr_20318: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -64591,9 +64591,9 @@ addr_20322: ;; ./porth.porth:2718:47: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_20323: ;; ./porth.porth:2718:49: OP_PUSH_GLOBAL_MEM 12189776
+addr_20323: ;; ./porth.porth:2718:49: OP_PUSH_GLOBAL_MEM 15073360
     mov rax, mem
-    add rax, 12189776
+    add rax, 15073360
     push rax
 addr_20324: ;; ./porth.porth:2718:55: OP_INLINED 73
 addr_20325: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -64698,9 +64698,9 @@ addr_20356: ;; ./porth.porth:2724:13: OP_INTRINSIC 19
 addr_20357: ;; ./porth.porth:2726:13: OP_PUSH_INT 13
     mov rax, 13
     push rax
-addr_20358: ;; ./porth.porth:2727:13: OP_PUSH_GLOBAL_MEM 12410992
+addr_20358: ;; ./porth.porth:2727:13: OP_PUSH_GLOBAL_MEM 15294576
     mov rax, mem
-    add rax, 12410992
+    add rax, 15294576
     push rax
 addr_20359: ;; ./porth.porth:2727:35: OP_INTRINSIC 28
     pop rax
@@ -64721,9 +64721,9 @@ addr_20362: ;; ./porth.porth:2731:13: OP_INLINED 11314
 addr_20363: ;; ./porth.porth:1178:3: OP_PUSH_INT 0
     mov rax, 0
     push rax
-addr_20364: ;; ./porth.porth:1178:5: OP_PUSH_GLOBAL_MEM 12353640
+addr_20364: ;; ./porth.porth:1178:5: OP_PUSH_GLOBAL_MEM 15237224
     mov rax, mem
-    add rax, 12353640
+    add rax, 15237224
     push rax
 addr_20365: ;; ./porth.porth:1178:26: OP_INTRINSIC 29
     pop rax
@@ -64732,9 +64732,9 @@ addr_20365: ;; ./porth.porth:1178:26: OP_INTRINSIC 29
 addr_20366: ;; ./porth.porth:1179:3: OP_PUSH_INT 0
     mov rax, 0
     push rax
-addr_20367: ;; ./porth.porth:1179:5: OP_PUSH_GLOBAL_MEM 12410992
+addr_20367: ;; ./porth.porth:1179:5: OP_PUSH_GLOBAL_MEM 15294576
     mov rax, mem
-    add rax, 12410992
+    add rax, 15294576
     push rax
 addr_20368: ;; ./porth.porth:1179:27: OP_INTRINSIC 29
     pop rax
@@ -64743,9 +64743,9 @@ addr_20368: ;; ./porth.porth:1179:27: OP_INTRINSIC 29
 addr_20369: ;; ./porth.porth:2732:13: OP_PUSH_BOOL 0
     mov rax, 0
     push rax
-addr_20370: ;; ./porth.porth:2732:19: OP_PUSH_GLOBAL_MEM 12296272
+addr_20370: ;; ./porth.porth:2732:19: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_20371: ;; ./porth.porth:2732:31: OP_INLINED 24
 addr_20372: ;; ./std/std.porth:24:31: OP_INTRINSIC 29
@@ -65536,13 +65536,13 @@ addr_20639: ;; ./std/std.porth:441:43: OP_INTRINSIC 19
 addr_20640: ;; ./porth.porth:2762:11: OP_END 20641
     jmp addr_20641
 addr_20641: ;; ./porth.porth:2766:11: OP_INLINED 15856
-addr_20642: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_20642: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_20643: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_20643: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_20644: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -65746,9 +65746,9 @@ addr_20708: ;; ./porth.porth:2772:32: OP_IF 20780
     test rax, rax
     jz addr_20780
 addr_20709: ;; ./porth.porth:2773:13: OP_INLINED 15868
-addr_20710: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_20710: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
 addr_20711: ;; ./porth.porth:1860:41: OP_INLINED 78
 addr_20712: ;; ./std/std.porth:400:3: OP_INTRINSIC 18
@@ -65768,9 +65768,9 @@ addr_20716: ;; ./std/std.porth:402:3: OP_INTRINSIC 1
     pop rbx
     sub rbx, rax
     push rbx
-addr_20717: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 12443776
+addr_20717: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_20718: ;; ./porth.porth:1860:59: OP_INLINED 30
 addr_20719: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -65778,13 +65778,13 @@ addr_20719: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_20720: ;; ./porth.porth:2774:13: OP_INLINED 15856
-addr_20721: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_20721: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_20722: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_20722: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_20723: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -65990,9 +65990,9 @@ addr_20788: ;; ./porth.porth:2780:32: OP_IF 20874
     test rax, rax
     jz addr_20874
 addr_20789: ;; ./porth.porth:2781:13: OP_INLINED 15868
-addr_20790: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_20790: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
 addr_20791: ;; ./porth.porth:1860:41: OP_INLINED 78
 addr_20792: ;; ./std/std.porth:400:3: OP_INTRINSIC 18
@@ -66012,9 +66012,9 @@ addr_20796: ;; ./std/std.porth:402:3: OP_INTRINSIC 1
     pop rbx
     sub rbx, rax
     push rbx
-addr_20797: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 12443776
+addr_20797: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_20798: ;; ./porth.porth:1860:59: OP_INLINED 30
 addr_20799: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -66022,13 +66022,13 @@ addr_20799: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_20800: ;; ./porth.porth:2782:13: OP_INLINED 15856
-addr_20801: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_20801: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_20802: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_20802: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_20803: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -68403,9 +68403,9 @@ addr_21591: ;; ./std/std.porth:441:43: OP_INTRINSIC 19
     pop rax
 addr_21592: ;; ./porth.porth:2872:11: OP_END 21593
     jmp addr_21593
-addr_21593: ;; ./porth.porth:2874:11: OP_PUSH_GLOBAL_MEM 12296272
+addr_21593: ;; ./porth.porth:2874:11: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_21594: ;; ./porth.porth:2874:23: OP_INLINED 12
 addr_21595: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -68418,9 +68418,9 @@ addr_21597: ;; ./porth.porth:2874:29: OP_IF 21618
     pop rax
     test rax, rax
     jz addr_21618
-addr_21598: ;; ./porth.porth:2875:13: OP_PUSH_GLOBAL_MEM 12410992
+addr_21598: ;; ./porth.porth:2875:13: OP_PUSH_GLOBAL_MEM 15294576
     mov rax, mem
-    add rax, 12410992
+    add rax, 15294576
     push rax
 addr_21599: ;; ./porth.porth:2875:35: OP_INTRINSIC 28
     pop rax
@@ -68457,9 +68457,9 @@ addr_21609: ;; ./porth.porth:2875:65: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_21610: ;; ./porth.porth:2876:13: OP_PUSH_GLOBAL_MEM 12410992
+addr_21610: ;; ./porth.porth:2876:13: OP_PUSH_GLOBAL_MEM 15294576
     mov rax, mem
-    add rax, 12410992
+    add rax, 15294576
     push rax
 addr_21611: ;; ./porth.porth:2876:35: OP_INTRINSIC 28
     pop rax
@@ -68471,9 +68471,9 @@ addr_21612: ;; ./porth.porth:2876:39: OP_INTRINSIC 0
     pop rbx
     add rax, rbx
     push rax
-addr_21613: ;; ./porth.porth:2876:41: OP_PUSH_GLOBAL_MEM 12410992
+addr_21613: ;; ./porth.porth:2876:41: OP_PUSH_GLOBAL_MEM 15294576
     mov rax, mem
-    add rax, 12410992
+    add rax, 15294576
     push rax
 addr_21614: ;; ./porth.porth:2876:63: OP_INTRINSIC 29
     pop rax
@@ -68491,9 +68491,9 @@ addr_21616: ;; ./porth.porth:2877:20: OP_CALL 11590
     mov rsp, rax
 addr_21617: ;; ./porth.porth:2878:11: OP_ELSE 21637
     jmp addr_21637
-addr_21618: ;; ./porth.porth:2879:13: OP_PUSH_GLOBAL_MEM 12353632
+addr_21618: ;; ./porth.porth:2879:13: OP_PUSH_GLOBAL_MEM 15237216
     mov rax, mem
-    add rax, 12353632
+    add rax, 15237216
     push rax
 addr_21619: ;; ./porth.porth:2879:36: OP_INTRINSIC 28
     pop rax
@@ -68530,9 +68530,9 @@ addr_21629: ;; ./porth.porth:2879:66: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_21630: ;; ./porth.porth:2880:13: OP_PUSH_GLOBAL_MEM 12353632
+addr_21630: ;; ./porth.porth:2880:13: OP_PUSH_GLOBAL_MEM 15237216
     mov rax, mem
-    add rax, 12353632
+    add rax, 15237216
     push rax
 addr_21631: ;; ./porth.porth:2880:36: OP_INTRINSIC 28
     pop rax
@@ -68544,9 +68544,9 @@ addr_21632: ;; ./porth.porth:2880:40: OP_INTRINSIC 0
     pop rbx
     add rax, rbx
     push rax
-addr_21633: ;; ./porth.porth:2880:42: OP_PUSH_GLOBAL_MEM 12353632
+addr_21633: ;; ./porth.porth:2880:42: OP_PUSH_GLOBAL_MEM 15237216
     mov rax, mem
-    add rax, 12353632
+    add rax, 15237216
     push rax
 addr_21634: ;; ./porth.porth:2880:65: OP_INTRINSIC 29
     pop rax
@@ -69446,9 +69446,9 @@ addr_21920: ;; ./porth.porth:2933:27: OP_IFSTAR 22423
     pop rax
     test rax, rax
     jz addr_22423
-addr_21921: ;; ./porth.porth:2934:7: OP_PUSH_GLOBAL_MEM 12296272
+addr_21921: ;; ./porth.porth:2934:7: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_21922: ;; ./porth.porth:2934:19: OP_INLINED 12
 addr_21923: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -70976,9 +70976,9 @@ addr_22426: ;; ./porth.porth:3007:26: OP_IFSTAR 22531
     pop rax
     test rax, rax
     jz addr_22531
-addr_22427: ;; ./porth.porth:3008:7: OP_PUSH_GLOBAL_MEM 12296272
+addr_22427: ;; ./porth.porth:3008:7: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_22428: ;; ./porth.porth:3008:19: OP_INLINED 12
 addr_22429: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -71292,9 +71292,9 @@ addr_22534: ;; ./porth.porth:3020:27: OP_IFSTAR 22639
     pop rax
     test rax, rax
     jz addr_22639
-addr_22535: ;; ./porth.porth:3021:7: OP_PUSH_GLOBAL_MEM 12296272
+addr_22535: ;; ./porth.porth:3021:7: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_22536: ;; ./porth.porth:3021:19: OP_INLINED 12
 addr_22537: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -71608,9 +71608,9 @@ addr_22642: ;; ./porth.porth:3033:27: OP_IFSTAR 22722
     pop rax
     test rax, rax
     jz addr_22722
-addr_22643: ;; ./porth.porth:3034:7: OP_PUSH_GLOBAL_MEM 12296272
+addr_22643: ;; ./porth.porth:3034:7: OP_PUSH_GLOBAL_MEM 15179856
     mov rax, mem
-    add rax, 12296272
+    add rax, 15179856
     push rax
 addr_22644: ;; ./porth.porth:3034:19: OP_INLINED 12
 addr_22645: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -71900,9 +71900,9 @@ addr_22744: ;; ./porth.porth:3051:5: OP_INTRINSIC 19
     pop rax
 addr_22745: ;; ./porth.porth:3053:3: OP_END 19578
     jmp addr_19578
-addr_22746: ;; ./porth.porth:3055:3: OP_PUSH_GLOBAL_MEM 12443784
+addr_22746: ;; ./porth.porth:3055:3: OP_PUSH_GLOBAL_MEM 15327368
     mov rax, mem
-    add rax, 12443784
+    add rax, 15327368
     push rax
 addr_22747: ;; ./porth.porth:3055:27: OP_INTRINSIC 28
     pop rax
@@ -73673,9 +73673,9 @@ addr_23344: ;; ./porth.porth:3181:3: OP_PUSH_STR 776
     mov rax, 18
     push rax
     push str_776
-addr_23345: ;; ./porth.porth:3181:24: OP_PUSH_GLOBAL_MEM 12411000
+addr_23345: ;; ./porth.porth:3181:24: OP_PUSH_GLOBAL_MEM 15294584
     mov rax, mem
-    add rax, 12411000
+    add rax, 15294584
     push rax
 addr_23346: ;; ./porth.porth:3181:31: OP_INLINED 12
 addr_23347: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -77223,9 +77223,9 @@ addr_24446: ;; ./porth.porth:3494:45: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_24447: ;; ./porth.porth:3494:47: OP_PUSH_GLOBAL_MEM 12189776
+addr_24447: ;; ./porth.porth:3494:47: OP_PUSH_GLOBAL_MEM 15073360
     mov rax, mem
-    add rax, 12189776
+    add rax, 15073360
     push rax
 addr_24448: ;; ./porth.porth:3494:53: OP_INLINED 73
 addr_24449: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -77681,9 +77681,9 @@ addr_24595: ;; ./porth.porth:3541:36: OP_CALL 2042
     mov rsp, rax
 addr_24596: ;; ./porth.porth:3541:43: OP_INTRINSIC 19
     pop rax
-addr_24597: ;; ./porth.porth:3547:3: OP_PUSH_GLOBAL_MEM 12189760
+addr_24597: ;; ./porth.porth:3547:3: OP_PUSH_GLOBAL_MEM 15073344
     mov rax, mem
-    add rax, 12189760
+    add rax, 15073344
     push rax
 addr_24598: ;; ./porth.porth:3547:25: OP_INLINED 16
 addr_24599: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -89947,9 +89947,9 @@ addr_28477: ;; ./porth.porth:4131:3: OP_INTRINSIC 19
     pop rax
 addr_28478: ;; ./porth.porth:4132:3: OP_INTRINSIC 19
     pop rax
-addr_28479: ;; ./porth.porth:4133:3: OP_PUSH_GLOBAL_MEM 12189760
+addr_28479: ;; ./porth.porth:4133:3: OP_PUSH_GLOBAL_MEM 15073344
     mov rax, mem
-    add rax, 12189760
+    add rax, 15073344
     push rax
 addr_28480: ;; ./porth.porth:4133:25: OP_INLINED 30
 addr_28481: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -90303,9 +90303,9 @@ addr_28597: ;; ./porth.porth:4163:11: OP_INTRINSIC 17
     pop rax
     push rax
     push rax
-addr_28598: ;; ./porth.porth:4163:15: OP_PUSH_GLOBAL_MEM 12189768
+addr_28598: ;; ./porth.porth:4163:15: OP_PUSH_GLOBAL_MEM 15073352
     mov rax, mem
-    add rax, 12189768
+    add rax, 15073352
     push rax
 addr_28599: ;; ./porth.porth:4163:27: OP_INLINED 16
 addr_28600: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -90337,9 +90337,9 @@ addr_28605: ;; ./porth.porth:4164:22: OP_INTRINSIC 2
     pop rbx
     mul rbx
     push rax
-addr_28606: ;; ./porth.porth:4164:24: OP_PUSH_GLOBAL_MEM 12189776
+addr_28606: ;; ./porth.porth:4164:24: OP_PUSH_GLOBAL_MEM 15073360
     mov rax, mem
-    add rax, 12189776
+    add rax, 15073360
     push rax
 addr_28607: ;; ./porth.porth:4164:30: OP_INLINED 73
 addr_28608: ;; ./std/std.porth:396:3: OP_INTRINSIC 31
@@ -90501,9 +90501,9 @@ addr_28660: ;; ./porth.porth:4179:3: OP_PUSH_STR 818
     mov rax, 20
     push rax
     push str_818
-addr_28661: ;; ./porth.porth:4179:26: OP_PUSH_GLOBAL_MEM 12411000
+addr_28661: ;; ./porth.porth:4179:26: OP_PUSH_GLOBAL_MEM 15294584
     mov rax, mem
-    add rax, 12411000
+    add rax, 15294584
     push rax
 addr_28662: ;; ./porth.porth:4179:33: OP_INLINED 12
 addr_28663: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -90591,8 +90591,8 @@ addr_28688: ;; ./std/std.porth:435:51: OP_INTRINSIC 40
     push rax
 addr_28689: ;; ./std/std.porth:519:40: OP_INTRINSIC 19
     pop rax
-addr_28690: ;; ./porth.porth:4183:83: OP_PUSH_INT 32768
-    mov rax, 32768
+addr_28690: ;; ./porth.porth:4183:83: OP_PUSH_INT 65536
+    mov rax, 65536
     push rax
 addr_28691: ;; ./porth.porth:4183:103: OP_INLINED 2030
 addr_28692: ;; ./std/std.porth:831:25: OP_PUSH_INT 1
@@ -90648,9 +90648,9 @@ addr_28708: ;; ./std/std.porth:435:51: OP_INTRINSIC 40
     push rax
 addr_28709: ;; ./std/std.porth:519:40: OP_INTRINSIC 19
     pop rax
-addr_28710: ;; ./porth.porth:4184:41: OP_PUSH_GLOBAL_MEM 11403320
+addr_28710: ;; ./porth.porth:4184:41: OP_PUSH_GLOBAL_MEM 14286904
     mov rax, mem
-    add rax, 11403320
+    add rax, 14286904
     push rax
 addr_28711: ;; ./porth.porth:4184:64: OP_INLINED 16
 addr_28712: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -90747,9 +90747,9 @@ addr_28742: ;; ./std/std.porth:435:51: OP_INTRINSIC 40
     push rax
 addr_28743: ;; ./std/std.porth:519:40: OP_INTRINSIC 19
     pop rax
-addr_28744: ;; ./porth.porth:4185:41: OP_PUSH_GLOBAL_MEM 12189768
+addr_28744: ;; ./porth.porth:4185:41: OP_PUSH_GLOBAL_MEM 15073352
     mov rax, mem
-    add rax, 12189768
+    add rax, 15073352
     push rax
 addr_28745: ;; ./porth.porth:4185:64: OP_INLINED 16
 addr_28746: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -90846,9 +90846,9 @@ addr_28776: ;; ./std/std.porth:435:51: OP_INTRINSIC 40
     push rax
 addr_28777: ;; ./std/std.porth:519:40: OP_INTRINSIC 19
     pop rax
-addr_28778: ;; ./porth.porth:4186:41: OP_PUSH_GLOBAL_MEM 11305008
+addr_28778: ;; ./porth.porth:4186:41: OP_PUSH_GLOBAL_MEM 14188592
     mov rax, mem
-    add rax, 11305008
+    add rax, 14188592
     push rax
 addr_28779: ;; ./porth.porth:4186:64: OP_INLINED 16
 addr_28780: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -91044,9 +91044,9 @@ addr_28844: ;; ./std/std.porth:435:51: OP_INTRINSIC 40
     push rax
 addr_28845: ;; ./std/std.porth:519:40: OP_INTRINSIC 19
     pop rax
-addr_28846: ;; ./porth.porth:4188:41: OP_PUSH_GLOBAL_MEM 12296280
+addr_28846: ;; ./porth.porth:4188:41: OP_PUSH_GLOBAL_MEM 15179864
     mov rax, mem
-    add rax, 12296280
+    add rax, 15179864
     push rax
 addr_28847: ;; ./porth.porth:4188:64: OP_INLINED 16
 addr_28848: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -91143,9 +91143,9 @@ addr_28878: ;; ./std/std.porth:435:51: OP_INTRINSIC 40
     push rax
 addr_28879: ;; ./std/std.porth:519:40: OP_INTRINSIC 19
     pop rax
-addr_28880: ;; ./porth.porth:4191:41: OP_PUSH_GLOBAL_MEM 12353632
+addr_28880: ;; ./porth.porth:4191:41: OP_PUSH_GLOBAL_MEM 15237216
     mov rax, mem
-    add rax, 12353632
+    add rax, 15237216
     push rax
 addr_28881: ;; ./porth.porth:4191:64: OP_INLINED 16
 addr_28882: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -91207,9 +91207,9 @@ addr_28900: ;; ./std/std.porth:435:51: OP_INTRINSIC 40
     push rax
 addr_28901: ;; ./std/std.porth:519:40: OP_INTRINSIC 19
     pop rax
-addr_28902: ;; ./porth.porth:4192:41: OP_PUSH_GLOBAL_MEM 12189760
+addr_28902: ;; ./porth.porth:4192:41: OP_PUSH_GLOBAL_MEM 15073344
     mov rax, mem
-    add rax, 12189760
+    add rax, 15073344
     push rax
 addr_28903: ;; ./porth.porth:4192:64: OP_INLINED 16
 addr_28904: ;; ./std/std.porth:21:32: OP_INTRINSIC 28
@@ -92697,9 +92697,9 @@ addr_29377: ;; ./porth.porth:4306:36: OP_IFSTAR 29384
 addr_29378: ;; ./porth.porth:4307:9: OP_PUSH_BOOL 1
     mov rax, 1
     push rax
-addr_29379: ;; ./porth.porth:4307:14: OP_PUSH_GLOBAL_MEM 12411000
+addr_29379: ;; ./porth.porth:4307:14: OP_PUSH_GLOBAL_MEM 15294584
     mov rax, mem
-    add rax, 12411000
+    add rax, 15294584
     push rax
 addr_29380: ;; ./porth.porth:4307:21: OP_INLINED 24
 addr_29381: ;; ./std/std.porth:24:31: OP_INTRINSIC 29
@@ -93614,13 +93614,13 @@ addr_29681: ;; ./porth.porth:4359:44: OP_IF 30035
     test rax, rax
     jz addr_30035
 addr_29682: ;; ./porth.porth:4360:7: OP_INLINED 15856
-addr_29683: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_29683: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_29684: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_29684: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_29685: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -93787,9 +93787,9 @@ addr_29735: ;; ./porth.porth:4364:13: OP_CALL 15426
     mov [ret_stack_rsp], rsp
     mov rsp, rax
 addr_29736: ;; ./porth.porth:4365:7: OP_INLINED 15868
-addr_29737: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_29737: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
 addr_29738: ;; ./porth.porth:1860:41: OP_INLINED 78
 addr_29739: ;; ./std/std.porth:400:3: OP_INTRINSIC 18
@@ -93809,9 +93809,9 @@ addr_29743: ;; ./std/std.porth:402:3: OP_INTRINSIC 1
     pop rbx
     sub rbx, rax
     push rbx
-addr_29744: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 12443776
+addr_29744: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_29745: ;; ./porth.porth:1860:59: OP_INLINED 30
 addr_29746: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -93819,13 +93819,13 @@ addr_29746: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_29747: ;; ./porth.porth:4367:7: OP_INLINED 15856
-addr_29748: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_29748: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_29749: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_29749: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_29750: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -93919,13 +93919,13 @@ addr_29780: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_29781: ;; ./porth.porth:4371:9: OP_INLINED 15856
-addr_29782: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_29782: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_29783: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_29783: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_29784: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -94114,9 +94114,9 @@ addr_29843: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_29844: ;; ./porth.porth:4377:9: OP_PUSH_GLOBAL_MEM 12411000
+addr_29844: ;; ./porth.porth:4377:9: OP_PUSH_GLOBAL_MEM 15294584
     mov rax, mem
-    add rax, 12411000
+    add rax, 15294584
     push rax
 addr_29845: ;; ./porth.porth:4377:16: OP_INLINED 12
 addr_29846: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -94143,9 +94143,9 @@ addr_29853: ;; ./porth.porth:4377:27: OP_CALL 3977
     mov [ret_stack_rsp], rsp
     mov rsp, rax
 addr_29854: ;; ./porth.porth:4378:7: OP_INLINED 15868
-addr_29855: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_29855: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
 addr_29856: ;; ./porth.porth:1860:41: OP_INLINED 78
 addr_29857: ;; ./std/std.porth:400:3: OP_INTRINSIC 18
@@ -94165,9 +94165,9 @@ addr_29861: ;; ./std/std.porth:402:3: OP_INTRINSIC 1
     pop rbx
     sub rbx, rax
     push rbx
-addr_29862: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 12443776
+addr_29862: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_29863: ;; ./porth.porth:1860:59: OP_INLINED 30
 addr_29864: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -94175,13 +94175,13 @@ addr_29864: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_29865: ;; ./porth.porth:4380:7: OP_INLINED 15856
-addr_29866: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_29866: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_29867: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_29867: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_29868: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -94275,13 +94275,13 @@ addr_29898: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_29899: ;; ./porth.porth:4384:9: OP_INLINED 15856
-addr_29900: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_29900: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_29901: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_29901: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_29902: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -94428,13 +94428,13 @@ addr_29949: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_29950: ;; ./porth.porth:4388:9: OP_INLINED 15856
-addr_29951: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_29951: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_29952: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_29952: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_29953: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -94623,9 +94623,9 @@ addr_30012: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_30013: ;; ./porth.porth:4394:9: OP_PUSH_GLOBAL_MEM 12411000
+addr_30013: ;; ./porth.porth:4394:9: OP_PUSH_GLOBAL_MEM 15294584
     mov rax, mem
-    add rax, 12411000
+    add rax, 15294584
     push rax
 addr_30014: ;; ./porth.porth:4394:16: OP_INLINED 12
 addr_30015: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -94652,9 +94652,9 @@ addr_30022: ;; ./porth.porth:4394:27: OP_CALL 3977
     mov [ret_stack_rsp], rsp
     mov rsp, rax
 addr_30023: ;; ./porth.porth:4395:7: OP_INLINED 15868
-addr_30024: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30024: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
 addr_30025: ;; ./porth.porth:1860:41: OP_INLINED 78
 addr_30026: ;; ./std/std.porth:400:3: OP_INTRINSIC 18
@@ -94674,9 +94674,9 @@ addr_30030: ;; ./std/std.porth:402:3: OP_INTRINSIC 1
     pop rbx
     sub rbx, rax
     push rbx
-addr_30031: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 12443776
+addr_30031: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30032: ;; ./porth.porth:1860:59: OP_INLINED 30
 addr_30033: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -94711,13 +94711,13 @@ addr_30040: ;; ./porth.porth:4396:49: OP_IFSTAR 30588
     test rax, rax
     jz addr_30588
 addr_30041: ;; ./porth.porth:4397:7: OP_INLINED 15856
-addr_30042: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30042: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_30043: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_30043: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30044: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -94884,9 +94884,9 @@ addr_30094: ;; ./porth.porth:4401:13: OP_CALL 15004
     mov [ret_stack_rsp], rsp
     mov rsp, rax
 addr_30095: ;; ./porth.porth:4402:7: OP_INLINED 15868
-addr_30096: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30096: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
 addr_30097: ;; ./porth.porth:1860:41: OP_INLINED 78
 addr_30098: ;; ./std/std.porth:400:3: OP_INTRINSIC 18
@@ -94906,9 +94906,9 @@ addr_30102: ;; ./std/std.porth:402:3: OP_INTRINSIC 1
     pop rbx
     sub rbx, rax
     push rbx
-addr_30103: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 12443776
+addr_30103: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30104: ;; ./porth.porth:1860:59: OP_INLINED 30
 addr_30105: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -94916,13 +94916,13 @@ addr_30105: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_30106: ;; ./porth.porth:4404:7: OP_INLINED 15856
-addr_30107: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30107: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_30108: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_30108: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30109: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -95033,13 +95033,13 @@ addr_30145: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_30146: ;; ./porth.porth:4409:9: OP_INLINED 15856
-addr_30147: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30147: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_30148: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_30148: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30149: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -95211,13 +95211,13 @@ addr_30202: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_30203: ;; ./porth.porth:4414:9: OP_INLINED 15856
-addr_30204: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30204: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_30205: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_30205: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30206: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -95406,9 +95406,9 @@ addr_30265: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_30266: ;; ./porth.porth:4420:9: OP_PUSH_GLOBAL_MEM 12411000
+addr_30266: ;; ./porth.porth:4420:9: OP_PUSH_GLOBAL_MEM 15294584
     mov rax, mem
-    add rax, 12411000
+    add rax, 15294584
     push rax
 addr_30267: ;; ./porth.porth:4420:16: OP_INLINED 12
 addr_30268: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -95435,9 +95435,9 @@ addr_30275: ;; ./porth.porth:4420:27: OP_CALL 3977
     mov [ret_stack_rsp], rsp
     mov rsp, rax
 addr_30276: ;; ./porth.porth:4421:7: OP_INLINED 15868
-addr_30277: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30277: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
 addr_30278: ;; ./porth.porth:1860:41: OP_INLINED 78
 addr_30279: ;; ./std/std.porth:400:3: OP_INTRINSIC 18
@@ -95457,9 +95457,9 @@ addr_30283: ;; ./std/std.porth:402:3: OP_INTRINSIC 1
     pop rbx
     sub rbx, rax
     push rbx
-addr_30284: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 12443776
+addr_30284: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30285: ;; ./porth.porth:1860:59: OP_INLINED 30
 addr_30286: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -95467,13 +95467,13 @@ addr_30286: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_30287: ;; ./porth.porth:4423:7: OP_INLINED 15856
-addr_30288: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30288: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_30289: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_30289: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30290: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -95500,13 +95500,13 @@ addr_30296: ;; ./std/std.porth:371:3: OP_INTRINSIC 0
     push rax
 addr_30297: ;; ./std/std.porth:372:3: OP_INTRINSIC 30
 addr_30298: ;; ./porth.porth:4424:9: OP_INLINED 15856
-addr_30299: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30299: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_30300: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_30300: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30301: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -95638,13 +95638,13 @@ addr_30342: ;; ./porth.porth:4426:31: OP_CALL 15880
 addr_30343: ;; ./porth.porth:4426:42: OP_INTRINSIC 19
     pop rax
 addr_30344: ;; ./porth.porth:4428:9: OP_INLINED 15856
-addr_30345: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30345: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_30346: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_30346: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30347: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -96008,9 +96008,9 @@ addr_30462: ;; ./std/std.porth:441:43: OP_INTRINSIC 19
 addr_30463: ;; ./porth.porth:4442:9: OP_END 30464
     jmp addr_30464
 addr_30464: ;; ./porth.porth:4443:7: OP_INLINED 15868
-addr_30465: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30465: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
 addr_30466: ;; ./porth.porth:1860:41: OP_INLINED 78
 addr_30467: ;; ./std/std.porth:400:3: OP_INTRINSIC 18
@@ -96030,9 +96030,9 @@ addr_30471: ;; ./std/std.porth:402:3: OP_INTRINSIC 1
     pop rbx
     sub rbx, rax
     push rbx
-addr_30472: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 12443776
+addr_30472: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30473: ;; ./porth.porth:1860:59: OP_INLINED 30
 addr_30474: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -96040,13 +96040,13 @@ addr_30474: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_30475: ;; ./porth.porth:4445:7: OP_INLINED 15856
-addr_30476: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30476: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_30477: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_30477: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30478: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -96140,13 +96140,13 @@ addr_30508: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rbx
     mov [rax], rbx
 addr_30509: ;; ./porth.porth:4449:9: OP_INLINED 15856
-addr_30510: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30510: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_30511: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_30511: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30512: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -96310,9 +96310,9 @@ addr_30565: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_30566: ;; ./porth.porth:4454:9: OP_PUSH_GLOBAL_MEM 12411000
+addr_30566: ;; ./porth.porth:4454:9: OP_PUSH_GLOBAL_MEM 15294584
     mov rax, mem
-    add rax, 12411000
+    add rax, 15294584
     push rax
 addr_30567: ;; ./porth.porth:4454:16: OP_INLINED 12
 addr_30568: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -96339,9 +96339,9 @@ addr_30575: ;; ./porth.porth:4454:27: OP_CALL 3977
     mov [ret_stack_rsp], rsp
     mov rsp, rax
 addr_30576: ;; ./porth.porth:4455:7: OP_INLINED 15868
-addr_30577: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30577: ;; ./porth.porth:1860:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
 addr_30578: ;; ./porth.porth:1860:41: OP_INLINED 78
 addr_30579: ;; ./std/std.porth:400:3: OP_INTRINSIC 18
@@ -96361,9 +96361,9 @@ addr_30583: ;; ./std/std.porth:402:3: OP_INTRINSIC 1
     pop rbx
     sub rbx, rax
     push rbx
-addr_30584: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 12443776
+addr_30584: ;; ./porth.porth:1860:50: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30585: ;; ./porth.porth:1860:59: OP_INLINED 30
 addr_30586: ;; ./std/std.porth:26:29: OP_INTRINSIC 29
@@ -96436,9 +96436,9 @@ addr_30610: ;; ./porth.porth:4461:5: OP_PUSH_STR 902
     mov rax, 17
     push rax
     push str_902
-addr_30611: ;; ./porth.porth:4461:25: OP_PUSH_GLOBAL_MEM 12411000
+addr_30611: ;; ./porth.porth:4461:25: OP_PUSH_GLOBAL_MEM 15294584
     mov rax, mem
-    add rax, 12411000
+    add rax, 15294584
     push rax
 addr_30612: ;; ./porth.porth:4461:32: OP_INLINED 12
 addr_30613: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -96502,13 +96502,13 @@ addr_30630: ;; ./std/std.porth:371:3: OP_INTRINSIC 0
     push rax
 addr_30631: ;; ./std/std.porth:372:3: OP_INTRINSIC 30
 addr_30632: ;; ./porth.porth:4465:7: OP_INLINED 15856
-addr_30633: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 12411008
+addr_30633: ;; ./porth.porth:1859:31: OP_PUSH_GLOBAL_MEM 15294592
     mov rax, mem
-    add rax, 12411008
+    add rax, 15294592
     push rax
-addr_30634: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 12443776
+addr_30634: ;; ./porth.porth:1859:41: OP_PUSH_GLOBAL_MEM 15327360
     mov rax, mem
-    add rax, 12443776
+    add rax, 15327360
     push rax
 addr_30635: ;; ./porth.porth:1859:50: OP_INTRINSIC 28
     pop rax
@@ -96789,9 +96789,9 @@ addr_30727: ;; ./std/std.porth:25:29: OP_INTRINSIC 29
     pop rax
     pop rbx
     mov [rax], rbx
-addr_30728: ;; ./porth.porth:4474:7: OP_PUSH_GLOBAL_MEM 12411000
+addr_30728: ;; ./porth.porth:4474:7: OP_PUSH_GLOBAL_MEM 15294584
     mov rax, mem
-    add rax, 12411000
+    add rax, 15294584
     push rax
 addr_30729: ;; ./porth.porth:4474:14: OP_INLINED 12
 addr_30730: ;; ./std/std.porth:20:34: OP_INTRINSIC 28
@@ -98622,4 +98622,4 @@ args_ptr: resq 1
 ret_stack_rsp: resq 1
 ret_stack: resb 65536
 ret_stack_end:
-mem: resb 12468384
+mem: resb 15351968
