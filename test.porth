@@ -1,6 +1,15 @@
 // In progress rewrite of test.py in porth
 include "std.porth"
 
+inline proc shell -- ptr in tmp-end end
+inline proc : ptr in tmp-append-ptr end
+inline proc run ptr ptr in
+  tmp-append-ptr
+  NULL tmp-append-ptr
+  dup true cmd-echoed
+  tmp-rewind
+end
+
 proc run-file
   ptr // file-name
 in
@@ -41,8 +50,36 @@ proc main in
       end
       args @@ptr run-file
     else dup "update"c cstreq if*
-      here eputs ": TODO: `update` subcommand is not implemented\n" eputs
-      1 exit
+      args @@ptr NULL ptr= if
+        "ERROR: no subsubcommand was provided for the `update` subcommand\n" eputs
+        1 exit
+      end
+
+      args @@ptr
+        dup "bootstrap"c cstreq if
+          shell
+            "./porth"c : "com"c : "-s"c : "-t"c : "nasm-linux-x86_64"c : "./porth.porth"c
+          run
+
+          shell
+            // TODO: we should probably use something more crossplatform than `cp` command
+            "cp"c : "-v"c : "./porth.asm"c : "./bootstrap/porth-linux-x86_64.nasm"c
+          run
+
+          shell
+            "./porth"c : "com"c : "-s"c : "-t"c : "fasm-linux-x86_64"c : "./porth.porth"c
+          run
+
+          shell
+            "cp"c : "-v"c : "./porth.asm"c : "./bootstrap/porth-linux-x86_64.fasm"c
+          run
+        else
+          "ERROR: unknown subsubcommand `update " eputs
+          dup cstr-to-str                         eputs
+          "`\n"                                   eputs
+          1 exit
+        end
+      drop
     else dup "help"c cstreq if*
       here eputs ": TODO: `help` subcommand is not implemented\n" eputs
       1 exit
@@ -53,5 +90,4 @@ proc main in
       1 exit
     end
   drop
-
 end
