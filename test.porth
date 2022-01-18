@@ -13,16 +13,9 @@ end
 proc run-file
   ptr // file-name
 in
-  tmp-end
-    "./porth"c   tmp-append-ptr
-    "com"c       tmp-append-ptr
-    "-s"c        tmp-append-ptr
-    "-r"c        tmp-append-ptr
-    over         tmp-append-ptr
-    NULL         tmp-append-ptr
-    dup true cmd-echoed
-  tmp-rewind
-  drop
+  shell
+    "./porth"c : "com"c : "-s"c : "-r"c : swap
+  run
 
   here eputs ": TODO: run-file is not fully implemented yet\n" eputs
   1 exit
