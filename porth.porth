@@ -1960,8 +1960,8 @@ in
   const-stack-count @64 > if
     token @ptr Token.loc ptr+             eputloc
     ": ERROR: not enough arguments for `" eputs
-    token @ptr Token.value ptr+ @Str      eputs
-    "` intrinsic\n"                       eputs
+    token @ptr Token.text ptr+ @Str       eputs
+    "`\n"                                 eputs
     1 exit
   end
 end
