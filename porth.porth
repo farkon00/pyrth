@@ -4204,6 +4204,8 @@ in
   name !ptr
 
   "Usage: " eputs name @ptr cstr-to-str puts " [OPTIONS] <SUBCOMMAND>\n"                     fd @64 fputs
+  "  OPTIONS:\n"                                                                             fd @64 fputs
+  "    -unsafe               Disable type checking.\n"                                       fd @64 fputs
   "  SUBCOMMANDS:\n"                                                                         fd @64 fputs
   "    com [OPTIONS] <file>  Compile the program\n"                                          fd @64 fputs
   "      OPTIONS:\n"                                                                         fd @64 fputs
@@ -4262,10 +4264,24 @@ proc main in
   memory program sizeof(ptr) end
   args @@ptr program !ptr
 
+  memory unsafe sizeof(bool) end
+  false unsafe !bool
+
   memory target sizeof(int) end
   TARGET_NASM_LINUX_X86_64 target !int
 
-  args sizeof(ptr) inc64-by
+  while
+    args sizeof(ptr) inc64-by
+    args @@ptr NULL ptr= if
+      false // break
+    else args @@ptr "-unsafe"c cstreq if*
+      true unsafe !bool
+      true  // continue
+    else
+      false // break
+    end
+  do end
+
   args @@ptr NULL ptr= if
     program @ptr stderr usage
     "ERROR: subcommand is not provided\n" eputs
@@ -4335,7 +4351,7 @@ proc main in
     input-file-path-cstr @ptr cstr-to-str remove-ext base-file-path !Str
 
     input-file-path-cstr @ptr compile-program-into-ops
-    type-check-program
+    unsafe @bool lnot if type-check-program end
 
     timeit/from-here
 
@@ -4469,7 +4485,7 @@ proc main in
     end
 
     args @@ptr compile-program-into-ops
-    type-check-program
+    unsafe @bool lnot if type-check-program end
 
     dump-ops
   else args @@ptr "lex"c cstreq if*
@@ -4490,7 +4506,7 @@ proc main in
     end
 
     args @@ptr compile-program-into-ops
-    type-check-program
+    unsafe @bool lnot if type-check-program end
 
     summary
   else
