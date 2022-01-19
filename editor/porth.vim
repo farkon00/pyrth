@@ -26,7 +26,7 @@ syntax region porthString start=/\v"/ skip=/\v\\./ end=/\v"/ contains=porthEscap
 syntax region porthChar start=/\v'/ skip=/\v\\./ end=/\v'/ contains=porthEscapes
 
 " Escape literals \n, \r, ....
-syntax match porthEscapes display contained "\\[nr"']"
+syntax match porthEscapes display contained "\\[nr\"']"
 
 " Number literals
 syntax region porthNumber start=/\s\d/ skip=/\d/ end=/\s/
