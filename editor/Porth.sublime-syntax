@@ -1,0 +1,53 @@
+%YAML 1.2
+---
+# See http://www.sublimetext.com/docs/syntax.html
+name: Porth
+scope: source.porth
+file_extensions:
+  - porth
+
+variables:
+  char_escape: '\\n|\\r|\\\\|\\"|\\'''
+
+contexts:
+  main:
+
+    # Comments begin with a '//' and finish at the end of the line
+    - match: '//'
+      scope: punctuation.definition.comment.porth
+      push: line_comment
+
+    # Keywords.
+    - match: '\b(if|else|while|do|include|memory|proc|const|end|offset|reset|assert|in|inline|here|addr-of|call-like)\b'
+      scope: keyword.control.porth
+
+    # Numbers
+    - match: '(?:^|\s)[0-9]+(?:\s|$)'
+      scope: constant.numeric.integer.porth
+
+    # Character literal
+    - match: (\')(?:({{char_escape}})|([^']))(\')
+      scope: string.quoted.single.porth
+      captures:
+        1: punctuation.definition.string.begin.porth
+        2: constant.character.escape.porth
+        3: constant.character.literal.porth
+        4: punctuation.definition.string.end.porth
+
+    # Strings begin and end with quotes, and use backslashes as an escape character
+    - match: '"'
+      scope: punctuation.definition.string.begin.porth
+      push: double_quoted_string
+
+  line_comment:
+    - meta_scope: comment.line.porth
+    - match: $
+      pop: true
+
+  double_quoted_string:
+    - meta_scope: string.quoted.double.porth
+    - match: '"'
+      scope: punctuation.definition.string.end.porth
+      pop: true
+    - match: ({{char_escape}})
+      scope: constant.character.escape.porth
