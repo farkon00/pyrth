@@ -1751,8 +1751,13 @@ in
   0 while dup strlits-count @64 < do
     "str_"                           out-fd @64 fputs
     dup                              out-fd @64 fputu
-    ": db "                          out-fd @64 fputs
-    dup sizeof(Str) * strlits +ptr @Str out-fd @64 fputdecstr
+    ":"                              out-fd @64 fputs
+    dup sizeof(Str) * strlits +ptr
+      dup ?str-empty lnot if
+        " db "   out-fd @64 fputs
+        dup @Str out-fd @64 fputdecstr
+      end
+    drop
     "\n"                             out-fd @64 fputs
     1 +
   end drop
@@ -1827,11 +1832,17 @@ in
   "    mov rdi, 0\n"         out-fd @64 fputs
   "    syscall\n"            out-fd @64 fputs
   "segment .data\n"          out-fd @64 fputs
+
   0 while dup strlits-count @64 < do
     "str_"                           out-fd @64 fputs
     dup                              out-fd @64 fputu
-    ": db "                          out-fd @64 fputs
-    dup sizeof(Str) * strlits +ptr @Str out-fd @64 fputdecstr
+    ":"                              out-fd @64 fputs
+    dup sizeof(Str) * strlits +ptr
+      dup ?str-empty lnot if
+        " db "   out-fd @64 fputs
+        dup @Str out-fd @64 fputdecstr
+      end
+    drop
     "\n"                             out-fd @64 fputs
     1 +
   end drop
