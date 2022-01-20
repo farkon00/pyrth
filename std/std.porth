@@ -691,56 +691,58 @@ proc streq
   --
   bool
 in
-  memory a sizeof(Str) end
-  a !Str
-  memory b sizeof(Str) end
-  b !Str
-
-  a @Str.count b @Str.count = if
-    0 while
-      dup a @Str.count < if
-        dup a @Str.data +ptr @8
-        over b @Str.data +ptr @8
-        =
+  while
+    let n1 s1 n2 s2 in
+      n1 s1 n2 s2
+      n1 0 > n2 0 > land if
+        s1 @8 s2 @8 =
       else false end
-    do 1 + end
-    a @Str.count >=
-  else false end
+    end
+  do
+    let n1 s1 n2 s2 in
+      n1 1 -
+      s1 1 ptr+
+      n2 1 -
+      s2 1 ptr+
+    end
+  end
+
+  let n1 _ n2 _ in
+    n1 0 = n2 0 = land
+  end
 end
 
 // TODO: rename isdigit to ?digit
 inline proc isdigit int -- bool in
-  dup
-    '0' >=
-  swap
-    '9' <=
-  land
+  let x in
+    x '0' >=
+    x '9' <=
+    land
+  end
 end
 
 // TODO: rename isalpha to ?alpha
 inline proc isalpha int -- bool in
-  dup
-    dup
-      'a' >=
-    swap
-      'z' <=
+  let x in
+    x 'a' >=
+    x 'z' <=
     land
-  swap
-    dup
-      'A' >=
-    swap
-      'Z' <=
+
+    x 'A' >=
+    x 'Z' <=
     land
-  lor
+
+    lor
+  end
 end
 
 // TODO: rename isalnum to ?alnum
 inline proc isalnum int -- bool in
-  dup
-    isdigit
-  swap
-    isalpha
-  lor
+  let x in
+    x isdigit
+    x isalpha
+    lor
+  end
 end
 
 proc try-parse-int
