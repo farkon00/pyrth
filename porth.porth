@@ -4552,28 +4552,24 @@ proc usage
   ptr // program name
   int // fd
 in
-  memory fd sizeof(u64) end
-  fd !64
-
-  memory name sizeof(ptr) end
-  name !ptr
-
-  "Usage: " eputs name @ptr cstr-to-str puts " [OPTIONS] <SUBCOMMAND>\n"                     fd @64 fputs
-  "  OPTIONS:\n"                                                                             fd @64 fputs
-  "    -unsafe               Disable type checking.\n"                                       fd @64 fputs
-  "  SUBCOMMANDS:\n"                                                                         fd @64 fputs
-  "    com [OPTIONS] <file>  Compile the program\n"                                          fd @64 fputs
-  "      OPTIONS:\n"                                                                         fd @64 fputs
-  // TODO: implement -o flag for com subcommand
-  "        -t                  Specify the target for generation.\n"                         fd @64 fputs
-  "                            Default: nasm-linux-x86_64.\n"                                fd @64 fputs
-  "                            Specify `-t list` to list all available targets.\n"           fd @64 fputs
-  "        -r                  Run the program after successful compilation\n"               fd @64 fputs
-  "        -s                  Silent mode. Don't print any info about compilation phases\n" fd @64 fputs
-  "    dump <file>           Dump the ops of the program\n"                                  fd @64 fputs
-  "    lex <file>            Produce lexical analysis of the file\n"                         fd @64 fputs
-  "    summary <file>        Print the summary of the program\n"                             fd @64 fputs
-  "    help                  Print this help to stdout and exit with 0 code\n"               fd @64 fputs
+  let name fd in
+    "Usage: " eputs name cstr-to-str puts " [OPTIONS] <SUBCOMMAND>\n"                          fd fputs
+    "  OPTIONS:\n"                                                                             fd fputs
+    "    -unsafe               Disable type checking.\n"                                       fd fputs
+    "  SUBCOMMANDS:\n"                                                                         fd fputs
+    "    com [OPTIONS] <file>  Compile the program\n"                                          fd fputs
+    "      OPTIONS:\n"                                                                         fd fputs
+    // TODO: implement -o flag for com subcommand
+    "        -t                  Specify the target for generation.\n"                         fd fputs
+    "                            Default: nasm-linux-x86_64.\n"                                fd fputs
+    "                            Specify `-t list` to list all available targets.\n"           fd fputs
+    "        -r                  Run the program after successful compilation\n"               fd fputs
+    "        -s                  Silent mode. Don't print any info about compilation phases\n" fd fputs
+    "    dump <file>           Dump the ops of the program\n"                                  fd fputs
+    "    lex <file>            Produce lexical analysis of the file\n"                         fd fputs
+    "    summary <file>        Print the summary of the program\n"                             fd fputs
+    "    help                  Print this help to stdout and exit with 0 code\n"               fd fputs
+  end
 end
 
 // TODO: split "target" into "format" and "platform"
