@@ -39,9 +39,9 @@ Simple program that prints numbers from 0 to 99 in an ascending order:
 include "std.porth"
 
 proc main in
-  100 0 while 2dup > do
+  0 while dup 100 < do
     dup print 1 +
-  end drop drop
+  end drop
 end
 ```
 
