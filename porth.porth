@@ -9,7 +9,7 @@ const Loc.row sizeof(u64) offset end
 const Loc.col sizeof(u64) offset end
 const sizeof(Loc) reset end
 
-proc fputloc ptr int in
+inline proc fputloc ptr int in
   let loc fd in
     loc Loc.file-path ptr+ @Str fd fputs
     ":"                         fd fputs
@@ -194,49 +194,45 @@ const Lexer.file-path  sizeof(Str) offset end
 const Lexer.row        sizeof(u64) offset end
 const sizeof(Lexer) reset end
 
-proc lexer-next-line ptr in
-  memory lexer sizeof(ptr) end
-  lexer !64
+inline proc lexer-next-line ptr in
+  let lexer in
+    '\n'
+    lexer Lexer.line ptr+
+    lexer Lexer.content ptr+
+    str-chop-by-delim
 
-  '\n'
-  lexer @ptr Lexer.line ptr+
-  lexer @ptr Lexer.content ptr+
-  str-chop-by-delim
+    lexer Lexer.line ptr+ offsetof(Str.data) ptr+ @ptr
+    lexer Lexer.line-start ptr+
+    !ptr
 
-  lexer @ptr Lexer.line ptr+ offsetof(Str.data) ptr+ @ptr
-  lexer @ptr Lexer.line-start ptr+
-  !64
-
-  lexer @ptr Lexer.row ptr+ inc64
+    lexer Lexer.row ptr+ inc64
+  end
 end
 
-proc lexer-get-loc
+inline proc lexer-get-loc
   ptr // loc
   ptr // lexer
 in
-  memory lexer sizeof(ptr) end
-  lexer !ptr
-  memory loc sizeof(ptr) end
-  loc !ptr
+  let loc lexer in
+    // File Path
+    sizeof(Str)
+    lexer Lexer.file-path ptr+
+    loc   Loc.file-path   ptr+
+    memcpy
+    drop
 
-  // File Path
-  sizeof(Str)
-  lexer @ptr Lexer.file-path ptr+
-  loc   @ptr Loc.file-path   ptr+
-  memcpy
-  drop
+    // Row
+    lexer Lexer.row ptr+ @int
+    loc   Loc.row   ptr+ !int
 
-  // Row
-  lexer @ptr Lexer.row ptr+ @int
-  loc   @ptr Loc.row   ptr+ !int
-
-  // Column
-  lexer @ptr Lexer.line ptr+ offsetof(Str.data) ptr+ @ptr
-  lexer @ptr Lexer.line-start ptr+ @ptr
-  ptr-diff
-  1 +
-  loc @ptr Loc.col ptr+
-  !int
+    // Column
+    lexer Lexer.line ptr+ offsetof(Str.data) ptr+ @ptr
+    lexer Lexer.line-start ptr+ @ptr
+    ptr-diff
+    1 +
+    loc Loc.col ptr+
+    !int
+  end
 end
 
 proc lexer-consume-str-like-lit
