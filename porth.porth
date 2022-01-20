@@ -1272,8 +1272,6 @@ in
   memory str sizeof(Str) end
   str !Str
 
-  memory byte 2 end
-
   memory first sizeof(bool) end
   true first !bool
 
@@ -3076,19 +3074,27 @@ in
           sizeof(Loc) token Token.loc   ptr+ memori Memory.loc  ptr+ memcpy drop
 
           lexer eval-const-value
+          let type size in
+            type DATATYPE_INT != if
+              here eputs ": TODO: memory size must be `int` error\n" eputs
+              1 exit
+            end
 
-          swap DATATYPE_INT != if
-            here eputs ": TODO: memory size must be `int` error\n" eputs 1 exit
-          end
+            // NOTE: align all the memories to the size of the word
+            size
+            7 +
+            8 /
+            8 *
 
-          inside-proc @bool if
-            local-memory-capacity @64 memori Memory.offset ptr+ !64
-            local-memory-capacity @64 + local-memory-capacity !64
-            memori local-memory-define
-          else
-            global-memory-capacity @64 memori Memory.offset ptr+ !64
-            global-memory-capacity @64 + global-memory-capacity !64
-            memori global-memory-define
+            inside-proc @bool if
+              local-memory-capacity @64 memori Memory.offset ptr+ !64
+              local-memory-capacity @64 + local-memory-capacity !64
+              memori local-memory-define
+            else
+              global-memory-capacity @64 memori Memory.offset ptr+ !64
+              global-memory-capacity @64 + global-memory-capacity !64
+              memori global-memory-define
+            end
           end
         else dup KEYWORD_ASSERT = if*
           token lexer lexer-next-token lnot if
