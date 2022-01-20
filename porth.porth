@@ -3211,7 +3211,9 @@ in
           // TODO: local memory regions can shadow the global ones
           // Do we wanna warn the user about that?
           OP_PUSH_LOCAL_MEM
-          swap Memory.offset ptr+ @64
+            swap Memory.offset ptr+ @64
+            bind-table-count @int 8 * // NOTE: let bindings do offset the local memories
+            +
           token
           push-op
         else drop dup @Str global-memories-lookup dup NULL ptr!= if*

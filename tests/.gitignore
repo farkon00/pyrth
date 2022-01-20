@@ -40,3 +40,4 @@ polymorphism
 dos-newlines
 segfault
 nested-let
+let-bindings-local-mem-corruption
