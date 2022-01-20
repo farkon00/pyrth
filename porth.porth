@@ -1376,26 +1376,25 @@ in
      "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
      "    mov rsp, rax\n"             out-fd @64 fputs
   else dup Op.type ptr+ @64 OP_BIND = if*
+    "    mov rax, [ret_stack_rsp]\n"  out-fd @64 fputs
+    "    sub rax, "                   out-fd @64 fputs
+    dup Op.operand ptr+ @64 8 *       out-fd @64 fputu
+    "\n"                              out-fd @64 fputs
+    "    mov [ret_stack_rsp], rax\n"  out-fd @64 fputs
     dup Op.operand ptr+ @64
     while dup 0 > do
-      "    pop rcx\n"                  out-fd @64 fputs
-      "    mov rax, rsp\n"             out-fd @64 fputs
-      "    mov rsp, [ret_stack_rsp]\n" out-fd @64 fputs
-      "    push rcx\n"                 out-fd @64 fputs
-      "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
-      "    mov rsp, rax\n"             out-fd @64 fputs
+      "    pop rbx\n" out-fd @64 fputs
+      "    mov [rax+" out-fd @64 fputs
+      dup 1 - 8 *     out-fd @64 fputu
+      "], rbx\n"      out-fd @64 fputs
       1 -
     end drop
   else dup Op.type ptr+ @64 OP_UNBIND = if*
-    "    mov rax, rsp\n"             out-fd @64 fputs
-    "    mov rsp, [ret_stack_rsp]\n" out-fd @64 fputs
-    dup Op.operand ptr+ @64
-    while dup 0 > do
-      "    pop rcx\n"                out-fd @64 fputs
-      1 -
-    end drop
-    "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
-    "    mov rsp, rax\n"             out-fd @64 fputs
+    "    mov rax, [ret_stack_rsp]\n"  out-fd @64 fputs
+    "    add rax, "                   out-fd @64 fputs
+    dup Op.operand ptr+ @64 8 *       out-fd @64 fputu
+    "\n"                              out-fd @64 fputs
+    "    mov [ret_stack_rsp], rax\n"  out-fd @64 fputs
   else dup Op.type ptr+ @64 OP_PUSH_BIND = if*
      "    mov rax, [ret_stack_rsp]\n" out-fd @64 fputs
      "    add rax, "                  out-fd @64 fputs
