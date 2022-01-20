@@ -686,7 +686,8 @@ inline proc ?str-empty ptr -- bool in
 end
 
 proc streq
-  int ptr int ptr
+  int ptr
+  int ptr
   --
   bool
 in

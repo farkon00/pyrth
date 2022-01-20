@@ -53,6 +53,7 @@ const KEYWORD_INLINE      1 offset end
 const KEYWORD_HERE        1 offset end
 const KEYWORD_ADDR_OF     1 offset end
 const KEYWORD_CALL_LIKE   1 offset end
+const KEYWORD_LET         1 offset end
 const COUNT_KEYWORDS         reset end
 
 proc keyword-by-name
@@ -63,7 +64,7 @@ in
   memory name sizeof(Str) end
   name !Str
   true
-  assert "Exhaustive keyword handling" COUNT_KEYWORDS 19 = end
+  assert "Exhaustive keyword handling" COUNT_KEYWORDS 20 = end
        name @Str "if"        streq if  KEYWORD_IF
   else name @Str "if*"       streq if* KEYWORD_IFSTAR
   else name @Str "else"      streq if* KEYWORD_ELSE
@@ -83,6 +84,7 @@ in
   else name @Str "here"      streq if* KEYWORD_HERE
   else name @Str "addr-of"   streq if* KEYWORD_ADDR_OF
   else name @Str "call-like" streq if* KEYWORD_CALL_LIKE
+  else name @Str "let"       streq if* KEYWORD_LET
   else
     drop false 0
   end
@@ -95,7 +97,7 @@ proc keyword-name
   --
   int ptr
 in
-  assert "Exhaustive keyword handling" COUNT_KEYWORDS 19 = end
+  assert "Exhaustive keyword handling" COUNT_KEYWORDS 20 = end
        dup KEYWORD_IF          = if  "if"
   else dup KEYWORD_IFSTAR      = if* "if*"
   else dup KEYWORD_ELSE        = if* "else"
@@ -115,6 +117,7 @@ in
   else dup KEYWORD_HERE        = if* "here"
   else dup KEYWORD_ADDR_OF     = if* "addr-of"
   else dup KEYWORD_CALL_LIKE   = if* "call-like"
+  else dup KEYWORD_LET         = if* "let"
   else
     0 NULL
     here eputs ": unreachable\n" eputs
@@ -803,6 +806,9 @@ const OP_WHILE           1 offset end
 const OP_DO              1 offset end
 const OP_INTRINSIC       1 offset end
 const OP_CALL_LIKE       1 offset end
+const OP_BIND            1 offset end
+const OP_PUSH_BIND       1 offset end
+const OP_UNBIND          1 offset end
 const COUNT_OPS             reset end
 
 proc op-type-as-str
@@ -810,7 +816,7 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 20 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 23 = end
        dup OP_PUSH_INT        =  if  "OP_PUSH_INT"
   else dup OP_PUSH_BOOL       =  if* "OP_PUSH_BOOL"
   else dup OP_PUSH_PTR        =  if* "OP_PUSH_PTR"
@@ -831,6 +837,9 @@ in
   else dup OP_WHILE           =  if* "OP_WHILE"
   else dup OP_DO              =  if* "OP_DO"
   else dup OP_CALL_LIKE       =  if* "OP_CALL_LIKE"
+  else dup OP_BIND            =  if* "OP_BIND"
+  else dup OP_UNBIND          =  if* "OP_UNBIND"
+  else dup OP_PUSH_BIND       =  if* "OP_PUSH_BIND"
   else
     here eputs ": Unknown op type\n" eputs 1 exit
     0 NULL
@@ -1227,6 +1236,8 @@ in
   end
 end
 
+// TODOOOOOOOO: make sure that the size of the defined memories is divisible by the size of the word
+
 proc local-memory-define
   ptr
 in
@@ -1332,7 +1343,7 @@ in
 
   dup sizeof(Op) * ops +ptr
 
-  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 20 = end
+  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 23 = end
 
   "addr_" out-fd @64 fputs
   over    out-fd @64 fputu
@@ -1365,6 +1376,33 @@ in
      "    call rbx\n"                 out-fd @64 fputs
      "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
      "    mov rsp, rax\n"             out-fd @64 fputs
+  else dup Op.type ptr+ @64 OP_BIND = if*
+    dup Op.operand ptr+ @64
+    while dup 0 > do
+      "    pop rcx\n"                  out-fd @64 fputs
+      "    mov rax, rsp\n"             out-fd @64 fputs
+      "    mov rsp, [ret_stack_rsp]\n" out-fd @64 fputs
+      "    push rcx\n"                 out-fd @64 fputs
+      "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
+      "    mov rsp, rax\n"             out-fd @64 fputs
+      1 -
+    end drop
+  else dup Op.type ptr+ @64 OP_UNBIND = if*
+    "    mov rax, rsp\n"             out-fd @64 fputs
+    "    mov rsp, [ret_stack_rsp]\n" out-fd @64 fputs
+    dup Op.operand ptr+ @64
+    while dup 0 > do
+      "    pop rcx\n"                out-fd @64 fputs
+      1 -
+    end drop
+    "    mov [ret_stack_rsp], rsp\n" out-fd @64 fputs
+    "    mov rsp, rax\n"             out-fd @64 fputs
+  else dup Op.type ptr+ @64 OP_PUSH_BIND = if*
+     "    mov rax, [ret_stack_rsp]\n" out-fd @64 fputs
+     "    add rax, "                  out-fd @64 fputs
+     dup Op.operand ptr+ @64 8 *      out-fd @64 fputu
+     "\n"                             out-fd @64 fputs
+     "    push QWORD [rax]\n"         out-fd @64 fputs
   else dup Op.type ptr+ @64 OP_PUSH_LOCAL_MEM = if*
      "    mov rax, [ret_stack_rsp]\n" out-fd @64 fputs
      "    add rax, "                  out-fd @64 fputs
@@ -2199,7 +2237,7 @@ in
       end
       drop // intrinsic
     else token Token.type ptr+ @64 TOKEN_KEYWORD = if*
-      assert "Exhaustive handling of keywords in eval-const-value" COUNT_KEYWORDS 19 = end
+      assert "Exhaustive handling of keywords in eval-const-value" COUNT_KEYWORDS 20 = end
       token Token.value ptr+ @64
         dup KEYWORD_END = if
           true done !64
@@ -2578,11 +2616,176 @@ proc current-proc -- ptr in
   end
 end
 
+const BIND_TABLE_CAP 1024 end
+memory bind-table sizeof(Str) BIND_TABLE_CAP * end
+memory bind-table-count sizeof(int) end
+
+proc bind-table-push int ptr in
+  bind-table-count @int BIND_TABLE_CAP >= if
+    here eputs ": Assertion Failed: bind table overflow!\n" eputs
+    1 exit
+  end
+
+  bind-table-count @int
+  sizeof(Str) *
+  bind-table +ptr
+  !Str
+
+  bind-table-count inc64
+end
+
+proc bind-table-pop in
+  bind-table-count @int 0 <= if
+    here eputs ": Assertion Failed: bind table underflow!\n" eputs
+    1 exit
+  end
+
+  bind-table-count dec64
+end
+
+proc bind-table-lookup
+  int ptr
+  --
+  int bool
+in
+  memory name sizeof(Str) end
+  name !Str
+
+  bind-table-count @int 1 -
+  while
+    dup 0 >= if
+      dup sizeof(Str) * bind-table +ptr @Str
+      name @Str
+      streq
+      lnot
+    else false end
+  do 1 - end
+
+  dup 0 >= if
+    bind-table-count @int
+    swap 1 +
+    -
+    true
+  else
+    false
+  end
+end
+
+proc bind-table-swap int int in
+  memory a sizeof(ptr) end
+  memory b sizeof(ptr) end
+  memory t sizeof(Str) end
+
+  sizeof(Str) * bind-table +ptr a !ptr
+  sizeof(Str) * bind-table +ptr b !ptr
+
+  a @ptr @Str t !Str
+  b @ptr @Str a @ptr !Str
+  t @Str b @ptr !Str
+end
+
+proc bind-table-rev-top int in
+  dup bind-table-count @int > if
+    here eputs ": Assertion Failed: not enough elements to reverse in bind-table-rev-top" eputs
+    1 exit
+  end
+
+  bind-table-count @int swap -
+  bind-table-count @int 1 -
+  while over over < do
+    over over bind-table-swap
+    swap 1 +
+    swap 1 -
+  end drop drop
+end
+
 const INCLUDE_LIMIT 100 end
 
 // TODO: consider merging the process of compilation and type checking
 // - Helps to catch type errors earlier
 // - Allows `???` to show the type stack even if the programming is not fully compilable
+
+proc parse-bind-list
+  ptr // lexer
+  --
+  int
+in
+  memory lexer sizeof(ptr) end
+  lexer !ptr
+  memory count sizeof(int) end
+  0 count !int
+  memory token sizeof(Token) end
+
+  while
+    token lexer @ptr lexer-next-token if
+      token Token.type ptr+ @int
+        dup TOKEN_WORD = if
+          token Token.value ptr+ @Str bind-table-push
+          count inc64
+          true
+        else dup TOKEN_KEYWORD = if*
+          token Token.value ptr+ @int
+            dup KEYWORD_IN = if
+              false
+            else
+              token Token.loc ptr+                            eputloc
+              ": ERROR: keyword `"                            eputs
+              dup keyword-name                                eputs
+              "` is not supported in the let-binding list.\n" eputs
+              1 exit
+              false
+            end
+          swap drop
+        else
+          token Token.loc ptr+                                     eputloc
+          ": ERROR: "                                              eputs
+          token Token.type ptr+ @int HUMAN_PLURAL human-token-type eputs
+          " are not supported in the let-binding list. Only "      eputs
+          TOKEN_WORD HUMAN_PLURAL human-token-type                 eputs
+          " are supported.\n"                                      eputs
+          1 exit
+          false // break
+        end
+      swap drop
+    else
+      token Token.loc ptr+
+      dup lexer @ptr lexer-get-loc
+      eputloc
+      ": ERROR: expected keyword `" eputs
+      KEYWORD_IN keyword-name       eputs
+      "` but got nothing\n"         eputs
+      1 exit
+
+      false // break
+    end
+  do end
+
+  count @int bind-table-rev-top
+
+  count @int
+end
+
+proc enclose-let
+  int // let ip
+  ptr // token
+in
+  memory token sizeof(Token) end
+  sizeof(Token) swap token memcpy drop
+
+  memory bind-count sizeof(int) end
+  sizeof(Op) * ops +ptr Op.operand ptr+ @int
+  bind-count !int
+
+  OP_UNBIND
+  bind-count @int
+  token
+  push-op
+
+  while bind-count @int 0 > do
+    bind-table-pop
+    bind-count dec64
+  end
+end
 
 proc compile-file-into-ops
   ptr  // file path cstr
@@ -2625,7 +2828,7 @@ in
       push-op
     else dup TOKEN_KEYWORD = if*
       token Token.value ptr+ @64
-        assert "Exhaustive handling of keywords in compile-file-into-ops" COUNT_KEYWORDS 19 = end
+        assert "Exhaustive handling of keywords in compile-file-into-ops" COUNT_KEYWORDS 20 = end
         dup KEYWORD_IF = if
           ops-count @64 parse-block-stack-push
           OP_IF 0 token push-op
@@ -2741,8 +2944,10 @@ in
 
             local-memories-clean
             false inside-proc !bool
+          else dup Op.type ptr+ @64 OP_BIND = if*
+            over token enclose-let
           else
-            token Token.loc ptr+ eputloc ": ERROR: `end` can only close `if`, `if*`, `else`, `do`, or `proc` blocks\n" eputs
+            token Token.loc ptr+ eputloc ": ERROR: `end` can only close `if`, `if*`, `else`, `do`, `proc` or `let` blocks\n" eputs
             dup Op.token ptr+ Token.loc ptr+ eputloc ": NOTE: found `" eputs dup Op.token ptr+ Token.text ptr+ @Str eputs "` instead\n" eputs
             1 exit
           end
@@ -2933,6 +3138,14 @@ in
           token // TODO: the token refers to `call-like` keyword, but not the name of the procedure the address
                 // of which we are taking.
           push-op
+        else dup KEYWORD_LET = if*
+          ops-count @int
+          parse-block-stack-push
+
+          OP_BIND
+          lexer parse-bind-list
+          token
+          push-op
         else
           token Token.loc ptr+ eputloc
           ": ERROR: unexpected keyword `" eputs
@@ -2951,9 +3164,14 @@ in
       end
 
       token Token.value ptr+ // token.value
-        assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 20 = end
+        assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 23 = end
         dup @Str intrinsic-by-name if
           OP_INTRINSIC swap token push-op
+        else drop dup @Str bind-table-lookup if*
+          OP_PUSH_BIND
+          swap
+          token
+          push-op
         else drop dup @Str const-lookup dup NULL ptr!= if*
           dup Const.type ptr+ @int
           assert "Exhaustive handling of data types in Const compilation\n" COUNT_DATATYPES 4 = end
@@ -3523,6 +3741,7 @@ const TypeContext.stack sizeof(TypeStack) offset end
 const TypeContext.ip sizeof(int) offset end
 const TypeContext.outs sizeof(TypeStack) offset end
 const TypeContext.block-start-ip sizeof(int) offset end
+const TypeContext.ret sizeof(TypeStack) offset end
 const sizeof(TypeContext) reset end
 
 proc type-context-from-parts
@@ -3530,6 +3749,7 @@ proc type-context-from-parts
   int // ip
   ptr // outs
   int // ip beginning of the type checking block
+  ptr // ret
   ptr // the type context
   --
   ptr // the type context
@@ -3537,12 +3757,114 @@ in
   memory context sizeof(ptr) end
   context !ptr
 
+  sizeof(TypeStack) swap context @ptr TypeContext.ret ptr+ memcpy drop
   context @ptr TypeContext.block-start-ip ptr+ !int
   sizeof(TypeStack) swap context @ptr TypeContext.outs ptr+ memcpy drop
   context @ptr TypeContext.ip ptr+ !int
   sizeof(TypeStack) swap context @ptr TypeContext.stack ptr+ memcpy drop
 
   context @ptr
+end
+
+proc type-check-bind
+  int // bind count
+  ptr // token
+  ptr // context
+in
+  memory context sizeof(ptr) end
+  context !ptr
+
+  memory token sizeof(Token) end
+  sizeof(Token) swap token memcpy drop
+
+  memory bind-count sizeof(int) end
+  bind-count !int
+
+  context @ptr TypeContext.stack ptr+ TypeStack.count ptr+ @int
+  bind-count @int
+  over over < if
+    token Token.loc ptr+ eputloc
+    ": ERROR: Data stack does not have enough elements to bind. Expected " eputs
+    eputu
+    " but got " eputs
+    eputu
+    ". Here is the data stack: \n" eputs
+    context @ptr TypeContext.stack ptr+ stderr type-stack-dump
+    1 exit
+  else
+    drop drop
+  end
+
+  while bind-count @int 0 > do
+    context @ptr TypeContext.stack ptr+ TypeStack.top ptr+ @ptr
+    context @ptr TypeContext.ret ptr+
+    type-stack-push-frame
+
+    context @ptr TypeContext.stack ptr+
+    type-stack-pop
+
+    bind-count dec64
+  end
+end
+
+proc type-check-unbind
+  int // bind count
+  ptr // token
+  ptr // context
+in
+  memory context sizeof(ptr) end
+  context !ptr
+
+  memory token sizeof(Token) end
+  sizeof(Token) swap token memcpy drop
+
+  dup
+  context @ptr TypeContext.ret ptr+ TypeStack.count ptr+ @int
+  > if
+    here eputs ": Assertion Failed: the return stack does not have enough frames to unbind" eputs
+    1 exit
+  end
+
+  memory bind-count sizeof(int) end
+  bind-count !int
+
+  while bind-count @int 0 > do
+    context @ptr TypeContext.ret ptr+
+    type-stack-pop
+
+    bind-count dec64
+  end
+end
+
+proc type-check-push-bind
+  int // bind count
+  ptr // token
+  ptr // context
+in
+  memory context sizeof(ptr) end
+  context !ptr
+
+  memory token sizeof(Token) end
+  sizeof(Token) swap token memcpy drop
+
+  memory bind-count sizeof(int) end
+  bind-count !int
+
+  bind-count @int
+  context @ptr TypeContext.ret ptr+ TypeStack.count ptr+ @int
+  > if
+    here eputs ": Assertion Failed: the return stack does not have enough frames to address for OP_PUSH_BIND\n" eputs
+    1 exit
+  end
+
+  context @ptr TypeContext.ret ptr+ TypeStack.top ptr+ @ptr
+  while bind-count @int 0 > do
+    TypeFrame.prev ptr+ @ptr
+    bind-count dec64
+  end
+
+  context @ptr TypeContext.stack ptr+
+  type-stack-push-frame
 end
 
 proc type-check-program-from
@@ -3565,7 +3887,7 @@ in
       op
       memcpy drop
 
-      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 20 = end
+      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 23 = end
 
       op Op.type ptr+ @int OP_PUSH_INT = if
         DATATYPE_INT
@@ -3691,6 +4013,30 @@ in
         context TypeContext.ip ptr+ inc64
 
         true // continue
+      else op Op.type ptr+ @int OP_BIND = if*
+        op Op.operand ptr+ @int
+        op Op.token ptr+
+        context
+        type-check-bind
+
+        context TypeContext.ip ptr+ inc64
+        true // continue
+      else op Op.type ptr+ @int OP_UNBIND = if*
+        op Op.operand ptr+ @int
+        op Op.token ptr+
+        context
+        type-check-unbind
+
+        context TypeContext.ip ptr+ inc64
+        true // continue
+      else op Op.type ptr+ @int OP_PUSH_BIND = if*
+        op Op.operand ptr+ @int
+        op Op.token ptr+
+        context
+        type-check-push-bind
+
+        context TypeContext.ip ptr+ inc64
+        true // continue
       else op Op.type ptr+ @int OP_INLINED = if*
         op Op.token ptr+
         context TypeContext.stack ptr+
@@ -3721,6 +4067,7 @@ in
           context TypeContext.ip ptr+ @int 1 +
           context TypeContext.stack ptr+
           context TypeContext.ip ptr+ @int
+          context TypeContext.ret ptr+
           while-context
           type-context-from-parts
           type-check-program-from
@@ -4175,11 +4522,14 @@ proc type-check-program in
     dup sizeof(Proc) * procs +ptr
     prok !ptr
 
+    sizeof(TypeContext) 0 context memset drop
     prok @ptr Proc.ins  ptr+
     prok @ptr Proc.addr ptr+ @int
     prok @ptr Proc.outs ptr+
     over
+    context TypeContext.ret ptr+
     context
+
     type-context-from-parts
 
     type-check-program-from

@@ -432,6 +432,16 @@ proc fib int in
 end
 ```
 
+#### Let-Bindings
+
+```porth
+34 35
+let a b in
+  a print
+  b print
+end
+```
+
 ### offset/reset
 
 <!-- TODO: Document offset/reset properly -->

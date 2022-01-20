@@ -4,7 +4,7 @@
 :i returncode 1
 :b stdout 0
 
-:b stderr 180
-./tests/end-cant-close-error.porth:1:7: ERROR: `end` can only close `if`, `if*`, `else`, `do`, or `proc` blocks
+:b stderr 186
+./tests/end-cant-close-error.porth:1:7: ERROR: `end` can only close `if`, `if*`, `else`, `do`, `proc` or `let` blocks
 ./tests/end-cant-close-error.porth:1:1: NOTE: found `while` instead
 

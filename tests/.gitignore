@@ -39,3 +39,4 @@ remove-ext
 polymorphism
 dos-newlines
 segfault
+nested-let
