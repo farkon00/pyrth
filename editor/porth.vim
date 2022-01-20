@@ -14,7 +14,7 @@ set iskeyword=a-z,A-Z,-,*,_,!,@
 syntax keyword porthTodos TODO XXX FIXME NOTE
 
 " Language keywords
-syntax keyword porthKeywords if if* else while do include memory proc const end offset reset assert in inline here addr-of call-like
+syntax keyword porthKeywords if if* else while do include memory proc const end offset reset assert in inline here addr-of call-like let
 
 " Comments
 syntax region porthCommentLine start="//" end="$"   contains=porthTodos
