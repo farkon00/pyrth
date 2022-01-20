@@ -10,14 +10,13 @@ const Loc.col sizeof(u64) offset end
 const sizeof(Loc) reset end
 
 proc fputloc ptr int in
-  memory fd sizeof(u64) end
-  fd !64
-  dup Loc.file-path ptr+ @Str fd @64 fputs
-  ":"                         fd @64 fputs
-  dup Loc.row ptr+ @64        fd @64 fputu
-  ":"                         fd @64 fputs
-  dup Loc.col ptr+ @64        fd @64 fputu
-  drop
+  let loc fd in
+    loc Loc.file-path ptr+ @Str fd fputs
+    ":"                         fd fputs
+    loc Loc.row ptr+ @64        fd fputu
+    ":"                         fd fputs
+    loc Loc.col ptr+ @64        fd fputu
+  end
 end
 inline proc putloc ptr in stdout fputloc end
 inline proc eputloc ptr in stderr fputloc end
