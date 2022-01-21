@@ -2680,10 +2680,8 @@ proc bind-table-rev-top int in
         let a b in
           a @Str
           b @Str
-          let n1 s1 n2 s2 in
-            n1 s1 b !Str
-            n2 s2 a !Str
-          end
+          a !Str
+          b !Str
         end
         i 1 +
         j 1 -
