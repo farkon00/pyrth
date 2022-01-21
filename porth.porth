@@ -3843,30 +3843,30 @@ proc type-check-push-bind
   ptr // token
   ptr // context
 in
-  memory context sizeof(ptr) end
-  context !ptr
+  let bind-count token context in
+    bind-count
+    context TypeContext.ret ptr+ TypeStack.count ptr+ @int
+    > if
+      here eputs ": Assertion Failed: the return stack does not have enough frames to address for OP_PUSH_BIND. This is likely a bug in the compilation process because it should've caught that.\n" eputs
+      1 exit
+    end
 
-  memory token sizeof(Token) end
-  sizeof(Token) swap token memcpy drop
+    bind-count
+    context TypeContext.ret ptr+ TypeStack.top ptr+ @ptr
+    while over 0 > do
+      let count frame in
+        count 1 -
+        frame TypeFrame.prev ptr+ @ptr
+      end
+    end
 
-  memory bind-count sizeof(int) end
-  bind-count !int
-
-  bind-count @int
-  context @ptr TypeContext.ret ptr+ TypeStack.count ptr+ @int
-  > if
-    here eputs ": Assertion Failed: the return stack does not have enough frames to address for OP_PUSH_BIND\n" eputs
-    1 exit
+    let _ frame in
+      frame TypeFrame.type ptr+ @int
+      token Token.loc ptr+
+      context TypeContext.stack ptr+
+      type-stack-push
+    end
   end
-
-  context @ptr TypeContext.ret ptr+ TypeStack.top ptr+ @ptr
-  while bind-count @int 0 > do
-    TypeFrame.prev ptr+ @ptr
-    bind-count dec64
-  end
-
-  context @ptr TypeContext.stack ptr+
-  type-stack-push-frame
 end
 
 proc type-check-program-from
