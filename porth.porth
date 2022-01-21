@@ -4569,7 +4569,7 @@ in
     "      OPTIONS:\n"                                                                         fd fputs
     // TODO: implement -o flag for com subcommand
     "        -t                  Specify the target for generation.\n"                         fd fputs
-    "                            Default: nasm-linux-x86_64.\n"                                fd fputs
+    "                            Default: fasm-linux-x86_64.\n"                                fd fputs
     "                            Specify `-t list` to list all available targets.\n"           fd fputs
     "        -r                  Run the program after successful compilation\n"               fd fputs
     "        -s                  Silent mode. Don't print any info about compilation phases\n" fd fputs
@@ -4627,7 +4627,7 @@ proc main in
   false unsafe !bool
 
   memory target sizeof(int) end
-  TARGET_NASM_LINUX_X86_64 target !int
+  TARGET_FASM_LINUX_X86_64 target !int
 
   while
     args sizeof(ptr) inc64-by

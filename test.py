@@ -94,7 +94,8 @@ def run_test_for_file(file_path: str, stats: RunStats = RunStats()):
     error = False
 
     if tc is not None:
-        com = cmd_run_echoed(["./porth", "com", "-r", "-s", file_path, *tc.argv], input=tc.stdin, capture_output=True)
+        # TODO: do something about fasm splash output
+        com = cmd_run_echoed(["./porth", "com", "-t", "nasm-linux-x86_64", "-r", "-s", file_path, *tc.argv], input=tc.stdin, capture_output=True)
         if com.returncode != tc.returncode or com.stdout != tc.stdout or com.stderr != tc.stderr:
             print("[ERROR] Unexpected output")
             print("  Expected:")
