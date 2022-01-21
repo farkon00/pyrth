@@ -2663,32 +2663,35 @@ in
   end
 end
 
-proc bind-table-swap int int in
-  memory a sizeof(ptr) end
-  memory b sizeof(ptr) end
-  memory t sizeof(Str) end
-
-  sizeof(Str) * bind-table +ptr a !ptr
-  sizeof(Str) * bind-table +ptr b !ptr
-
-  a @ptr @Str t !Str
-  b @ptr @Str a @ptr !Str
-  t @Str b @ptr !Str
-end
-
 proc bind-table-rev-top int in
-  dup bind-table-count @int > if
-    here eputs ": Assertion Failed: not enough elements to reverse in bind-table-rev-top" eputs
-    1 exit
-  end
+  bind-table-count @int
+  let n cap in
+    n cap > if
+      here eputs ": Assertion Failed: not enough elements to reverse in bind-table-rev-top" eputs
+      1 exit
+    end
 
-  bind-table-count @int swap -
-  bind-table-count @int 1 -
-  while over over < do
-    over over bind-table-swap
-    swap 1 +
-    swap 1 -
-  end drop drop
+    cap n -
+    cap 1 -
+    while over over < do
+      let i j in
+        i sizeof(Str) * bind-table +ptr
+        j sizeof(Str) * bind-table +ptr
+        let a b in
+          a @Str
+          b @Str
+          let n1 s1 n2 s2 in
+            n1 s1 b !Str
+            n2 s2 a !Str
+          end
+        end
+        i 1 +
+        j 1 -
+      end
+    end
+    drop
+    drop
+  end
 end
 
 const INCLUDE_LIMIT 100 end
