@@ -448,10 +448,20 @@ inline proc execve ptr ptr ptr -- int in SYS_execve syscall3 end
 inline proc wait4 ptr int ptr int -- int in SYS_wait4 syscall4 end
 inline proc rename ptr ptr -- int in SYS_rename syscall2 end
 
-inline proc /   int int -- int in divmod drop end
-inline proc %   int int -- int in divmod swap drop end
-inline proc mod int int -- int in % end
-inline proc div int int -- int in / end
+inline proc /    int int -- int in divmod drop end
+inline proc %    int int -- int in divmod swap drop end
+inline proc mod  int int -- int in % end
+inline proc div  int int -- int in / end
+inline proc imod int int -- int in idivmod swap drop end
+inline proc idiv int int -- int in idivmod drop end
+inline proc emod int int -- int in
+  let a b in
+    a
+    b imod
+    b +
+    b imod
+  end
+end
 
 inline proc nth_argv int -- ptr in
   8 * argv +ptr @64 cast(ptr)

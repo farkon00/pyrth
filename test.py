@@ -152,7 +152,7 @@ def update_output_for_file(file_path: str):
     tc_path = file_path[:-len(PORTH_EXT)] + ".txt"
     tc = load_test_case(tc_path) or DEFAULT_TEST_CASE
 
-    output = cmd_run_echoed(["./porth", "com", "-s", "-r", file_path, *tc.argv], input=tc.stdin, capture_output=True)
+    output = cmd_run_echoed(["./porth", "com", "-s", "-r", "-t", "nasm-linux-x86_64", file_path, *tc.argv], input=tc.stdin, capture_output=True)
     print("[INFO] Saving output to %s" % tc_path)
     save_test_case(tc_path,
                    tc.argv, tc.stdin,
