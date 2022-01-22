@@ -57,9 +57,7 @@ proc snake-add int int in
 
   let x y in
     CELL_SNAKE
-      y COLS * x +
-      sizeof(Cell) *
-      cells +ptr
+    x y cell-at
     !int
 
     x y
@@ -86,9 +84,7 @@ proc snake-del in
   @Point
   let x y in
     CELL_EMPTY
-      y COLS * x +
-      sizeof(Cell) *
-      cells +ptr
+    x y cell-at
     !int
 
     snake-size dec64
