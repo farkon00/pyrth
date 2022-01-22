@@ -610,6 +610,7 @@ const INTRINSIC_PLUS      1 offset end
 const INTRINSIC_MINUS     1 offset end
 const INTRINSIC_MUL       1 offset end
 const INTRINSIC_DIVMOD    1 offset end
+const INTRINSIC_IDIVMOD   1 offset end
 const INTRINSIC_MAX       1 offset end
 const INTRINSIC_EQ        1 offset end
 const INTRINSIC_GT        1 offset end
@@ -659,11 +660,12 @@ proc intrinsic-name
   --
   int ptr // name
 in
-  assert "Exhaustive handling of Intrinsics in intrinsic-name" COUNT_INTRINSICS 45 = end
+  assert "Exhaustive handling of Intrinsics in intrinsic-name" COUNT_INTRINSICS 46 = end
        dup INTRINSIC_PLUS      = if  drop "ptr+"
   else dup INTRINSIC_MINUS     = if* drop "-"
   else dup INTRINSIC_MUL       = if* drop "*"
   else dup INTRINSIC_DIVMOD    = if* drop "divmod"
+  else dup INTRINSIC_IDIVMOD   = if* drop "idivmod"
   else dup INTRINSIC_MAX       = if* drop "max"
   else dup INTRINSIC_PRINT     = if* drop "print"
   else dup INTRINSIC_EQ        = if* drop "="
@@ -721,11 +723,12 @@ in
   memory name sizeof(Str) end
   name !Str
   true
-  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 45 = end
+  assert "Exhaustive handling of Intrinsics in intrinsic-by-name" COUNT_INTRINSICS 46 = end
        name @Str "+"          streq if  INTRINSIC_PLUS
   else name @Str "-"          streq if* INTRINSIC_MINUS
   else name @Str "*"          streq if* INTRINSIC_MUL
   else name @Str "divmod"     streq if* INTRINSIC_DIVMOD
+  else name @Str "idivmod"    streq if* INTRINSIC_IDIVMOD
   else name @Str "max"        streq if* INTRINSIC_MAX
   else name @Str "print"      streq if* INTRINSIC_PRINT
   else name @Str "="          streq if* INTRINSIC_EQ
@@ -1466,7 +1469,7 @@ in
      // ignored
   else dup Op.type ptr+ @64 OP_INTRINSIC = if*
       assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
-        COUNT_INTRINSICS 45 =
+        COUNT_INTRINSICS 46 =
       end
 
       dup Op.operand ptr+ @64
@@ -1490,6 +1493,13 @@ in
           "    pop rbx\n"             out-fd @64 fputs
           "    pop rax\n"             out-fd @64 fputs
           "    div rbx\n"             out-fd @64 fputs
+          "    push rax\n"            out-fd @64 fputs
+          "    push rdx\n"            out-fd @64 fputs
+      else dup INTRINSIC_IDIVMOD = if*
+          "    pop rbx\n"             out-fd @64 fputs
+          "    pop rax\n"             out-fd @64 fputs
+          "    cqo\n"                 out-fd @64 fputs
+          "    idiv rbx\n"            out-fd @64 fputs
           "    push rax\n"            out-fd @64 fputs
           "    push rdx\n"            out-fd @64 fputs
       else dup INTRINSIC_MAX = if*
@@ -4091,7 +4101,7 @@ in
         // else branch
         false // break
       else op Op.type ptr+ @int OP_INTRINSIC = if*
-        assert "Exhaustive handling of Intrinsics in type-check-program-from" COUNT_INTRINSICS 45 = end
+        assert "Exhaustive handling of Intrinsics in type-check-program-from" COUNT_INTRINSICS 46 = end
 
         op Op.operand ptr+ @int
           dup INTRINSIC_PLUS = if
@@ -4101,6 +4111,8 @@ in
           else dup INTRINSIC_MUL = if*
             op Op.token ptr+ context TypeContext.stack ptr+ type-check-binary-int-operator
           else dup INTRINSIC_DIVMOD = if*
+            op Op.token ptr+ context TypeContext.stack ptr+ type-check-divmod-operator
+          else dup INTRINSIC_IDIVMOD = if*
             op Op.token ptr+ context TypeContext.stack ptr+ type-check-divmod-operator
           else dup INTRINSIC_MAX = if*
             op Op.token ptr+ context TypeContext.stack ptr+ type-check-binary-int-operator
