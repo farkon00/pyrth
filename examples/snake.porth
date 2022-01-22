@@ -1,3 +1,4 @@
+// $ stty -echo -icanon && ./porth com -r ./example/snake.porth
 include "std.porth"
 
 const ROWS 10 end
