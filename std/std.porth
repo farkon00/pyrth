@@ -352,6 +352,12 @@ const O_WRONLY 1 end
 const O_RDWR   2 end
 const O_CREAT 64 end
 const O_TRUNC 512 end
+const O_NONBLOCK 2048 end
+
+const F_SETFL 4 end
+const F_GETFL 3 end
+
+const EAGAIN 11 end
 
 const CLOCK_MONOTONIC 1 end
 const TIMER_ABSTIME 1 end
@@ -447,6 +453,7 @@ inline proc getpid -- int in SYS_getpid syscall0 end
 inline proc execve ptr ptr ptr -- int in SYS_execve syscall3 end
 inline proc wait4 ptr int ptr int -- int in SYS_wait4 syscall4 end
 inline proc rename ptr ptr -- int in SYS_rename syscall2 end
+inline proc fcntl int int int -- int in SYS_fcntl syscall3 end
 
 inline proc /    int int -- int in divmod drop end
 inline proc %    int int -- int in divmod swap drop end
