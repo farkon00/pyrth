@@ -1,7 +1,7 @@
 include "std.porth"
 
 const ROWS 10 end
-const COLS 20 end
+const COLS 25 end
 
 const CELL_EMPTY 1 offset end
 const CELL_EGG   1 offset end
