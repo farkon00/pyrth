@@ -95,8 +95,8 @@ proc snake-del in
   end
 end
 
-memory player-pos sizeof(Point) end
-memory player-dir sizeof(Dir) end
+memory head-pos sizeof(Point) end
+memory head-dir sizeof(Dir) end
 
 memory quit sizeof(bool) end
 memory input 1 end
@@ -185,8 +185,8 @@ proc main in
   5 5 snake-add
   6 5 snake-add
   7 5 snake-add
-  7 5 player-pos !Point
-  DIR_RIGHT player-dir !int
+  7 5 head-pos !Point
+  DIR_RIGHT head-dir !int
 
   spawn-egg
 
@@ -197,16 +197,16 @@ proc main in
     let ret in
       ret 1 = if
         input @8
-        player-dir @int
+        head-dir @int
         let cmd dir in
           cmd 's' = dir DIR_UP != land if
-            DIR_DOWN player-dir !int
+            DIR_DOWN head-dir !int
           else cmd 'w' = dir DIR_DOWN != land if*
-            DIR_UP player-dir !int
+            DIR_UP head-dir !int
           else cmd 'a' = dir DIR_RIGHT != land if*
-            DIR_LEFT player-dir !int
+            DIR_LEFT head-dir !int
           else cmd 'd' = dir DIR_LEFT != land if*
-            DIR_RIGHT player-dir !int
+            DIR_RIGHT head-dir !int
           else cmd 'q' = if*
             true quit !bool
           end
@@ -216,19 +216,19 @@ proc main in
         1 exit
       end
 
-      player-pos player-dir @int step-point
+      head-pos head-dir @int step-point
 
-      player-pos @Point cell-at @int
+      head-pos @Point cell-at @int
       let cell in
         cell CELL_SNAKE = if
           "YOU LOST ZULUL\n" puts
           0 exit
         else cell CELL_EGG = if*
-          player-pos @Point snake-add
+          head-pos @Point snake-add
           spawn-egg
         else cell CELL_EMPTY = if*
           snake-del
-          player-pos @Point snake-add
+          head-pos @Point snake-add
         end
       end
 
