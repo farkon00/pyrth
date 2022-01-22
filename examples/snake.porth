@@ -172,6 +172,29 @@ proc spawn-egg in
   cell-at !int
 end
 
+proc spawn-snake
+  int int // x y
+  int     // dir
+  int     // len
+in
+  let x y dir len in
+    x y head-pos !Point
+    dir head-dir !int
+    x y snake-add
+
+    1 while dup len < do
+      head-pos @Point
+      head-dir @int
+      step-point
+      head-pos !Point
+
+      head-pos @Point snake-add
+
+      1 +
+    end drop
+  end
+end
+
 proc main in
   memory delta_time sizeof(timespec) end
   200000000 delta_time timespec.tv_nsec ptr+ !int
@@ -183,12 +206,7 @@ proc main in
   fcntl
   drop
 
-  5 5 snake-add
-  6 5 snake-add
-  7 5 snake-add
-  7 5 head-pos !Point
-  DIR_RIGHT head-dir !int
-
+  5 5 DIR_RIGHT 4 spawn-snake
   spawn-egg
 
   while quit @bool lnot do
