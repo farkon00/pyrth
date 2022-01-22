@@ -44,6 +44,38 @@ const DIR_RIGHT 1 offset end
 const COUNT_DIRS reset end
 const sizeof(Dir) sizeof(int) end
 
+proc step-point
+  int int // x y
+  int     // dir
+  --
+  int int // x' y'
+in
+  let x y dir in
+    dir DIR_UP = if
+      x
+      y 1 -
+    else dir DIR_DOWN = if*
+      x
+      y 1 +
+    else dir DIR_LEFT = if*
+      x 1 -
+      y
+    else dir DIR_RIGHT = if*
+      x 1 +
+      y
+    else
+      0 0
+      here eputs ": unrechable\n" eputs
+      1 exit
+    end
+  end
+
+  let x y in
+    x COLS emod
+    y ROWS emod
+  end
+end
+
 const SNAKE_CAP ROWS COLS * end
 memory snake sizeof(Point) SNAKE_CAP * end
 memory snake-begin sizeof(int) end
@@ -100,37 +132,6 @@ memory head-dir sizeof(Dir) end
 
 memory quit sizeof(bool) end
 memory input 1 end
-
-proc step-point ptr int in
-  let p dir in
-    p @Point
-    let x y in
-      dir DIR_UP = if
-        x
-        y 1 -
-      else dir DIR_DOWN = if*
-        x
-        y 1 +
-      else dir DIR_LEFT = if*
-        x 1 -
-        y
-      else dir DIR_RIGHT = if*
-        x 1 +
-        y
-      else
-        0 0
-        here eputs ": unrechable\n" eputs
-        1 exit
-      end
-
-      let x y in
-        x COLS emod
-        y ROWS emod
-      end
-    end
-    p !Point
-  end
-end
 
 proc display in
   0 while dup ROWS < do
@@ -216,7 +217,10 @@ proc main in
         1 exit
       end
 
-      head-pos head-dir @int step-point
+      head-pos @Point
+      head-dir @int
+      step-point
+      head-pos !Point
 
       head-pos @Point cell-at @int
       let cell in
