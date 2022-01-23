@@ -30,6 +30,7 @@ contexts:
     - include: match-keyword-memory
     - include: match-keyword-inline
     - include: match-keyword-proc
+    - include: match-keyword-assert
 
   match-any:
     - include: match-comments
