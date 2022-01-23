@@ -2702,8 +2702,6 @@ proc bind-table-rev-top int in
   end
 end
 
-const INCLUDE_LIMIT 100 end
-
 // TODO: consider merging the process of compilation and type checking
 // - Helps to catch type errors earlier
 // - Allows `???` to show the type stack even if the programming is not fully compilable
@@ -2809,11 +2807,7 @@ end
 
 proc compile-file-into-ops
   ptr  // file path cstr
-  int  // include level
 in
-  memory include-level sizeof(int) end
-  include-level !int
-
   memory file-path-cstr sizeof(ptr) end
   file-path-cstr !64
 
@@ -2989,14 +2983,6 @@ in
             1 exit
           end
 
-          include-level @int INCLUDE_LIMIT >= if
-            token Token.loc ptr+                                       eputloc
-            ": ERROR: Include limit is exceeded. A file was included " eputs
-            include-level @int                                         eputu
-            " times.\n"                                                eputs
-            1 exit
-          end
-
           // TODO: ignore the files that were already included
 
           fpb-end
@@ -3030,7 +3016,6 @@ in
             1 exit
           end
 
-          include-level @int 1 +
           compile-file-into-ops
         else dup KEYWORD_CONST = if*
           token lexer lexer-next-token lnot if
@@ -3436,7 +3421,7 @@ proc compile-program-into-ops ptr in
   sizeof(Token) 0 empty-token memset drop
 
   timeit/from-here
-    0 compile-file-into-ops
+    compile-file-into-ops
   "[INFO] Compilation" silent @bool timeit/to-here
 end
 
