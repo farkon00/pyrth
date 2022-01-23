@@ -225,7 +225,7 @@ contexts:
           pop: true
 
   pop-on-end:
-    - match: (?<=^|\s)end(?=\s|//)
+    - match: (?<=^|\s)end(?=\s|//|$)
       scope: keyword.control.porth punctuation.section.block.end.porth
       pop: true
 
