@@ -1,53 +1,258 @@
 %YAML 1.2
 ---
+# Usage Instruction
+# Put this file in:
+# - Linux: $home/.config/sublime-text/Packages/User
+# - Mac: $home/Library/Application Support/Sublime Text/Packages/User
+# - Windows: %appdata%\Sublime Text\Packages\User
+# Select "View > Syntax > Porth" or "View > Syntax > User > Porth"
+
 # See http://www.sublimetext.com/docs/syntax.html
+# Derived from https://github.com/sublimehq/Packages/blob/master/Go/Go.sublime-syntax
+
 name: Porth
 scope: source.porth
 file_extensions:
   - porth
 
 variables:
-  char_escape: '\\n|\\r|\\\\|\\"|\\'''
+  char_escape: \\[nr\\"']
+  number: (?<=^|\s)-?[0-9]+(\.[0-9]+)?(?=\s|//)
+  types: (bool|int|ptr|addr)
+  type: (?<=^|\s){{types}}(?=\s|//)
+  word: \S+?(?=\s|//)
 
 contexts:
   main:
+    - include: match-comments
+    - include: match-keyword-include
+    - include: match-keyword-const
+    - include: match-keyword-memory
+    - include: match-keyword-inline
+    - include: match-keyword-proc
 
-    # Comments begin with a '//' and finish at the end of the line
-    - match: '//'
+  match-any:
+    - include: match-comments
+    - include: match-tokens
+
+  match-comments:
+    - match: //
       scope: punctuation.definition.comment.porth
-      push: line_comment
+      push:
+        - meta_scope: comment.line.porth
+        - match: $\n?
+          pop: true
 
-    # Keywords.
-    - match: '\b(if|else|while|do|include|memory|proc|const|end|offset|reset|assert|in|inline|here|addr-of|call-like)\b'
+  match-tokens:
+    - include: match-keywords
+    - include: match-literals
+    - include: match-intrinsics
+    - include: match-words
+
+  match-keywords:
+    - include: match-keyword-include
+    - include: match-keyword-const
+    - include: match-keyword-memory
+    - include: match-keyword-inline
+    - include: match-keyword-proc
+    - include: match-keyword-let
+    - include: match-keyword-if
+    - include: match-keyword-while
+    - include: match-keyword-assert
+    - include: match-keyword-addr-of-call-like
+    - match: (?<=^|\s)here(?=\s|//)
+      scope: variable.language.porth
+
+  match-literals:
+    - include: match-numbers
+    - include: match-strings
+    - include: match-characters
+
+  match-intrinsics:
+    - match: (?<=^|\s)cast\({{types}}\)(?=\s|//)
+      scope: keyword.operator.word.porth
+      captures:
+        1: storage.type.porth
+    - match: (?<=^|\s)(dup|swap|drop|over|rot|!8|@8|!16|@16|!32|@32|!64|@64)(?=\s|//)
+      scope: keyword.operator.word.porth
+    - match: (?<=^|\s)(\+|-|\*|divmod|idivmod|max|=|>|<|>=|<=|!=)(?=\s|//)
+      scope: keyword.operator.arithmetic.porth
+    - match: (?<=^|\s)(shr|shl|or|and|not)(?=\s|//)
+      scope: keyword.operator.bitwise.porth
+    - match: (?<=^|\s)(print|argc|argv|envp|syscall0|syscall1|syscall2|syscall3|syscall4|syscall5|syscall6|\?\?\?)(?=\s|//)
+      scope: variable.language.porth
+
+  match-keyword-include:
+    - match: (?<=^|\s)include(?=\s|//)
+      scope: keyword.control.import.porth
+      push:
+        - include: match-strings
+        - match: (?<=")
+          pop: true
+        - include: match-comments
+
+  match-keyword-const:
+    - match: (?<=^|\s)const(?=\s|//)
+      scope: keyword.declaration.const.porth punctuation.section.block.begin.porth
+      push:
+        - meta_scope: meta.block.const.porth
+        - include: match-comments
+        - match: '{{word}}'
+          scope: variable.other.constant.declaration.porth
+          set:
+            - meta_scope: meta.block.const.porth
+            - include: pop-on-end
+            - match: (?<=^|\s)(offset|reset)(?=\s|//)
+              scope: keyword.control.porth
+            - include: match-any
+
+  match-keyword-memory:
+    - match: (?<=^|\s)memory(?=\s|//)
+      scope: keyword.declaration.memory.porth punctuation.section.block.begin.porth
+      push:
+        - meta_scope: meta.block.memory.porth
+        - include: match-comments
+        - match: '{{word}}'
+          scope: entity.name.memory.porth
+          set:
+            - meta_scope: meta.block.memory.porth
+            - include: pop-on-end
+            - include: match-any
+
+  match-keyword-inline:
+    - match: (?<=^|\s)inline(?=\s|//)
+      scope: storage.modifier.porth
+      set:
+        - meta_scope: meta.function.porth
+        - include: match-comments
+        - include: match-keyword-proc
+
+  match-keyword-proc:
+    - match: (?<=^|\s)proc(?=\s|//)
+      scope: keyword.declaration.function.porth
+      set:
+        - meta_scope: meta.function.porth
+        - include: match-comments
+        - match: (?<=^|\s)in(?=\s|//)
+          scope: keyword.control.porth punctuation.section.block.begin.porth
+          set:
+            - meta_scope: meta.function.porth meta.block.porth
+            - include: pop-on-end
+            - include: match-any
+        - include: proc-contract-list
+
+  proc-contract-list:
+    - include: match-comments
+    - match: '{{word}}'
+      scope: entity.name.function.porth
+      push:
+        - include: match-comments
+        - match: '{{type}}'
+          scope: storage.type.porth meta.function.parameters.porth
+        - match: (?<=^|\s)--(?=\s|//)
+          scope: punctuation.separator.porth
+          set:
+            - include: match-comments
+            - match: '{{type}}'
+              scope: storage.type.porth meta.function.return-type.porth
+            - match: (?=in(\s|//))
+              pop: true
+        - match: (?=in(\s|//))
+          pop: true
+
+  match-keyword-let:
+    - match: (?<=^|\s)let(?=\s|//)
+      scope: keyword.declaration.porth
+      push:
+        - meta_scope: meta.block.let-binding.porth
+        - include: match-comments
+        - match: (?<=^|\s)in(?=\s|//)
+          scope: keyword.control.porth punctuation.section.block.begin.porth
+          set:
+            - meta_scope: meta.block.let-binding.porth
+            - include: pop-on-end
+            - include: match-any
+        - include: match-words
+
+  match-keyword-if:
+    - match: (?<=^|\s)if(?=\s|//)
+      scope: keyword.control.conditional.porth punctuation.section.block.begin.porth
+      push:
+        - meta_scope: meta.block.if.porth
+        - include: match-comments
+        - include: pop-on-end
+        - match: (?<=^|\s)else(?=\s|//)
+          scope: keyword.control.conditional.porth
+        - match: (?<=^|\s)if\*(?=\s|//)
+          scope: keyword.control.conditional.porth
+        - include: match-any
+
+  match-keyword-while:
+    - match: (?<=^|\s)while(?=\s|//)
       scope: keyword.control.porth
+      push:
+        - meta_scope: meta.block.while.porth
+        - include: match-comments
+        - match: (?<=^|\s)do(?=\s|//)
+          scope: keyword.control.porth punctuation.section.block.begin.porth
+          set:
+            - meta_scope: meta.block.while.porth
+            - include: pop-on-end
+            - include: match-any
+        - include: match-any
 
-    # Numbers
-    - match: '(?:^|\s)[0-9]+(?:\s|$)'
-      scope: constant.numeric.integer.porth
+  match-keyword-assert:
+    - match: (?<=^|\s)assert(?=\s|//)
+      scope: keyword.control.porth
+      push:
+        - meta_scope: meta.block.assert.porth
+        - include: match-strings
+        - match: (?<=")
+          set:
+            - meta_scope: meta.block.assert.porth
+            - include: pop-on-end
+            - include: match-any
+        - include: match-comments
 
-    # Character literal
-    - match: (\')(?:({{char_escape}})|([^']))(\')
+  match-keyword-addr-of-call-like:
+    - match: (?<=^|\s)(addr-of|call-like)(\s+|(?=//))
+      scope: keyword.control.porth
+      push:
+        - include: match-comments
+        - match: '{{word}}'
+          scope: variable.function.porth
+          pop: true
+
+  pop-on-end:
+    - match: (?<=^|\s)end(?=\s|//)
+      scope: keyword.control.porth punctuation.section.block.end.porth
+      pop: true
+
+  match-words:
+    - match: '{{word}}'
+      scope: variable.other.readwrite.porth
+
+  match-numbers:
+    - match: '{{number}}'
+      scope: constant.numeric.integer.decimal.porth
+
+  match-strings:
+    - match: '(?<=^|\s)"'
+      scope: punctuation.definition.string.begin.porth
+      push:
+        - meta_scope: meta.string string.quoted.double.porth
+        - match: '"c?(?=\s|//)'
+          scope: punctuation.definition.string.end.porth
+          pop: true
+        - match: \n
+          pop: true
+        - match: '{{char_escape}}'
+          scope: constant.character.escape.porth
+
+  match-characters:
+    - match: (\')(?:({{char_escape}})|[^'])(\')
       scope: string.quoted.single.porth
       captures:
         1: punctuation.definition.string.begin.porth
         2: constant.character.escape.porth
-        3: constant.character.literal.porth
-        4: punctuation.definition.string.end.porth
-
-    # Strings begin and end with quotes, and use backslashes as an escape character
-    - match: '"'
-      scope: punctuation.definition.string.begin.porth
-      push: double_quoted_string
-
-  line_comment:
-    - meta_scope: comment.line.porth
-    - match: $
-      pop: true
-
-  double_quoted_string:
-    - meta_scope: string.quoted.double.porth
-    - match: '"'
-      scope: punctuation.definition.string.end.porth
-      pop: true
-    - match: ({{char_escape}})
-      scope: constant.character.escape.porth
+        3: punctuation.definition.string.end.porth
