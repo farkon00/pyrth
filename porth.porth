@@ -2790,6 +2790,23 @@ in
   end
 end
 
+const Module.full-path sizeof(ptr) offset end
+const Module.finished sizeof(bool) offset end
+const sizeof(Module) reset end
+
+const MODULES_CAP 1024 end
+memory modules sizeof(Module) MODULES_CAP * end
+memory modules-count sizeof(int) end
+
+proc module-lookup
+  ptr // full-path cstr
+  --
+  ptr
+in
+  here eputs ": TODO: module-lookup is not implemented yet\n" eputs
+  1 exit
+end
+
 proc compile-file-into-ops
   ptr  // file path cstr
   int  // include level
