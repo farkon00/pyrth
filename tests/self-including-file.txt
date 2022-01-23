@@ -4,6 +4,6 @@
 :i returncode 1
 :b stdout 0
 
-:b stderr 42
-./porth.porth:3377:7: TODO: detected loop
+:b stderr 60
+./tests/self-including-file.porth:1:9: ERROR: detected loop
 
