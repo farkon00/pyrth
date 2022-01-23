@@ -4,6 +4,6 @@
 :i returncode 1
 :b stdout 0
 
-:b stderr 104
-./tests/self-including-file.porth:1:9: ERROR: Include limit is exceeded. A file was included 100 times.
+:b stderr 42
+./porth.porth:3377:7: TODO: detected loop
 
