@@ -539,17 +539,13 @@ inline proc eputs int ptr in stderr fputs end
 
 inline proc WIFSTOPPED int -- bool in
   // (((x) & 0xff) == 0x7f)
-  here eputs ": TODO: WIFSTOPPED is not implemented\n" eputs
-  1 exit
-  cast(bool)
+  255 and // 0xff
+  127 = // 0x7f
 end
 
 inline proc WIFCONTINUED int -- bool in
   // ((x) == 0xffff)
-
-  here eputs ": TODO: WIFCONTINUED is not implemented\n" eputs
-  1 exit
-  cast(bool)
+  65535 = // 0xffff
 end
 
 inline proc WIFSIGNALED int -- bool in
@@ -562,15 +558,13 @@ end
 
 inline proc WIFEXITED int -- bool in
   // (((x) & 0x7f) == 0)
-  127 // 0x7f
-  and
+  127 and // 0x7f
   0 =
 end
 
 inline proc WEXITSTATUS int -- int in
   // (((x) & 0xff00) >> 8)
-  65280 // 0xff00
-  and
+  65280 and // 0xff00
   8 shr
 end
 
