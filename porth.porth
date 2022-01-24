@@ -1234,8 +1234,6 @@ in
   end
 end
 
-// TODOOOOOOOO: make sure that the size of the defined memories is divisible by the size of the word
-
 proc local-memory-define
   ptr
 in
