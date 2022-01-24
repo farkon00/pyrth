@@ -24,6 +24,7 @@ proc main in
   // not
   0 not 1 + print
 
+  "------------------------------\n" puts
   // TODO: `print` intrinsics cannot print negative numbers
   //
   // To be honest, I'm not sure if we still need it to be an intrinsic.
