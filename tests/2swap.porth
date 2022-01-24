@@ -1,18 +1,19 @@
 include "std.porth"
- 
+
 // TODO: 2swap should be generic
-// but we don't have generics at the moment
+// But we don't have generics at the moment
+//
+// Once we have generics, it would probably make sense to move this
+// procedure to std.porth and make it a part of the
+// "Forth-Style Stack Manipulation" set of words.
+//
+// - rexim 24.01.2022
 proc 2swap
   int int int int
   --
   int int int int
 in
-  memory a sizeof(u64) end
-  memory b sizeof(u64) end
-  memory c sizeof(u64) end
-  memory d sizeof(u64) end
-  d !64 c !64 b !64 a !64
-  c @64 d @64 a @64 b @64
+  let a b c d in c d a b end
 end
 
 proc main in

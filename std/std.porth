@@ -708,24 +708,26 @@ proc streq
   --
   bool
 in
-  while
-    let n1 s1 n2 s2 in
-      n1 s1 n2 s2
-      n1 0 > n2 0 > land if
-        s1 @8 s2 @8 =
-      else false end
-    end
-  do
-    let n1 s1 n2 s2 in
-      n1 1 -
-      s1 1 ptr+
-      n2 1 -
-      s2 1 ptr+
-    end
-  end
+  let n s1 m s2 in
+    n m = if
+      n s1 s2
+      while
+        let n s1 s2 in
+          n s1 s2
+          n 0 > if
+            s1 @8 s2 @8 =
+          else false end
+        end
+      do
+        let n s1 s2 in
+          n  1 -
+          s1 1 ptr+
+          s2 1 ptr+
+        end
+      end
 
-  let n1 _ n2 _ in
-    n1 0 = n2 0 = land
+      let n _ _ in n 0 <= end
+    else false end
   end
 end
 
@@ -767,19 +769,31 @@ proc try-parse-int
   --
   int bool
 in
-  memory input sizeof(Str) end
-  input !Str
+  over 0 > if
+    0 // result
+    while
+      let n s result in
+        n s result
+        n 0 > if s @8 isdigit else false end
+      end
+    do
+      let n s result in
+        n 1 -
+        s 1 ptr+
 
-  0 while
-    input @Str.count 0 > if
-      input @Str.data @8 isdigit
-    else false end
-  do
-    10 * input @Str.data @8 '0' - +
-    input str-chop-one-left
+        result 10 *
+        s @8 '0' -
+        +
+      end
+    end
+
+    let n _ result in
+      result n 0 <=
+    end
+  else
+    drop drop
+    0 false
   end
-
-  input @Str.count 0 <=
 end
 
 const PUTU_BUFFER_CAP 32 end
