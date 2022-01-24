@@ -556,6 +556,11 @@ inline proc WIFSIGNALED int -- bool in
   0 >
 end
 
+inline proc WTERMSIG int -- int in
+  // ((x) & 0x7f)
+  127 and // 0x7f
+end
+
 inline proc WIFEXITED int -- bool in
   // (((x) & 0x7f) == 0)
   127 and // 0x7f
@@ -1407,8 +1412,9 @@ in
 
           false // break
         else dup WIFSIGNALED if*
-          // TODO: print the signal that terminated the child
-          "ERROR: the child process was terminated by a signal\n" eputs
+          "ERROR: the child process was terminated by a signal " eputs
+          dup WTERMSIG                                           eputu
+          "\n"                                                   eputs
           255 exit
 
           false // break
