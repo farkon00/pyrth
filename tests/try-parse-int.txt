@@ -2,9 +2,12 @@
 :b stdin 0
 
 :i returncode 0
-:b stdout 5
-1234
+:b stdout 119
+"" is not a number
+Successfully parsed 0
+Successfully parsed 1234
+Successfully parsed 987654321
+"abcd" is not a number
 
-:b stderr 21
-abcd is not a number
+:b stderr 0
 

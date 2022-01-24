@@ -1,21 +1,30 @@
 include "std.porth"
 
 proc test-try-parse-int int ptr in
-  memory a sizeof(Str) end
-  a !Str
-  a @Str try-parse-int if print else
-    drop
-    a @Str eputs " is not a number\n" eputs
+  let n s in
+    n s
+    try-parse-int
+    let x ok in
+      ok if
+        "Successfully parsed " puts
+        x                      putu
+        "\n"                   puts
+      else
+        "\""                   puts
+        n s                    puts
+        "\" is not a number\n" puts
+      end
+    end
   end
 end
 
 proc main in
-  // // TODO: "./tests/try-parse-int.asm:2291: warning: no operand for data declaration"
-  // // TODO: try-parse-int does not fail on empty list
-  // ""      test-try-parse-int
-  "1234"  test-try-parse-int
-  "abcd"  test-try-parse-int
-  
+  ""           test-try-parse-int
+  "0"          test-try-parse-int
+  "1234"       test-try-parse-int
+  "0987654321" test-try-parse-int
+  "abcd"       test-try-parse-int
+
   // TODO: try-parse-int does not parse negative numbers
   // "-1234" test-try-parse-int
 end

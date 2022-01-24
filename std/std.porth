@@ -767,19 +767,31 @@ proc try-parse-int
   --
   int bool
 in
-  memory input sizeof(Str) end
-  input !Str
+  over 0 > if
+    0 // result
+    while
+      let n s result in
+        n s result
+        n 0 > if s @8 isdigit else false end
+      end
+    do
+      let n s result in
+        n 1 -
+        s 1 ptr+
 
-  0 while
-    input @Str.count 0 > if
-      input @Str.data @8 isdigit
-    else false end
-  do
-    10 * input @Str.data @8 '0' - +
-    input str-chop-one-left
+        result 10 *
+        s @8 '0' -
+        +
+      end
+    end
+
+    let n _ result in
+      result n 0 <=
+    end
+  else
+    drop drop
+    0 false
   end
-
-  input @Str.count 0 <=
 end
 
 const PUTU_BUFFER_CAP 32 end
