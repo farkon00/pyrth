@@ -2788,10 +2788,11 @@ in
   end
 end
 
-// TODO: more reliable id of the file we are including
-const Module.full-path sizeof(ptr) offset end
+// TODO: more reliable id of the file we've already included
+// Full path should suffice for now. Not sure if we wanna go into
+// realpath kinda business with resolving symlinks and other crazy stuff.
+const Module.path sizeof(ptr) offset end
 const Module.finished sizeof(bool) offset end
-const Module.loc sizeof(Loc) offset end
 const sizeof(Module) reset end
 
 const MODULES_CAP 1024 end
@@ -2808,7 +2809,7 @@ in
       dup modules-count @int < if
         dup sizeof(Module) * modules +ptr
         let module in
-          module Module.full-path ptr+ @ptr
+          module Module.path ptr+ @ptr
           path-cstr
           cstreq
           lnot
@@ -2838,7 +2839,7 @@ in
 
   let path-cstr in
     silent @bool lnot if
-      "[DEBUG] started "    puts
+      "[INFO] Compiling "   puts
       path-cstr cstr-to-str puts
       "\n"                  puts
     end
@@ -2850,7 +2851,7 @@ in
     modules-count inc64
 
     let module in
-      path-cstr module Module.full-path ptr+ !ptr
+      path-cstr module Module.path ptr+ !ptr
       false     module Module.finished  ptr+ !bool
       module
     end
@@ -3073,16 +3074,11 @@ in
                   include-path module-start
                     include-path compile-file-into-ops
                   true swap Module.finished ptr+ !bool
-                else module Module.finished ptr+ @bool if*
-                  silent @bool lnot if
-                    "[DEBUG] ignoring "        puts
-                    include-path cstr-to-str puts
-                    "\n"                       puts
-                  end
-                else
+                else module Module.finished ptr+ @bool lnot if*
                   // TODO: report more information on detected loop
+                  // Preferable the whole path of the loop
                   token Token.loc ptr+ eputloc
-                  ": ERROR: detected loop\n" eputs
+                  ": ERROR: include loop\n" eputs
                   1 exit
                 end
               end
@@ -3499,18 +3495,6 @@ proc compile-program-into-ops ptr in
         file-path-cstr compile-file-into-ops
       true swap Module.finished ptr+ !bool
     "[INFO] Compilation" silent @bool timeit/to-here
-  end
-
-  silent @bool lnot if
-    "[INFO] Compiled " puts
-    modules-count @int putu
-    " modules:\n"      puts
-    0 while dup modules-count @int < do
-      dup sizeof(Module) * modules +ptr
-      Module.full-path ptr+ @ptr cstr-to-str puts
-      "\n" puts
-      1 +
-    end drop
   end
 end
 
@@ -4893,11 +4877,13 @@ proc main in
           ".tmp"              fpb-append drop
           1                   fpb-alloc  drop
 
-        "[INFO] renaming " puts
-        dup cstr-to-str    puts
-        " -> "             puts
-        over cstr-to-str   puts
-        "\n"               puts
+        silent @bool lnot if
+          "[INFO] renaming " puts
+          dup cstr-to-str    puts
+          " -> "             puts
+          over cstr-to-str   puts
+          "\n"               puts
+        end
 
         rename 0 < if
           "ERROR: could not rename the file\n" eputs
