@@ -4,6 +4,6 @@
 :i returncode 255
 :b stdout 0
 
-:b stderr 52
-ERROR: the child process was terminated by a signal
+:b stderr 55
+ERROR: the child process was terminated by a signal 11
 

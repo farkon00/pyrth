@@ -367,6 +367,8 @@ const MAP_ANONYMOUS 32 end
 const PROT_READ 1 end
 const PROT_WRITE 2 end
 
+const SIGQUIT 3 end
+
 const timespec.tv_sec  sizeof(int) offset end
 const timespec.tv_nsec sizeof(int) offset end
 const sizeof(timespec) reset end
@@ -454,6 +456,7 @@ inline proc execve ptr ptr ptr -- int in SYS_execve syscall3 end
 inline proc wait4 ptr int ptr int -- int in SYS_wait4 syscall4 end
 inline proc rename ptr ptr -- int in SYS_rename syscall2 end
 inline proc fcntl int int int -- int in SYS_fcntl syscall3 end
+inline proc kill int int -- int in SYS_kill syscall2 end
 
 inline proc /    int int -- int in divmod drop end
 inline proc %    int int -- int in divmod swap drop end
@@ -539,17 +542,13 @@ inline proc eputs int ptr in stderr fputs end
 
 inline proc WIFSTOPPED int -- bool in
   // (((x) & 0xff) == 0x7f)
-  here eputs ": TODO: WIFSTOPPED is not implemented\n" eputs
-  1 exit
-  cast(bool)
+  255 and // 0xff
+  127 = // 0x7f
 end
 
 inline proc WIFCONTINUED int -- bool in
   // ((x) == 0xffff)
-
-  here eputs ": TODO: WIFCONTINUED is not implemented\n" eputs
-  1 exit
-  cast(bool)
+  65535 = // 0xffff
 end
 
 inline proc WIFSIGNALED int -- bool in
@@ -560,17 +559,20 @@ inline proc WIFSIGNALED int -- bool in
   0 >
 end
 
+inline proc WTERMSIG int -- int in
+  // ((x) & 0x7f)
+  127 and // 0x7f
+end
+
 inline proc WIFEXITED int -- bool in
   // (((x) & 0x7f) == 0)
-  127 // 0x7f
-  and
+  127 and // 0x7f
   0 =
 end
 
 inline proc WEXITSTATUS int -- int in
   // (((x) & 0xff00) >> 8)
-  65280 // 0xff00
-  and
+  65280 and // 0xff00
   8 shr
 end
 
@@ -1413,8 +1415,9 @@ in
 
           false // break
         else dup WIFSIGNALED if*
-          // TODO: print the signal that terminated the child
-          "ERROR: the child process was terminated by a signal\n" eputs
+          "ERROR: the child process was terminated by a signal " eputs
+          dup WTERMSIG                                           eputu
+          "\n"                                                   eputs
           255 exit
 
           false // break
