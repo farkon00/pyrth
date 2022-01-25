@@ -367,6 +367,8 @@ const MAP_ANONYMOUS 32 end
 const PROT_READ 1 end
 const PROT_WRITE 2 end
 
+const SIGQUIT 3 end
+
 const timespec.tv_sec  sizeof(int) offset end
 const timespec.tv_nsec sizeof(int) offset end
 const sizeof(timespec) reset end
@@ -454,6 +456,7 @@ inline proc execve ptr ptr ptr -- int in SYS_execve syscall3 end
 inline proc wait4 ptr int ptr int -- int in SYS_wait4 syscall4 end
 inline proc rename ptr ptr -- int in SYS_rename syscall2 end
 inline proc fcntl int int int -- int in SYS_fcntl syscall3 end
+inline proc kill int int -- int in SYS_kill syscall2 end
 
 inline proc /    int int -- int in divmod drop end
 inline proc %    int int -- int in divmod swap drop end
