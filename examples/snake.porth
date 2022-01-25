@@ -1,4 +1,4 @@
-// $ stty -echo -icanon && ./porth com -r ./example/snake.porth
+// $ stty -echo -icanon && ./porth com -r ./examples/snake.porth
 include "std.porth"
 
 const ROWS 10 end
@@ -152,7 +152,7 @@ proc display in
           end
         end
 
-        y x
+        y x // @peek
       end
       1 +
     end drop

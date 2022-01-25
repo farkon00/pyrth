@@ -727,7 +727,7 @@ in
       n s1 s2
       while
         let n s1 s2 in
-          n s1 s2
+          n s1 s2 // @peek
           n 0 > if
             s1 @8 s2 @8 =
           else false end
@@ -787,7 +787,7 @@ in
     0 // result
     while
       let n s result in
-        n s result
+        n s result // @peek
         n 0 > if s @8 ?digit else false end
       end
     do
