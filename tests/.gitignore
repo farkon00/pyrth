@@ -43,3 +43,4 @@ nested-let
 let-bindings-local-mem-corruption
 emod
 child-terminated
+peek

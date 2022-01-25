@@ -53,6 +53,7 @@ const KEYWORD_HERE        1 offset end
 const KEYWORD_ADDR_OF     1 offset end
 const KEYWORD_CALL_LIKE   1 offset end
 const KEYWORD_LET         1 offset end
+const KEYWORD_PEEK        1 offset end
 const COUNT_KEYWORDS         reset end
 
 proc keyword-by-name
@@ -63,7 +64,7 @@ in
   memory name sizeof(Str) end
   name !Str
   true
-  assert "Exhaustive keyword handling" COUNT_KEYWORDS 20 = end
+  assert "Exhaustive keyword handling" COUNT_KEYWORDS 21 = end
        name @Str "if"        streq if  KEYWORD_IF
   else name @Str "if*"       streq if* KEYWORD_IFSTAR
   else name @Str "else"      streq if* KEYWORD_ELSE
@@ -84,6 +85,7 @@ in
   else name @Str "addr-of"   streq if* KEYWORD_ADDR_OF
   else name @Str "call-like" streq if* KEYWORD_CALL_LIKE
   else name @Str "let"       streq if* KEYWORD_LET
+  else name @Str "peek"      streq if* KEYWORD_PEEK
   else
     drop false 0
   end
@@ -96,7 +98,7 @@ proc keyword-name
   --
   int ptr
 in
-  assert "Exhaustive keyword handling" COUNT_KEYWORDS 20 = end
+  assert "Exhaustive keyword handling" COUNT_KEYWORDS 21 = end
        dup KEYWORD_IF          = if  "if"
   else dup KEYWORD_IFSTAR      = if* "if*"
   else dup KEYWORD_ELSE        = if* "else"
@@ -117,6 +119,7 @@ in
   else dup KEYWORD_ADDR_OF     = if* "addr-of"
   else dup KEYWORD_CALL_LIKE   = if* "call-like"
   else dup KEYWORD_LET         = if* "let"
+  else dup KEYWORD_PEEK        = if* "peek"
   else
     0 NULL
     here eputs ": unreachable\n" eputs
@@ -805,6 +808,7 @@ const OP_DO              1 offset end
 const OP_INTRINSIC       1 offset end
 const OP_CALL_LIKE       1 offset end
 const OP_BIND            1 offset end
+const OP_PEEK            1 offset end
 const OP_PUSH_BIND       1 offset end
 const OP_UNBIND          1 offset end
 const COUNT_OPS             reset end
@@ -814,7 +818,7 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 23 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 24 = end
        dup OP_PUSH_INT        =  if  "OP_PUSH_INT"
   else dup OP_PUSH_BOOL       =  if* "OP_PUSH_BOOL"
   else dup OP_PUSH_PTR        =  if* "OP_PUSH_PTR"
@@ -836,6 +840,7 @@ in
   else dup OP_DO              =  if* "OP_DO"
   else dup OP_CALL_LIKE       =  if* "OP_CALL_LIKE"
   else dup OP_BIND            =  if* "OP_BIND"
+  else dup OP_PEEK            =  if* "OP_PEEK"
   else dup OP_UNBIND          =  if* "OP_UNBIND"
   else dup OP_PUSH_BIND       =  if* "OP_PUSH_BIND"
   else
@@ -1337,7 +1342,7 @@ in
 
   dup sizeof(Op) * ops +ptr
 
-  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 23 = end
+  assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 24 = end
 
   "addr_" out-fd @64 fputs
   over    out-fd @64 fputu
@@ -1384,6 +1389,31 @@ in
       "], rbx\n"      out-fd @64 fputs
       1 -
     end drop
+  else dup Op.type ptr+ @64 OP_PEEK = if*
+    "    mov rax, [ret_stack_rsp]\n"  out-fd @64 fputs
+    "    sub rax, "                   out-fd @64 fputs
+    dup Op.operand ptr+ @64 8 *       out-fd @64 fputu
+    "\n"                              out-fd @64 fputs
+    "    mov [ret_stack_rsp], rax\n"  out-fd @64 fputs
+
+    0
+    over Op.operand ptr+ @64
+    while over over < do
+      let i n in
+        "    mov rbx, [rsp+" out-fd @64 fputs
+        i 8 *                out-fd @64 fputu
+        "]\n"                out-fd @64 fputs
+
+        "    mov [rax+"      out-fd @64 fputs
+        n i - 1 - 8 *        out-fd @64 fputu
+        "], rbx\n"           out-fd @64 fputs
+
+        i 1 +
+        n
+      end
+    end
+    drop
+    drop
   else dup Op.type ptr+ @64 OP_UNBIND = if*
     "    mov rax, [ret_stack_rsp]\n"  out-fd @64 fputs
     "    add rax, "                   out-fd @64 fputs
@@ -2237,7 +2267,7 @@ in
       end
       drop // intrinsic
     else token Token.type ptr+ @64 TOKEN_KEYWORD = if*
-      assert "Exhaustive handling of keywords in eval-const-value" COUNT_KEYWORDS 20 = end
+      assert "Exhaustive handling of keywords in eval-const-value" COUNT_KEYWORDS 21 = end
       token Token.value ptr+ @64
         dup KEYWORD_END = if
           true done !64
@@ -2891,7 +2921,7 @@ in
         push-op
       else dup TOKEN_KEYWORD = if*
         token Token.value ptr+ @64
-          assert "Exhaustive handling of keywords in compile-file-into-ops" COUNT_KEYWORDS 20 = end
+          assert "Exhaustive handling of keywords in compile-file-into-ops" COUNT_KEYWORDS 21 = end
           dup KEYWORD_IF = if
             ops-count @64 parse-block-stack-push
             OP_IF 0 token push-op
@@ -3009,8 +3039,10 @@ in
               false inside-proc !bool
             else dup Op.type ptr+ @64 OP_BIND = if*
               over token enclose-let
+            else dup Op.type ptr+ @64 OP_PEEK = if*
+              over token enclose-let
             else
-              token Token.loc ptr+ eputloc ": ERROR: `end` can only close `if`, `if*`, `else`, `do`, `proc` or `let` blocks\n" eputs
+              token Token.loc ptr+ eputloc ": ERROR: `end` can only close `if`, `if*`, `else`, `do`, `proc`, `let` or `peek` blocks\n" eputs
               dup Op.token ptr+ Token.loc ptr+ eputloc ": NOTE: found `" eputs dup Op.token ptr+ Token.text ptr+ @Str eputs "` instead\n" eputs
               1 exit
             end
@@ -3223,6 +3255,14 @@ in
             lexer parse-bind-list
             token
             push-op
+          else dup KEYWORD_PEEK = if*
+            ops-count @int
+            parse-block-stack-push
+
+            OP_PEEK
+            lexer parse-bind-list
+            token
+            push-op
           else
             token Token.loc ptr+ eputloc
             ": ERROR: unexpected keyword `" eputs
@@ -3241,7 +3281,7 @@ in
         end
 
         token Token.value ptr+ // token.value
-          assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 23 = end
+          assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 24 = end
           dup @Str intrinsic-by-name if
             OP_INTRINSIC swap token push-op
           else drop dup @Str bind-table-lookup if*
@@ -3852,6 +3892,43 @@ in
   context @ptr
 end
 
+proc type-check-peek
+  int // bind count
+  ptr // token
+  ptr // context
+in
+  let bind-count token context in
+    context TypeContext.stack ptr+ TypeStack.count ptr+ @int
+    let stack-size in
+      stack-size bind-count < if
+        token Token.loc ptr+ eputloc
+        ": ERROR: Data stack does not have enough elements to bind. Expected " eputs
+        bind-count eputu
+        " but got " eputs
+        stack-size eputu
+        ". Here is the data stack: \n" eputs
+        context @ptr TypeContext.stack ptr+ stderr type-stack-dump
+        1 exit
+      end
+    end
+
+    bind-count
+    context TypeContext.stack ptr+ TypeStack.top ptr+ @ptr
+    while over 0 > do
+      let bind-count top in
+        top
+        context TypeContext.ret ptr+
+        type-stack-push-frame
+
+        bind-count 1 -
+        top TypeFrame.prev ptr+ @ptr
+      end
+    end
+    drop
+    drop
+  end
+end
+
 proc type-check-bind
   int // bind count
   ptr // token
@@ -3973,7 +4050,7 @@ in
       op
       memcpy drop
 
-      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 23 = end
+      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 24 = end
 
       op Op.type ptr+ @int OP_PUSH_INT = if
         DATATYPE_INT
@@ -4104,6 +4181,14 @@ in
         op Op.token ptr+
         context
         type-check-bind
+
+        context TypeContext.ip ptr+ inc64
+        true // continue
+      else op Op.type ptr+ @int OP_PEEK = if*
+        op Op.operand ptr+ @int
+        op Op.token ptr+
+        context
+        type-check-peek
 
         context TypeContext.ip ptr+ inc64
         true // continue
