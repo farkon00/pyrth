@@ -745,17 +745,16 @@ in
   end
 end
 
-// TODO: rename isdigit to ?digit
-inline proc isdigit int -- bool in
+inline proc ?digit int -- bool in
   let x in
     x '0' >=
     x '9' <=
     land
   end
 end
+inline proc isdigit int -- bool in ?digit end // @deprecated
 
-// TODO: rename isalpha to ?alpha
-inline proc isalpha int -- bool in
+inline proc ?alpha int -- bool in
   let x in
     x 'a' >=
     x 'z' <=
@@ -768,15 +767,16 @@ inline proc isalpha int -- bool in
     lor
   end
 end
+inline proc isalpha int -- bool in ?alpha end // @deprecated
 
-// TODO: rename isalnum to ?alnum
-inline proc isalnum int -- bool in
+inline proc ?alnum int -- bool in
   let x in
-    x isdigit
-    x isalpha
+    x ?digit
+    x ?alpha
     lor
   end
 end
+inline proc isalnum int -- bool in ?alnum end // @deprecated
 
 proc try-parse-int
   int ptr
@@ -788,7 +788,7 @@ in
     while
       let n s result in
         n s result
-        n 0 > if s @8 isdigit else false end
+        n 0 > if s @8 ?digit else false end
       end
     do
       let n s result in
@@ -1196,7 +1196,7 @@ in
     swap 1 ptr+
   end
   drop 0 >
-  ch @int isalnum
+  ch @int ?alnum
   lor
 end
 
