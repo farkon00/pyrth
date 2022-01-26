@@ -1379,74 +1379,74 @@ end
 //
 // This runs external command `echo uwu`
 proc cmd-echoed
-  ptr   // array of cstrs reprets the command we are running
+  ptr   // array of cstrs representing the command we are running
   bool  // echo the command to stdout
 in
-  if
-    "[CMD]" puts
-    dup while dup @64 0 != do
-      " " puts
-      dup @64 cast(ptr) cstr-to-str shell-escape puts
-      8 ptr+
-    end drop
-    "\n" puts
-  end
+  let cmd echo in
+    echo if
+      "[CMD]" puts
+      cmd while dup @64 0 != do
+        " " puts
+        dup @ptr cstr-to-str shell-escape puts
+        8 ptr+
+      end drop
+      "\n" puts
+    end
 
-  memory wstatus sizeof(u64) end
+    memory wstatus sizeof(u64) end
 
-  fork
+    fork
 
-  dup 0 = if
-    // child process
-    drop
-    dup @ptr
-    swap
-    execvp
-    // TODO: report that you could not execute the child
-  else dup 0 > if*
-    // parent process
-    drop drop
+    let pid in 
+      pid 0 = if
+        // child process
+        cmd @ptr
+        cmd
+        execvp
+        // TODO: report that you could not execute the child 
+      else pid 0 > if*
+        // parent process
+        while
+          NULL
+          0
+          wstatus
+          0 1 - // TODO: replace this with -1 when we support negative numbers @negative
+          wait4 0 < if
+            "[ERROR] could not wait until the child process has finished executing\n" eputs
+            1 exit
+          end
 
-    while
-      NULL
-      0
-      wstatus
-      0 1 - // TODO: replace this with -1 when we support negative numbers
-      wait4 0 < if
-        "[ERROR] could not wait until the child process has finished executing\n" eputs
+          wstatus @int
+            dup WIFEXITED if
+              dup WEXITSTATUS
+                dup 0 > if
+                  dup exit
+                end
+              drop
+
+              false // break
+            else dup WIFSIGNALED if*
+              "ERROR: the child process was terminated by a signal " eputs
+              dup WTERMSIG                                           eputu
+              "\n"                                                   eputs
+              255 exit
+
+              false // break
+            else dup WIFSTOPPED if*
+              true  // continue
+            else dup WIFCONTINUED if*
+              true  // continue
+            else
+              here eputs ": unreachable\n" eputs
+              1 exit
+              false // break
+            end
+          swap drop
+        do end
+      else
+        "[ERROR] could not fork a child\n" eputs
         1 exit
       end
-
-      wstatus @int
-        dup WIFEXITED if
-          dup WEXITSTATUS
-            dup 0 > if
-              dup exit
-            end
-          drop
-
-          false // break
-        else dup WIFSIGNALED if*
-          "ERROR: the child process was terminated by a signal " eputs
-          dup WTERMSIG                                           eputu
-          "\n"                                                   eputs
-          255 exit
-
-          false // break
-        else dup WIFSTOPPED if*
-          true  // continue
-        else dup WIFCONTINUED if*
-          true  // continue
-        else
-          here eputs ": unreachable\n" eputs
-          1 exit
-          false // break
-        end
-      swap drop
-    do end
-  else
-    drop drop
-    "[ERROR] could not fork a child\n" eputs
-    1 exit
+    end
   end
 end
