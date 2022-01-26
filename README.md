@@ -53,6 +53,8 @@ Since Porth is self-hosted you need to bootstrap it first. There are some pre-co
 
 #### FASM
 
+You will need to install [fasm](https://flatassembler.net/) first.
+
 ```console
 $ fasm -m 524288 ./bootstrap/porth-linux-x86_64.fasm
 $ chmod +x ./bootstrap/porth-linux-x86_64
@@ -60,20 +62,9 @@ $ ./bootstrap/porth-linux-x86_64 com -t fasm-linux-x86_64 ./porth.porth
 $ ./porth com -t fasm-linux-x86_64 ./porth.porth
 ```
 
-#### NASM
-
-*Keeping in mind that nasm is significantly slower than fasm.*
-
-```console
-$ nasm -felf64 ./bootstrap/porth-linux-x86_64.nasm
-$ ld -o ./bootstrap/porth-linux-x86_64 ./bootstrap/porth-linux-x86_64.o
-$ ./bootstrap/porth-linux-x86_64 com -t nasm-linux-x86_64 ./porth.porth
-$ ./porth com ./porth.porth
-```
-
 ### Compilation
 
-Compilation generates assembly code, compiles it with [nasm](https://www.nasm.us/), and then links it with [GNU ld](https://www.gnu.org/software/binutils/). So make sure you have both available in your `$PATH`.
+Compilation generates assembly code and compiles it with [fasm](https://flatassembler.net/). So make sure you have it available in your `$PATH`.
 
 ```console
 $ cat program.porth
@@ -81,10 +72,17 @@ proc main in
   34 35 + print
 end
 $ ./porth com program.porth
-[INFO] Generating ./output.asm
-[CMD] nasm -felf64 ./output.asm
-[CMD] ld -o ./output ./output.o
-$ ./output
+[INFO] Compiling ./program.porth
+[INFO] Compilation took 0.000285715 secs
+[INFO] Type checking took 0.000175608 secs
+[INFO] Generating ./program.asm
+[CMD] fasm -m 524288 ./program.asm ./program.tmp
+flat assembler  version 1.73.09  (524288 kilobytes memory)
+3 passes, 391 bytes.
+[INFO] renaming ./program.tmp -> ./program
+[CMD] chmod +x ./program
+[INFO] Generation took 0.004627095 secs
+$ ./program
 69
 ```
 
