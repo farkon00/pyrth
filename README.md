@@ -58,8 +58,8 @@ You will need to install [fasm](https://flatassembler.net/) first.
 ```console
 $ fasm -m 524288 ./bootstrap/porth-linux-x86_64.fasm
 $ chmod +x ./bootstrap/porth-linux-x86_64
-$ ./bootstrap/porth-linux-x86_64 com -t fasm-linux-x86_64 ./porth.porth
-$ ./porth com -t fasm-linux-x86_64 ./porth.porth
+$ ./bootstrap/porth-linux-x86_64 com ./porth.porth
+$ ./porth com ./porth.porth
 ```
 
 ### Compilation
