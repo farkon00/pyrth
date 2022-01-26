@@ -4931,24 +4931,27 @@ proc main in
         dup generate-fasm-linux-x86_64
       fpb-rewind
 
-      fpb-end
-        tmp-end
-        "fasm"c       tmp-append-ptr
-        "-m"c         tmp-append-ptr
-        "524288"c     tmp-append-ptr
+      cmd-dev-null-stdout @bool
+        silent @bool cmd-dev-null-stdout !bool
         fpb-end
-          base-file-path @Str fpb-append drop
-          ".asm"              fpb-append drop
-          1                   fpb-alloc  drop
-          tmp-append-ptr
-        fpb-end
-          base-file-path @Str fpb-append drop
-          ".tmp"              fpb-append drop
-          1                   fpb-alloc  drop
-          tmp-append-ptr
-        NULL          tmp-append-ptr
-        silent @bool lnot cmd-echoed
-      fpb-rewind
+          tmp-end
+          "fasm"c       tmp-append-ptr
+          "-m"c         tmp-append-ptr
+          "524288"c     tmp-append-ptr
+          fpb-end
+            base-file-path @Str fpb-append drop
+            ".asm"              fpb-append drop
+            1                   fpb-alloc  drop
+            tmp-append-ptr
+          fpb-end
+            base-file-path @Str fpb-append drop
+            ".tmp"              fpb-append drop
+            1                   fpb-alloc  drop
+            tmp-append-ptr
+          NULL          tmp-append-ptr
+          silent @bool lnot cmd-echoed
+        fpb-rewind
+      cmd-dev-null-stdout !bool
 
       fpb-end
         fpb-end

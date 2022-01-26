@@ -457,6 +457,8 @@ inline proc wait4 ptr int ptr int -- int in SYS_wait4 syscall4 end
 inline proc rename ptr ptr -- int in SYS_rename syscall2 end
 inline proc fcntl int int int -- int in SYS_fcntl syscall3 end
 inline proc kill int int -- int in SYS_kill syscall2 end
+// TODO: possible confusion with `dup` intrinsic
+inline proc dup2 int int -- int in SYS_dup2 syscall2 end
 
 inline proc /    int int -- int in divmod drop end
 inline proc %    int int -- int in divmod swap drop end
@@ -480,7 +482,7 @@ inline proc nth_argv int -- ptr in
 end
 
 inline proc lnot bool -- bool in
-  cast(int) 1 - cast(bool)
+  cast(int) 1 swap - cast(bool)
 end
 
 inline proc land bool bool -- bool in
@@ -1365,6 +1367,9 @@ in
   end
 end
 
+// TODO: we need a better way of managing complex procedure contexts
+memory cmd-dev-null-stdout sizeof(bool) end
+
 // # Run external command
 //
 // Usage example:
@@ -1385,7 +1390,7 @@ in
   let cmd echo in
     echo if
       "[CMD]" puts
-      cmd while dup @64 0 != do
+      cmd while dup @ptr NULL ptr!= do
         " " puts
         dup @ptr cstr-to-str shell-escape puts
         8 ptr+
@@ -1397,13 +1402,35 @@ in
 
     fork
 
-    let pid in 
+    let pid in
       pid 0 = if
         // child process
+        cmd-dev-null-stdout @bool if
+          // oldfd
+          stdout
+
+          // newfd
+          0                   // mode
+          O_RDONLY            // flags
+          "/dev/null"c        // pathname
+          // TODO: this is lame, let's just support negative numbers properly @negative
+          0 100 - // AT_FDCWD // dirfd
+          openat
+
+          dup 0 < if
+            here eputs ": ERROR: could not open /dev/null to silence the command in cmd-echoed\n" eputs
+            1 exit
+          end
+
+          dup2 0 < if
+            here eputs ": ERROR: could not reopen /dev/null as stdout for child process in cmd-echoed\n" eputs
+            1 exit
+          end
+        end
+
         cmd @ptr
         cmd
         execvp
-        // TODO: report that you could not execute the child 
       else pid 0 > if*
         // parent process
         while
