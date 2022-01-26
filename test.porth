@@ -51,16 +51,7 @@ proc main in
       args @@ptr
         dup "bootstrap"c cstreq if
           shell
-            "./porth"c : "com"c : "-s"c : "-t"c : "nasm-linux-x86_64"c : "./porth.porth"c
-          run
-
-          shell
-            // TODO: we should probably use something more crossplatform than `cp` command
-            "cp"c : "-v"c : "./porth.asm"c : "./bootstrap/porth-linux-x86_64.nasm"c
-          run
-
-          shell
-            "./porth"c : "com"c : "-s"c : "-t"c : "fasm-linux-x86_64"c : "./porth.porth"c
+            "./porth"c : "com"c : "-s"c : "./porth.porth"c
           run
 
           shell

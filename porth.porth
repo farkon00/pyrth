@@ -1496,7 +1496,7 @@ in
   else dup Op.type ptr+ @64 OP_INLINED = if*
      // ignored
   else dup Op.type ptr+ @64 OP_INTRINSIC = if*
-      assert "Exhaustive handling of Intrinsics in generate-nasm-linux-x86_64"
+      assert "Exhaustive handling of Intrinsics in generate-op-intel-linux-x86_64"
         COUNT_INTRINSICS 46 =
       end
 
@@ -1841,90 +1841,6 @@ in
   out-fd @64 close drop
 end
 
-proc generate-nasm-linux-x86_64
-  ptr // file-path
-in
-  memory file-path sizeof(ptr) end
-  file-path !ptr
-
-  silent @bool lnot if
-    "[INFO] Generating "       puts
-    file-path @ptr cstr-to-str puts
-    "\n"                       puts
-  end
-
-  memory out-fd sizeof(u64) end
-
-  420                     // mode
-  O_CREAT O_WRONLY or O_TRUNC or  // flags
-  file-path @ptr        // pathname
-  // TODO: this is lame, let's just support negative numbers properly
-  0 100 - //AT_FDCWD
-  openat
-  out-fd !64
-
-  out-fd @64 0 < if
-    "[ERROR] could not open `output.asm`\n" eputs
-    1 exit
-  end
-
-  "BITS 64\n"                              out-fd @64 fputs
-  "segment .text\n"                        out-fd @64 fputs
-  out-fd @64 generate-print-intel-linux-x86_64
-  0 while dup ops-count @64 < do
-    dup out-fd @64 generate-op-intel-linux-x86_64
-    1 +
-  end drop
-
-  "addr_"    out-fd @64 fputs
-  ops-count @64 out-fd @64 fputu
-  ":\n"      out-fd @64 fputs
-  "global _start\n"                        out-fd @64 fputs
-  "_start:\n"                              out-fd @64 fputs
-  "    mov [args_ptr], rsp\n"              out-fd @64 fputs
-  "    mov rax, ret_stack_end\n"           out-fd @64 fputs
-  "    mov [ret_stack_rsp], rax\n"         out-fd @64 fputs
-
-  "main" proc-lookup-by-name
-    dup NULL ptr= if
-      here eputs ": Assertion Failed: type checking phase did not check the existence of `main` procedure" eputs
-      1 exit
-    end
-
-    "    call addr_"        out-fd @64 fputs
-    dup Proc.addr ptr+ @int out-fd @64 fputu
-    "\n"                    out-fd @64 fputs
-  drop
-
-  "    mov rax, 60\n"        out-fd @64 fputs
-  "    mov rdi, 0\n"         out-fd @64 fputs
-  "    syscall\n"            out-fd @64 fputs
-  "segment .data\n"          out-fd @64 fputs
-
-  0 while dup strlits-count @64 < do
-    "str_"                           out-fd @64 fputs
-    dup                              out-fd @64 fputu
-    ":"                              out-fd @64 fputs
-    dup sizeof(Str) * strlits +ptr
-      dup ?str-empty lnot if
-        " db "   out-fd @64 fputs
-        dup @Str out-fd @64 fputdecstr
-      end
-    drop
-    "\n"                             out-fd @64 fputs
-    1 +
-  end drop
-  "segment .bss\n"           out-fd @64 fputs
-  "args_ptr: resq 1\n"       out-fd @64 fputs
-  "ret_stack_rsp: resq 1\n"  out-fd @64 fputs
-  "ret_stack: resb "         out-fd @64 fputs X86_64_RET_STACK_CAP out-fd @64 fputu "\n" out-fd @64 fputs
-  "ret_stack_end:\n"         out-fd @64 fputs
-  "mem: resb "               out-fd @64 fputs
-  global-memory-capacity @64 out-fd @64 fputu
-  "\n"                       out-fd @64 fputs
-
-  out-fd @64 close drop
-end
 /// END Code Generator //////////////////////////////
 
 /// BEGIN File Path Buffer //////////////////////////////
@@ -4739,8 +4655,6 @@ in
     "    com [OPTIONS] <file>  Compile the program\n"                                          fd fputs
     "      OPTIONS:\n"                                                                         fd fputs
     // TODO: implement -o flag for com subcommand
-    "        -t                  Specify the target for generation.\n"                         fd fputs
-    "                            Default: fasm-linux-x86_64.\n"                                fd fputs
     "                            Specify `-t list` to list all available targets.\n"           fd fputs
     "        -r                  Run the program after successful compilation\n"               fd fputs
     "        -s                  Silent mode. Don't print any info about compilation phases\n" fd fputs
@@ -4748,42 +4662,6 @@ in
     "    lex <file>            Produce lexical analysis of the file\n"                         fd fputs
     "    summary <file>        Print the summary of the program\n"                             fd fputs
     "    help                  Print this help to stdout and exit with 0 code\n"               fd fputs
-  end
-end
-
-// TODO: split "target" into "format" and "platform"
-const TARGET_NASM_LINUX_X86_64 1 offset end
-const TARGET_FASM_LINUX_X86_64 1 offset end
-const COUNT_TARGETS               reset end
-
-proc target-name int -- int ptr in
-  assert "Exhaustive handling of targets in target-name" COUNT_TARGETS 2 = end
-  dup TARGET_NASM_LINUX_X86_64 = if
-    drop "nasm-linux-x86_64"
-  else dup TARGET_FASM_LINUX_X86_64 = if*
-    drop "fasm-linux-x86_64"
-  else
-    drop
-    0 NULL
-    here eputs ": Assertion Failed: unreachable\n" eputs
-    1 exit
-  end
-end
-
-proc target-by-name int ptr -- int bool in
-  assert "Exhaustive handling of targets in target-by-name" COUNT_TARGETS 2 = end
-  over over "nasm-linux-x86_64" streq if
-    drop drop
-    TARGET_NASM_LINUX_X86_64
-    true
-  else over over "fasm-linux-x86_64" streq if*
-    drop drop
-    TARGET_FASM_LINUX_X86_64
-    true
-  else
-    drop drop
-    0
-    false
   end
 end
 
@@ -4796,9 +4674,6 @@ proc main in
 
   memory unsafe sizeof(bool) end
   false unsafe !bool
-
-  memory target sizeof(int) end
-  TARGET_FASM_LINUX_X86_64 target !int
 
   while
     args sizeof(ptr) inc64-by
@@ -4836,35 +4711,6 @@ proc main in
       else args @@ptr "-s"c cstreq if*
         true silent !bool
         true  // continue
-      else args @@ptr "-t"c cstreq if*
-        args sizeof(ptr) inc64-by
-        args @@ptr NULL ptr= if
-          program @ptr stderr usage
-          "ERROR: no argument is provided for parameter `-t`\n" eputs
-          1 exit
-        end
-
-        args @@ptr "list"c cstreq if
-          "Available targets:\n" puts
-          0 while dup COUNT_TARGETS < do
-            "  " puts dup target-name puts "\n" puts
-            1 +
-          end drop
-          0 exit
-        end
-
-        args @@ptr cstr-to-str target-by-name if
-          target !int
-        else
-          drop
-          program @ptr stderr usage
-          "ERROR: unknown target `"                                 eputs
-          args @@ptr cstr-to-str                                    eputs
-          "`. Use `-t list` to list all of the available targets\n" eputs
-          1 exit
-        end
-
-        true  // continue
       else
         args @@ptr input-file-path-cstr !ptr
         args sizeof(ptr) inc64-by
@@ -4884,46 +4730,6 @@ proc main in
     unsafe @bool lnot if type-check-program end
 
     timeit/from-here
-
-    assert "Exhaustive target handling in main" COUNT_TARGETS 2 = end
-    target @int TARGET_NASM_LINUX_X86_64 = if
-      fpb-end
-        base-file-path @Str fpb-append drop
-        ".asm"              fpb-append drop
-        1                   fpb-alloc  drop
-        dup generate-nasm-linux-x86_64
-      fpb-rewind
-
-      fpb-end
-        tmp-end
-        "nasm"c       tmp-append-ptr
-        "-felf64"c    tmp-append-ptr
-        fpb-end
-          base-file-path @Str fpb-append drop
-          ".asm"              fpb-append drop
-          1                   fpb-alloc  drop
-          tmp-append-ptr
-        NULL          tmp-append-ptr
-        silent @bool lnot cmd-echoed
-      fpb-rewind
-
-      fpb-end
-        tmp-end
-        "ld"c         tmp-append-ptr
-        "-o"c         tmp-append-ptr
-        fpb-end
-          base-file-path @Str fpb-append drop
-          1                   fpb-alloc  drop
-          tmp-append-ptr
-        fpb-end
-          base-file-path @Str fpb-append drop
-          ".o"                fpb-append drop
-          1                   fpb-alloc  drop
-          tmp-append-ptr
-        NULL          tmp-append-ptr
-        silent @bool lnot cmd-echoed
-      fpb-rewind
-    else target @int TARGET_FASM_LINUX_X86_64 = if*
       fpb-end
         base-file-path @Str fpb-append drop
         ".asm"              fpb-append drop
@@ -4931,24 +4737,27 @@ proc main in
         dup generate-fasm-linux-x86_64
       fpb-rewind
 
-      fpb-end
-        tmp-end
-        "fasm"c       tmp-append-ptr
-        "-m"c         tmp-append-ptr
-        "524288"c     tmp-append-ptr
+      cmd-dev-null-stdout @bool
+        silent @bool cmd-dev-null-stdout !bool
         fpb-end
-          base-file-path @Str fpb-append drop
-          ".asm"              fpb-append drop
-          1                   fpb-alloc  drop
-          tmp-append-ptr
-        fpb-end
-          base-file-path @Str fpb-append drop
-          ".tmp"              fpb-append drop
-          1                   fpb-alloc  drop
-          tmp-append-ptr
-        NULL          tmp-append-ptr
-        silent @bool lnot cmd-echoed
-      fpb-rewind
+          tmp-end
+          "fasm"c       tmp-append-ptr
+          "-m"c         tmp-append-ptr
+          "524288"c     tmp-append-ptr
+          fpb-end
+            base-file-path @Str fpb-append drop
+            ".asm"              fpb-append drop
+            1                   fpb-alloc  drop
+            tmp-append-ptr
+          fpb-end
+            base-file-path @Str fpb-append drop
+            ".tmp"              fpb-append drop
+            1                   fpb-alloc  drop
+            tmp-append-ptr
+          NULL          tmp-append-ptr
+          silent @bool lnot cmd-echoed
+        fpb-rewind
+      cmd-dev-null-stdout !bool
 
       fpb-end
         fpb-end
@@ -4985,10 +4794,6 @@ proc main in
         NULL          tmp-append-ptr
         silent @bool lnot cmd-echoed
       fpb-rewind
-    else
-      here eputs ": Assertion Failed: unreachable\n" eputs
-      1 exit
-    end
 
     "[INFO] Generation" silent @bool timeit/to-here
 

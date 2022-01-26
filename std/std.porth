@@ -457,6 +457,8 @@ inline proc wait4 ptr int ptr int -- int in SYS_wait4 syscall4 end
 inline proc rename ptr ptr -- int in SYS_rename syscall2 end
 inline proc fcntl int int int -- int in SYS_fcntl syscall3 end
 inline proc kill int int -- int in SYS_kill syscall2 end
+// TODO: possible confusion with `dup` intrinsic
+inline proc dup2 int int -- int in SYS_dup2 syscall2 end
 
 inline proc /    int int -- int in divmod drop end
 inline proc %    int int -- int in divmod swap drop end
@@ -480,7 +482,7 @@ inline proc nth_argv int -- ptr in
 end
 
 inline proc lnot bool -- bool in
-  cast(int) 1 - cast(bool)
+  cast(int) 1 swap - cast(bool)
 end
 
 inline proc land bool bool -- bool in
@@ -1365,6 +1367,9 @@ in
   end
 end
 
+// TODO: we need a better way of managing complex procedure contexts
+memory cmd-dev-null-stdout sizeof(bool) end
+
 // # Run external command
 //
 // Usage example:
@@ -1379,74 +1384,96 @@ end
 //
 // This runs external command `echo uwu`
 proc cmd-echoed
-  ptr   // array of cstrs reprets the command we are running
+  ptr   // array of cstrs representing the command we are running
   bool  // echo the command to stdout
 in
-  if
-    "[CMD]" puts
-    dup while dup @64 0 != do
-      " " puts
-      dup @64 cast(ptr) cstr-to-str shell-escape puts
-      8 ptr+
-    end drop
-    "\n" puts
-  end
+  let cmd echo in
+    echo if
+      "[CMD]" puts
+      cmd while dup @ptr NULL ptr!= do
+        " " puts
+        dup @ptr cstr-to-str shell-escape puts
+        8 ptr+
+      end drop
+      "\n" puts
+    end
 
-  memory wstatus sizeof(u64) end
+    memory wstatus sizeof(u64) end
 
-  fork
+    fork
 
-  dup 0 = if
-    // child process
-    drop
-    dup @ptr
-    swap
-    execvp
-    // TODO: report that you could not execute the child
-  else dup 0 > if*
-    // parent process
-    drop drop
+    let pid in
+      pid 0 = if
+        // child process
+        cmd-dev-null-stdout @bool if
+          // oldfd
+          stdout
 
-    while
-      NULL
-      0
-      wstatus
-      0 1 - // TODO: replace this with -1 when we support negative numbers
-      wait4 0 < if
-        "[ERROR] could not wait until the child process has finished executing\n" eputs
+          // newfd
+          0                   // mode
+          O_RDONLY            // flags
+          "/dev/null"c        // pathname
+          // TODO: this is lame, let's just support negative numbers properly @negative
+          0 100 - // AT_FDCWD // dirfd
+          openat
+
+          dup 0 < if
+            here eputs ": ERROR: could not open /dev/null to silence the command in cmd-echoed\n" eputs
+            1 exit
+          end
+
+          dup2 0 < if
+            here eputs ": ERROR: could not reopen /dev/null as stdout for child process in cmd-echoed\n" eputs
+            1 exit
+          end
+        end
+
+        cmd @ptr
+        cmd
+        execvp
+      else pid 0 > if*
+        // parent process
+        while
+          NULL
+          0
+          wstatus
+          0 1 - // TODO: replace this with -1 when we support negative numbers @negative
+          wait4 0 < if
+            "[ERROR] could not wait until the child process has finished executing\n" eputs
+            1 exit
+          end
+
+          wstatus @int
+            dup WIFEXITED if
+              dup WEXITSTATUS
+                dup 0 > if
+                  dup exit
+                end
+              drop
+
+              false // break
+            else dup WIFSIGNALED if*
+              "ERROR: the child process was terminated by a signal " eputs
+              dup WTERMSIG                                           eputu
+              "\n"                                                   eputs
+              255 exit
+
+              false // break
+            else dup WIFSTOPPED if*
+              true  // continue
+            else dup WIFCONTINUED if*
+              true  // continue
+            else
+              here eputs ": unreachable\n" eputs
+              1 exit
+              false // break
+            end
+          swap drop
+        do end
+      else
+        "[ERROR] could not fork a child\n" eputs
         1 exit
       end
-
-      wstatus @int
-        dup WIFEXITED if
-          dup WEXITSTATUS
-            dup 0 > if
-              dup exit
-            end
-          drop
-
-          false // break
-        else dup WIFSIGNALED if*
-          "ERROR: the child process was terminated by a signal " eputs
-          dup WTERMSIG                                           eputu
-          "\n"                                                   eputs
-          255 exit
-
-          false // break
-        else dup WIFSTOPPED if*
-          true  // continue
-        else dup WIFCONTINUED if*
-          true  // continue
-        else
-          here eputs ": unreachable\n" eputs
-          1 exit
-          false // break
-        end
-      swap drop
-    do end
-  else
-    drop drop
-    "[ERROR] could not fork a child\n" eputs
-    1 exit
+    end
   end
 end
