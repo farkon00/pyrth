@@ -664,7 +664,7 @@ proc intrinsic-name
   int ptr // name
 in
   assert "Exhaustive handling of Intrinsics in intrinsic-name" COUNT_INTRINSICS 46 = end
-       dup INTRINSIC_PLUS      = if  drop "ptr+"
+       dup INTRINSIC_PLUS      = if  drop "+"
   else dup INTRINSIC_MINUS     = if* drop "-"
   else dup INTRINSIC_MUL       = if* drop "*"
   else dup INTRINSIC_DIVMOD    = if* drop "divmod"
