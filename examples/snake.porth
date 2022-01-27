@@ -137,7 +137,7 @@ memory input 1 end
 proc display in
   0 while dup ROWS < do
     0 while dup COLS < do
-      let y x in
+      peek y x in
         x y cell-at @int
         let cell in
           cell CELL_EMPTY = if
@@ -151,8 +151,6 @@ proc display in
             1 exit
           end
         end
-
-        y x // @peek
       end
       1 +
     end drop

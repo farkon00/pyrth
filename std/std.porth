@@ -524,8 +524,7 @@ end
 
 proc cstreq ptr ptr -- bool in
   while
-    let s1 s2 in
-      s1 s2 // @peek
+    peek s1 s2 in
       s1 @8 0 != s2 @8 0 != land if
          s1 @8 s2 @8 =
       else false end
@@ -763,8 +762,7 @@ in
     n m = if
       n s1 s2
       while
-        let n s1 s2 in
-          n s1 s2 // @peek
+        peek n s1 s2 in
           n 0 > if
             s1 @8 s2 @8 =
           else false end
@@ -823,8 +821,7 @@ in
   over 0 > if
     0 // result
     while
-      let n s result in
-        n s result // @peek
+      peek n s result in
         n 0 > if s @8 ?digit else false end
       end
     do
