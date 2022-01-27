@@ -1352,7 +1352,11 @@ in
         ": "                            fd fputs
         type op-type-as-str             fd fputs
         " "                             fd fputs
-        operand                         fd fputu
+        type OP_INTRINSIC = if
+          operand intrinsic-name        fd fputs
+        else
+          operand                       fd fputu
+        end
         "\n"                            fd fputs
 
         assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 24 = end
