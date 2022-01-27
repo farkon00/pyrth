@@ -693,23 +693,23 @@ proc str-starts-with
   --
   bool
 in
-  memory prefix sizeof(Str) end
-  memory input sizeof(Str) end
-  input  !Str
-  prefix !Str
-
-  prefix @Str.count
-  input  @Str.count
-  <= if
-    0 while
-      dup prefix @Str.count < if
-        dup  input  @Str.data +ptr @8
-        over prefix @Str.data +ptr @8
-        =
-      else false end
-    do 1 + end
-    prefix @Str.count >=
-  else false end
+  let pn ps n s in
+    pn n <= if
+      pn ps s
+      while
+        peek pn ps s in
+          pn 0 > if ps @8 s @8 = else false end
+        end
+      do
+        let pn ps s in
+          pn 1 -
+          ps 1 ptr+
+          s  1 ptr+
+        end
+      end
+      let pn _ _ in pn 0 <= end
+    else false end
+  end
 end
 
 inline proc ?str-empty ptr -- bool in
