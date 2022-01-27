@@ -44,3 +44,4 @@ let-bindings-local-mem-corruption
 emod
 child-terminated
 peek
+str-starts-with
