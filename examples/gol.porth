@@ -1,17 +1,38 @@
 include "std.porth"
 
-// constants
 const ROWS 10 end
 const COLS 20 end
 const BOARD_SIZE ROWS COLS * end
 
-// memory layout
-memory delta_time sizeof(timespec) end
 memory board_current_index sizeof(u64) end
-memory nbors sizeof(u64) end
-memory value sizeof(u64) end
 memory board_base BOARD_SIZE 2 * end
 memory display COLS 1 + end
+
+proc current int int -- ptr in
+  let row col in
+    row ROWS emod
+    col COLS emod
+  end
+
+  let row col in
+    board_base board_current_index @int BOARD_SIZE * ptr+
+    row COLS * col +
+    ptr+
+  end
+end
+
+proc next int int -- ptr in
+  let row col in
+    row ROWS emod
+    col COLS emod
+  end
+
+  let row col in
+    board_base 1 board_current_index @int - BOARD_SIZE * ptr+
+    row COLS * col +
+    ptr+
+  end
+end
 
 proc board_current -- ptr in
   board_base board_current_index @64 BOARD_SIZE * ptr+
@@ -21,7 +42,7 @@ proc board_next -- ptr in
   board_base 1 board_current_index @64 - BOARD_SIZE * ptr+
 end
 
-proc swap_boards in
+proc swap-boards in
   1 board_current_index @64 - board_current_index !64
 end
 
@@ -56,73 +77,52 @@ proc get_current_cell int int -- int in
 end
 
 proc set_next_cell int int int in
-  value !64
-  swap COLS * + board_next +ptr
-  value @64
-  swap !8
-end
-
-proc in_bounds int int -- bool in
-  dup 0 >= swap COLS < land
-  swap
-  dup 0 >= swap ROWS < land
-  land
+  let row col value in
+    value row COLS * col + board_next +ptr !8
+  end
 end
 
 proc count_current_nbors int int -- int in
-  0 nbors !64
+  memory nbors sizeof(u64) end
+  0 nbors !int
 
-  over over 1 - swap 1 - swap over over in_bounds
-  rot rot swap COLS * + board_current +ptr @8 1 =
-  land if nbors inc64 end
+  let row col in
+    0 1 - while dup 1 <= do // @negative
+      0 1 - while dup 1 <= do
+        peek drow dcol in
+          drow 0 != dcol 0 != lor if
+            row drow + ROWS emod
+            col dcol + COLS emod
+            let row col in
+              row col get_current_cell 1 = if
+                nbors inc64
+              end
+            end
+          end
+        end
+        1 +
+      end drop
+      1 +
+    end drop
+  end
 
-  over over 1 - over over in_bounds
-  rot rot swap COLS * + board_current +ptr @8 1 =
-  land if nbors inc64 end
-
-  over over 1 - swap 1 + swap over over in_bounds
-  rot rot swap COLS * + board_current +ptr @8 1 =
-  land if nbors inc64 end
-
-  over over swap 1 - swap over over in_bounds
-  rot rot swap COLS * + board_current +ptr @8 1 =
-  land if nbors inc64 end
-
-  over over swap 1 + swap over over in_bounds
-  rot rot swap COLS * + board_current +ptr @8 1 =
-  land if nbors inc64 end
-
-  over over 1 + swap 1 - swap over over in_bounds
-  rot rot swap COLS * + board_current +ptr @8 1 =
-  land if nbors inc64 end
-
-  over over 1 + over over in_bounds
-  rot rot swap COLS * + board_current +ptr @8 1 =
-  land if nbors inc64 end
-
-  over over 1 + swap 1 + swap over over in_bounds
-  rot rot swap COLS * + board_current +ptr @8 1 =
-  land if nbors inc64 end
-
-  drop drop
-  nbors @64
+  nbors @int
 end
 
 proc compute_next_board in
   0 while dup ROWS < do
     0 while dup COLS < do
-      over over get_current_cell 1 = if
-        over over count_current_nbors
-        dup 2 = swap 3 = lor if
-          over over 1 set_next_cell
-        else
-          over over 0 set_next_cell
-        end
-      else
-        over over count_current_nbors 3 = if
-          over over 1 set_next_cell
-        else
-          over over 0 set_next_cell
+      peek row col in
+        row col count_current_nbors
+        row col get_current_cell 1 =
+        let nbors alive in
+          row col
+          alive if
+            nbors 2 = nbors 3 = lor cast(int)
+          else
+            nbors 3 = cast(int)
+          end
+          set_next_cell
         end
       end
 
@@ -145,6 +145,7 @@ proc put_glider ptr in
 end
 
 proc main in
+  memory delta_time sizeof(timespec) end
   100000000 delta_time 8 ptr+ !64
 
   board_current put_glider
@@ -152,7 +153,7 @@ proc main in
   while true do
     display_current_board
     compute_next_board
-    swap_boards
+    swap-boards
 
     NULL delta_time 0 CLOCK_MONOTONIC clock_nanosleep drop
     // TODO: support for these kind of escape characters
