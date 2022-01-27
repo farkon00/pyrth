@@ -687,6 +687,41 @@ in
   drop drop
 end
 
+proc str-chop-by-delim-2
+  int ptr  // input str
+  int      // delim
+  --
+  int ptr  // rest
+  int ptr  // prefix
+in
+  let n s1 delim in
+    0 s1
+    while
+      peek i s2 in
+        i n < if
+          s2 @8 delim !=
+        else false end
+      end
+    do
+      let i s2 in
+        i  1 +
+        s2 1 ptr+
+      end
+    end
+
+    let i s2 in
+      i n < if
+        n i - 1 -
+        s2    1 ptr+
+      else
+        n i -
+        s2
+      end
+      i s1
+    end
+  end
+end
+
 proc str-starts-with
   int ptr // prefix
   int ptr // input
