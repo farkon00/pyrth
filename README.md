@@ -173,7 +173,10 @@ Example:
 
 ```porth
 include "std.porth"
-"Hello, World" puts
+
+proc main in
+  "Hello, World" puts
+end
 ```
 
 The `puts` procedure from `std.porth` module expects two values on the data stack:
@@ -189,19 +192,21 @@ It's like a regular string but it does not push its size on the stack and implic
 ```porth
 include "std.porth"
 
-0 O_RDONLY "input.txt"c AT_FDCWD openat
-//                    ^
-//                    |
-//                    postfix that indicates a C-style string
+proc main in
+  0 O_RDONLY "input.txt"c AT_FDCWD openat
+  //                    ^
+  //                    |
+  //                    postfix that indicates a C-style string
 
-dup 0 < if
-    "ERROR: could not open the file\n" eputs
-    1 exit
-else
-    "Successfully opened the file!\n" puts
+  dup 0 < if
+      "ERROR: could not open the file\n" eputs
+      1 exit
+  else
+      "Successfully opened the file!\n" puts
+  end
+
+  close
 end
-
-close
 ```
 
 Here we are using [openat(2)](https://linux.die.net/man/2/openat) Linux syscall to open a file. The syscall expects the pathname to be a NULL-terminated string.
@@ -215,7 +220,9 @@ When compiler encounters a character it pushes its value as an integer onto the 
 Example:
 
 ```porth
-'E' print
+proc main in
+  'E' print
+end
 ```
 
 This program pushes integer `69` onto the stack (since the ASCII code of letter `E` is `69`) and prints it with the `print` operation.
@@ -300,7 +307,10 @@ for i in range(n):
 ```porth
 include "std.porth"
 
-here puts ": TODO: not implemented\n" puts 1 exit
+proc main in
+  here puts ": FIXME: not implemented yet\n" puts
+  1 exit
+end
 ```
 
 - `argc (-- [argc: int])`
@@ -402,15 +412,17 @@ include "std.porth"
 const N 26 end
 memory buffer N end
 
-0 while dup N < do
-  dup 'a' +
-  over buffer +
-  !8
+proc main in
+  0 while dup N < do
+    dup 'a' +
+    over buffer +
+    !8
 
-  1 +
-end drop
+    1 +
+  end drop
 
-N buffer puts
+  N buffer puts
+end
 ```
 
 #### Local Memory
@@ -430,13 +442,30 @@ proc fib int in
 end
 ```
 
-#### Let-Bindings
+#### Bindings
+
+##### Let
 
 ```porth
-34 35
-let a b in
-  a print
-  b print
+proc main in
+  34 35
+  let a b in
+    a print
+    b print
+  end
+end
+```
+
+##### Peek
+
+```porth
+proc main in
+  34 35
+  peek a b in
+    a print
+    b print
+  end
+  drop drop
 end
 ```
 
@@ -482,6 +511,7 @@ TBD
 - `int` - 64 bit integer
 - `bool` - boolean
 - `ptr` - pointer
+- `addr` - address of the procedure (see "Procedure Pointers" section)
 
 TBD
 
