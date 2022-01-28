@@ -1,33 +1,27 @@
 include "std.porth"
 
 proc main in
-  memory limit sizeof(u64) end
-  
   argc 2 < if
     "Usage: seq <limit>\n" eputs
     "ERROR: no limit is provided\n" eputs
     1 exit
   end
-  
+
   1 nth_argv
-  while dup @8 0 != do
-    dup @8 '0' < over @8 '9' > lor if
-      "ERROR: `" eputs
-      1 nth_argv cstrlen 1 nth_argv eputs
+
+  let arg in
+    arg cstr-to-str try-parse-int lnot if
+      "ERROR: `"                     eputs
+      arg cstr-to-str                eputs
       "` is not a correct integer\n" eputs
       1 exit
     end
-  
-    limit @64 10 *
-    over @8 '0' -
-    +
-    limit !64
-  
-    1 ptr+
-  end drop
-  
-  0 while dup limit @64 < do
-    dup print
-    1 +
-  end drop
+  end
+
+  let limit in
+    0 while dup limit < do
+      dup print
+      1 +
+    end drop
+  end
 end
