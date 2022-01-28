@@ -4,8 +4,8 @@ const ROWS 10 end
 const COLS 20 end
 const BOARD_SIZE ROWS COLS * end
 
-memory board_current_index sizeof(u64) end
-memory board_base BOARD_SIZE 2 * end
+memory board-current-index sizeof(u64) end
+memory board-base BOARD_SIZE 2 * end
 memory display COLS 1 + end
 
 proc current int int -- ptr in
@@ -15,7 +15,7 @@ proc current int int -- ptr in
   end
 
   let row col in
-    board_base board_current_index @int BOARD_SIZE * ptr+
+    board-base board-current-index @int BOARD_SIZE * ptr+
     row COLS * col +
     ptr+
   end
@@ -28,61 +28,35 @@ proc next int int -- ptr in
   end
 
   let row col in
-    board_base 1 board_current_index @int - BOARD_SIZE * ptr+
+    board-base 1 board-current-index @int - BOARD_SIZE * ptr+
     row COLS * col +
     ptr+
   end
 end
 
-proc board_current -- ptr in
-  board_base board_current_index @64 BOARD_SIZE * ptr+
-end
-
-proc board_next -- ptr in
-  board_base 1 board_current_index @64 - BOARD_SIZE * ptr+
-end
-
 proc swap-boards in
-  1 board_current_index @64 - board_current_index !64
+  1 board-current-index @64 - board-current-index !64
 end
 
-proc display_row ptr in
-  0 while dup COLS < do
-    over over ptr+ @8 0 = if
-      display over ptr+ '.' swap !8
-    else
-      display over ptr+ '#' swap !8
-    end
-    1 +
-  end drop
-  COLS display +ptr '\n' swap !8
-  COLS 1 + display puts
-  drop
-end
-
-proc display_board ptr in
+proc display-current in
   0 while dup ROWS < do
-    over over COLS * ptr+ display_row
+    0 while dup COLS < do
+      peek row col in
+        row col current @8 0 = if '.' else '#' end
+        display col ptr+
+        !8
+      end
+      1 +
+    end drop
+
+    '\n' display COLS ptr+ !8
+    COLS 1 + display puts
+
     1 +
   end drop
-  drop
 end
 
-proc display_current_board in
-  board_current display_board
-end
-
-proc get_current_cell int int -- int in
-  swap COLS * + board_current +ptr @8
-end
-
-proc set_next_cell int int int in
-  let row col value in
-    value row COLS * col + board_next +ptr !8
-  end
-end
-
-proc count_current_nbors int int -- int in
+proc count-nbors int int -- int in
   memory nbors sizeof(u64) end
   0 nbors !int
 
@@ -94,7 +68,7 @@ proc count_current_nbors int int -- int in
             row drow + ROWS emod
             col dcol + COLS emod
             let row col in
-              row col get_current_cell 1 = if
+              row col current @8 1 = if
                 nbors inc64
               end
             end
@@ -109,20 +83,19 @@ proc count_current_nbors int int -- int in
   nbors @int
 end
 
-proc compute_next_board in
+proc compute-next in
   0 while dup ROWS < do
     0 while dup COLS < do
       peek row col in
-        row col count_current_nbors
-        row col get_current_cell 1 =
+        row col count-nbors
+        row col current @8 1 =
         let nbors alive in
-          row col
           alive if
             nbors 2 = nbors 3 = lor cast(int)
           else
             nbors 3 = cast(int)
           end
-          set_next_cell
+          row col next !8
         end
       end
 
@@ -135,24 +108,30 @@ end
 // .*.
 // ..*
 // ***
-proc put_glider ptr in
-   dup 0 COLS * 1 + ptr+ 1 swap !8
-   dup 1 COLS * 2 + ptr+ 1 swap !8
-   dup 2 COLS * 0 + ptr+ 1 swap !8
-   dup 2 COLS * 1 + ptr+ 1 swap !8
-   dup 2 COLS * 2 + ptr+ 1 swap !8
-   drop
+proc put-glider int int in
+  let row col in
+    1 row 0 + col 1 + current !8
+    1 row 1 + col 2 + current !8
+    1 row 2 + col 0 + current !8
+    1 row 2 + col 1 + current !8
+    1 row 2 + col 2 + current !8
+  end
 end
 
 proc main in
   memory delta_time sizeof(timespec) end
   100000000 delta_time 8 ptr+ !64
 
-  board_current put_glider
+  0 while dup 5 < do
+    peek i in
+      i 4 * i 4 * put-glider
+    end
+    1 +
+  end drop
 
   while true do
-    display_current_board
-    compute_next_board
+    display-current
+    compute-next
     swap-boards
 
     NULL delta_time 0 CLOCK_MONOTONIC clock_nanosleep drop
