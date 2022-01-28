@@ -439,6 +439,27 @@ const sizeof(stat.st_atim) sizeof(timespec) end
 const sizeof(stat.st_mtim) sizeof(timespec) end
 const sizeof(stat.st_ctim) sizeof(timespec) end
 
+const sizeof(sockaddr) 16 end
+const sockaddr_in.sin_family 0 end
+const sockaddr_in.sin_port 2 end
+const sockaddr_in.sin_addr 4 end
+const sizeof(sockaddr_in.sin_family) 2 end
+const sizeof(sockaddr_in.sin_port) 2 end
+const sizeof(sockaddr_in.sin_addr) 4 end
+
+const AF_INET 2 end
+const SOCK_STREAM 1 end
+// NOTE: This is not standard. I invented this constant as an opposite ot INADDR_ANY
+const INADDR_LOCAL 16777343 end
+
+proc htons int -- int in
+  let x in
+    x       255 and 8 shl
+    x 8 shr 255 and
+    or
+  end
+end
+
 // Wrappers for common syscalls
 inline proc write int ptr int -- int in SYS_write syscall3 end
 inline proc read int ptr int -- int in SYS_read syscall3 end
@@ -459,6 +480,10 @@ inline proc fcntl int int int -- int in SYS_fcntl syscall3 end
 inline proc kill int int -- int in SYS_kill syscall2 end
 // TODO: possible confusion with `dup` intrinsic
 inline proc dup2 int int -- int in SYS_dup2 syscall2 end
+inline proc socket int int int -- int in SYS_socket syscall3 end
+inline proc bind int ptr int -- int in SYS_bind syscall3 end
+inline proc listen int int -- int in SYS_listen syscall2 end
+inline proc accept ptr ptr int -- int in SYS_accept syscall3 end
 
 inline proc /    int int -- int in divmod drop end
 inline proc %    int int -- int in divmod swap drop end
