@@ -664,7 +664,7 @@ proc intrinsic-name
   int ptr // name
 in
   assert "Exhaustive handling of Intrinsics in intrinsic-name" COUNT_INTRINSICS 46 = end
-       dup INTRINSIC_PLUS      = if  drop "ptr+"
+       dup INTRINSIC_PLUS      = if  drop "+"
   else dup INTRINSIC_MINUS     = if* drop "-"
   else dup INTRINSIC_MUL       = if* drop "*"
   else dup INTRINSIC_DIVMOD    = if* drop "divmod"
@@ -1333,6 +1333,27 @@ in
   end
 end
 
+proc generate-op-comment ptr int in
+  let op fd in
+    op Op.type    ptr+ @int
+    op Op.operand ptr+ @int
+    op Op.token   ptr+
+    let type operand token in
+      " ;; "                   fd fputs
+      token Token.loc ptr+     fd fputloc
+      ": "                     fd fputs
+      type op-type-as-str      fd fputs
+      " "                      fd fputs
+      type OP_INTRINSIC = if
+        operand intrinsic-name fd fputs
+      else
+        operand                fd fputu
+      end
+      "\n"                     fd fputs
+    end
+  end
+end
+
 proc generate-op-intel-linux-x86_64
   int // ip
   int // out-fd
@@ -1344,17 +1365,11 @@ in
 
     ip sizeof(Op) * ops +ptr
     let op in
+      op fd generate-op-comment
+
       op Op.type ptr+ @int
       op Op.operand ptr+ @int
       let type operand in
-        " ;; "                          fd fputs
-        op Op.token ptr+ Token.loc ptr+ fd fputloc
-        ": "                            fd fputs
-        type op-type-as-str             fd fputs
-        " "                             fd fputs
-        operand                         fd fputu
-        "\n"                            fd fputs
-
         assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 24 = end
         type OP_PUSH_INT = if
            "    mov rax, "   fd fputs operand fd fputu "\n" fd fputs
