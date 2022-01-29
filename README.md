@@ -2,7 +2,7 @@
 
 **EXTREMELY IMPORTANT! THIS LANGUAGE IS A WORK IN PROGRESS! ANYTHING CAN CHANGE AT ANY MOMENT WITHOUT ANY NOTICE! USE THIS LANGUAGE AT YOUR OWN RISK! SEE [CONTRIBUTING.md](./CONTRIBUTING.md) IF YOU HAVE A DESIRE TO CONTRIBUTE TO THIS PROJECT!**
 
-Porth is a [concatenative](https://en.wikipedia.org/wiki/Concatenative_programming_language) [stack-oriented](https://en.wikipedia.org/wiki/Stack-oriented_programming) [programming language](https://en.wikipedia.org/wiki/Programming_language) for [computers](https://en.wikipedia.org/wiki/Computer)
+Porth is a [Concatenative](https://en.wikipedia.org/wiki/Concatenative_programming_language) [Stack-Oriented](https://en.wikipedia.org/wiki/Stack-oriented_programming) [Programming Language](https://en.wikipedia.org/wiki/Programming_language) for [Computers](https://en.wikipedia.org/wiki/Computer)
 
 *(If you never heard about this kind of languages before check out [https://concatenative.org/](https://concatenative.org/))*
 
