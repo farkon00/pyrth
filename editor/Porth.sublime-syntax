@@ -1,7 +1,7 @@
 %YAML 1.2
 ---
 # Usage Instruction
-# Put this file in:
+# Put this file and "Porth.Comments.tmPreferences" in:
 # - Linux: $home/.config/sublime-text/Packages/User
 # - Mac: $home/Library/Application Support/Sublime Text/Packages/User
 # - Windows: %appdata%\Sublime Text\Packages\User
