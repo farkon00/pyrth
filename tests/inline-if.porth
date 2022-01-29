@@ -1,0 +1,5 @@
+inline proc foo in
+  1 cast(bool) if end
+end
+
+proc main in end
