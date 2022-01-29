@@ -10,9 +10,6 @@ proc main in
   memory servaddr sizeof(sockaddr) end
   memory cliaddr sizeof(sockaddr) end
   memory clilen sizeof(u32) end
-  memory quit sizeof(bool) end
-
-  false quit !bool
 
   0 SOCK_STREAM AF_INET socket
   let fd in
@@ -46,7 +43,7 @@ proc main in
 
     "Successfully started listening\n" puts
 
-    while quit @bool lnot do
+    while
       clilen cliaddr fd accept
       let connfd in
         connfd 0 < if
@@ -79,7 +76,7 @@ proc main in
               "\r\n"                                 connfd fputs
               "<h1>Shutting down the server!</h1>\n" connfd fputs
 
-              true quit !bool
+              false // break
             else n s "/" streq if*
               request-count inc64
 
@@ -93,6 +90,8 @@ proc main in
               request-count @int                     connfd fputu
               " times</p>\n"                         connfd fputs
               "<p><a href=\"/quit\">Quit</a></p>"    connfd fputs
+
+              true // continue
             else
               "HTTP/1.1 404 NOT OK\r\n"              connfd fputs
               "Server: HTTPorth\r\n"                 connfd fputs
@@ -100,12 +99,14 @@ proc main in
               "Connection: Closed\r\n"               connfd fputs
               "\r\n"                                 connfd fputs
               "<h1>404!</h1>\n"                      connfd fputs
+
+              true // continue
             end
           end
         end
         connfd close drop
       end
-    end
+    do end
 
     fd close drop
   end
