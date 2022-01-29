@@ -1,0 +1,5 @@
+inline proc foo in
+  while 0 cast(bool) do end
+end
+
+proc main in end

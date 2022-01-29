@@ -2852,6 +2852,24 @@ in
         token Token.value ptr+ @64
           assert "Exhaustive handling of keywords in compile-file-into-ops" COUNT_KEYWORDS 21 = end
           dup KEYWORD_IF = if
+            current-proc
+            let p in
+              p NULL ptr!= if
+                p Proc.inlinable ptr+ @bool if
+                  // NOTE: `if*` and `else` are also not allowed in inlinable procedures yet,
+                  // but because they can't exist in without just `if` we don't check this
+                  // condition for them
+                  //
+                  // - rexim 30.01.2022
+                  token Token.loc ptr+                                                eputloc
+                  ": ERROR: conditions are not allowed in inlinable procedures yet\n" eputs
+                  p Proc.loc ptr+                                                     eputloc
+                  ": NOTE: the procedure starts here\n"                               eputs
+                  1 exit
+                end
+              end
+            end
+
             ops-count @64 parse-block-stack-push
             OP_IF 0 token push-op
           else dup KEYWORD_IFSTAR = if*
@@ -2897,6 +2915,19 @@ in
             drop // if_op
             drop // if_ip
           else dup KEYWORD_WHILE = if*
+            current-proc
+            let p in
+              p NULL ptr!= if
+                p Proc.inlinable ptr+ @bool if
+                  token Token.loc ptr+                                                 eputloc
+                  ": ERROR: while loops are not allowed in inlinable procedures yet\n" eputs
+                  p Proc.loc ptr+                                                      eputloc
+                  ": NOTE: the procedure starts here\n"                                eputs
+                  1 exit
+                end
+              end
+            end
+
             ops-count @64 parse-block-stack-push
             OP_WHILE 0 token push-op
           else dup KEYWORD_DO = if*
@@ -3124,14 +3155,25 @@ in
               8 /
               8 *
 
-              inside-proc @bool if
-                local-memory-capacity @64 memori Memory.offset ptr+ !64
-                local-memory-capacity @64 + local-memory-capacity !64
-                memori local-memory-define
-              else
-                global-memory-capacity @64 memori Memory.offset ptr+ !64
-                global-memory-capacity @64 + global-memory-capacity !64
-                memori global-memory-define
+              current-proc
+              let p in
+                p NULL ptr!= if
+                  p Proc.inlinable ptr+ @bool if
+                    token Token.loc ptr+                                                    eputloc
+                    ": ERROR: local memories are not allowed in inlinable procedures yet\n" eputs
+                    p Proc.loc ptr+                                                     eputloc
+                    ": NOTE: the procedure starts here\n"                               eputs
+                    1 exit
+                  end
+
+                  local-memory-capacity @64 memori Memory.offset ptr+ !64
+                  local-memory-capacity @64 + local-memory-capacity !64
+                  memori local-memory-define
+                else
+                  global-memory-capacity @64 memori Memory.offset ptr+ !64
+                  global-memory-capacity @64 + global-memory-capacity !64
+                  memori global-memory-define
+                end
               end
             end
           else dup KEYWORD_ASSERT = if*
