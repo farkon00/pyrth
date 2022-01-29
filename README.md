@@ -1,25 +1,20 @@
 # Porth
 
-**WARNING! THIS LANGUAGE IS A WORK IN PROGRESS! ANYTHING CAN CHANGE AT ANY MOMENT WITHOUT ANY NOTICE! USE THIS LANGUAGE AT YOUR OWN RISK!**
+**EXTREMELY IMPORTANT! THIS LANGUAGE IS A WORK IN PROGRESS! ANYTHING CAN CHANGE AT ANY MOMENT WITHOUT ANY NOTICE! USE THIS LANGUAGE AT YOUR OWN RISK! SEE [CONTRIBUTING.md](./CONTRIBUTING.md) IF YOU HAVE A DESIRE TO CONTRIBUTE TO THIS PROJECT!**
 
-It's like [Forth](https://en.wikipedia.org/wiki/Forth_(programming_language)) but written in [Porth](./porth.porth). But I don't actually know for sure since I never programmed in Forth, I only heard that it's some sort of stack-based programming language. Porth is also stack-based programming language. Which makes it just like Forth am I rite?
+Porth is a [concatenative](https://en.wikipedia.org/wiki/Concatenative_programming_language) [stack-oriented](https://en.wikipedia.org/wiki/Stack-oriented_programming) [programming language](https://en.wikipedia.org/wiki/Programming_language) for [computers](https://en.wikipedia.org/wiki/Computer)
 
-Porth is planned to be
-- [x] Compiled
-- [x] Native
-- [x] Stack-based (just like Forth)
+*(If you never heard about this kind of languages before check out [https://concatenative.org/](https://concatenative.org/))*
+
+## Development Milestones
+
+- [x] Compiled to a native instruction set (only x86_64 for now)
 - [x] [Turing-complete](./examples/rule110.porth)
-- [x] Statically typed (the type checking is similar to [WASM validation](https://binji.github.io/posts/webassembly-type-checking/))
-- [x] Self-hosted (See [./porth.porth](./porth.porth), it is actually written in itself)
+- [x] Statically typed (the type checking is inspired by [WASM validation](https://binji.github.io/posts/webassembly-type-checking/))
+- [x] [Self-hosted](https://en.wikipedia.org/wiki/Self-hosting_(compilers)) (See [./porth.porth](./porth.porth), it is actually written in itself)
 - [ ] More or else close in convenience to C
 - [ ] Optimized
 - [ ] Crossplatform
-
-(these are not the selling points, but rather milestones of the development)
-
-## The Use Case for The Language
-
-Porth is a Computer [Programming Language](https://en.wikipedia.org/wiki/Programming_language). It's designed to write programs for [Computers](https://en.wikipedia.org/wiki/Computer).
 
 ## Examples
 
