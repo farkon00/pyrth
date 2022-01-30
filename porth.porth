@@ -4713,7 +4713,6 @@ in
     "    com [OPTIONS] <file>  Compile the program\n"                                          fd fputs
     "      OPTIONS:\n"                                                                         fd fputs
     // TODO: implement -o flag for com subcommand
-    "                            Specify `-t list` to list all available targets.\n"           fd fputs
     "        -r                  Run the program after successful compilation\n"               fd fputs
     "        -s                  Silent mode. Don't print any info about compilation phases\n" fd fputs
     "    dump <file>           Dump the ops of the program\n"                                  fd fputs
