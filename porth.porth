@@ -3145,7 +3145,10 @@ in
             lexer eval-const-value
             let type size in
               type DATATYPE_INT != if
-                here eputs ": TODO: memory size must be `int` error\n" eputs
+                token Token.loc ptr+ eputloc
+                ": ERROR: Expected memory size to be `int` but got `" eputs
+                type datatype-name eputs
+                "` instead\n" eputs
                 1 exit
               end
 
