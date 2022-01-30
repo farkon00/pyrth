@@ -3070,7 +3070,7 @@ in
                   true swap Module.finished ptr+ !bool
                 else module Module.finished ptr+ @bool lnot if*
                   // TODO: report more information on detected loop
-                  // Preferable the whole path of the loop
+                  // Preferably the whole "path" of the loop
                   token Token.loc ptr+ eputloc
                   ": ERROR: include loop\n" eputs
                   1 exit
