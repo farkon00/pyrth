@@ -49,3 +49,4 @@ str-chop-by-delim-2
 inline-if
 inline-while
 inline-memory
+normpath
