@@ -1534,3 +1534,86 @@ in
     end
   end
 end
+
+// Heavily inspired by Python's os.path.normpath
+proc normpath int ptr -- int ptr in
+  let n s in
+    tmp-end // start of the components stack
+    0       // m - size of the components stack
+    n s
+
+    // count leading slashes
+    n s 0
+    while
+      peek n s _ in
+        n 0 > if s @8 '/' = else false end
+      end
+    do
+      let n s count in
+        n 1 -
+        s 1 ptr+
+        count 1 +
+      end
+    end
+    let _ _ count in count end
+  end
+
+  let leading-slashes in
+    while peek n _ in n 0 > end do
+      '/' str-chop-by-delim-2
+      let m n1 s1 n0 s0 in
+        n0 s0 ".." streq if
+          m 0 > if
+            tmp-end sizeof(Str) ptr-
+            let p in
+              p @Str ".." streq if
+                n0 s0 sizeof(Str) tmp-alloc !Str
+                m 1 +
+              else
+                p tmp-rewind
+                m 1 -
+              end
+            end
+          else
+            leading-slashes 0 > if
+              m
+            else
+              n0 s0 sizeof(Str) tmp-alloc !Str
+              m 1 +
+            end
+          end
+        else n0 s0 "." streq lnot if n0 s0 "" streq else true end if*
+          m // ignore
+        else
+          n0 s0 sizeof(Str) tmp-alloc !Str
+          m 1 +
+        end
+        n1 s1
+      end
+    end
+
+    let start m _ _ in
+      tmp-end
+      let s in
+        m 0 > if
+          0 while dup m < do
+            // NOTE: POSIX allows one or two initial slashes, but treats three or more
+            // as single slash.
+            dup 0 > if
+              "/" tmp-append drop
+            else leading-slashes 2 = if*
+              "//" tmp-append drop
+            else leading-slashes 0 > if*
+              "/" tmp-append drop
+            end
+            dup sizeof(Str) * start +ptr @Str tmp-append drop
+            1 +
+          end drop
+        else
+          "." tmp-append drop
+        end
+        tmp-end s ptr-diff s
+      end
+    end
+  end
+end
