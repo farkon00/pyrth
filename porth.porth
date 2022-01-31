@@ -2342,8 +2342,12 @@ in
           swap
         drop
       else
-        here eputs ": TODO: report unsupported token type in proc definition \n" eputs
-        token Token.loc ptr+ eputloc ": located in here\n" eputs
+        token Token.loc ptr+                                     eputloc
+        ": ERROR: "                                              eputs
+        token Token.type ptr+ @int HUMAN_PLURAL human-token-type eputs
+        " are not supported in procedure definition. Only "      eputs
+        TOKEN_WORD HUMAN_PLURAL human-token-type                 eputs
+        " are supported.\n"                                      eputs
         1 exit
         false // break, compile error
       end
@@ -3145,10 +3149,12 @@ in
             lexer eval-const-value
             let type size in
               type DATATYPE_INT != if
-                token Token.loc ptr+ eputloc
-                ": ERROR: Expected memory size to be `int` but got `" eputs
-                type datatype-name eputs
-                "` instead\n" eputs
+                token Token.loc ptr+                    eputloc
+                ": ERROR: Expected memory size to be `" eputs
+                DATATYPE_INT datatype-name              eputs
+                "` but got `"                           eputs
+                type datatype-name                      eputs
+                "` instead\n"                           eputs
                 1 exit
               end
 
