@@ -139,7 +139,7 @@ This is what the language supports so far. **Since the language is a work in pro
 
 #### Integer
 
-Currently an integer is a sequence of decimal digits. Only unsigned integers are supported right now. When an integer is encountered it is pushed onto the data stack for processing by the relevant operations.
+Currently an integer is a sequence of decimal digits that optionally starts with a dash (`-`) to indicate a negative integer. When an integer is encountered it is pushed onto the data stack for processing by the relevant operations.
 
 Example:
 
