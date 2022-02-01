@@ -61,8 +61,8 @@ proc count-nbors int int -- int in
   0 nbors !int
 
   let row col in
-    0 1 - while dup 1 <= do // @negative
-      0 1 - while dup 1 <= do
+    -1 while dup 1 <= do
+      -1 while dup 1 <= do
         peek drow dcol in
           drow 0 != dcol 0 != lor if
             row drow + ROWS emod

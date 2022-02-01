@@ -345,7 +345,7 @@ const SYS_process_vm_writev 311 end
 const SYS_kcmp 312 end
 const SYS_finit_module 313 end
 
-const AT_FDCWD 0 100 - end
+const AT_FDCWD -100 end
 
 const O_RDONLY 0 end
 const O_WRONLY 1 end
@@ -848,24 +848,39 @@ proc try-parse-int
   int bool
 in
   over 0 > if
-    0 // result
-    while
-      peek n s result in
-        n 0 > if s @8 ?digit else false end
-      end
-    do
-      let n s result in
+    let n s in
+      s @8 '-' =
+
+      dup if
         n 1 -
         s 1 ptr+
-
-        result 10 *
-        s @8 '0' -
-        +
-      end
+      else n s end
     end
 
-    let n _ result in
-      result n 0 <=
+    over 0 > if
+      0 // result
+      while
+        peek n s result in
+          n 0 > if s @8 ?digit else false end
+        end
+      do
+        let n s result in
+          n 1 -
+          s 1 ptr+
+
+          result 10 *
+          s @8 '0' -
+          +
+        end
+      end
+
+      let minus n _ result in
+        result
+        minus if not 1 + end
+        n 0 <=
+      end
+    else
+      let _ _ _ in 0 false end
     end
   else
     drop drop
@@ -875,7 +890,6 @@ end
 
 const PUTU_BUFFER_CAP 32 end
 // TODO: fputu should fail if write call fails
-// TODO: fputu does not print negative numbers
 proc fputu
   int // number
   int // fd
@@ -898,6 +912,21 @@ in
     buffer PUTU_BUFFER_CAP ptr+ swap ptr-diff swap fd @64 fputs
   end
   drop
+end
+
+proc fputi
+  int // number
+  int // fd
+in
+  let number fd in
+    number 0 < if
+      "-" fd fputs
+      number not 1 +
+    else
+      number
+    end
+    fd fputu
+  end
 end
 
 proc fput0u
@@ -938,6 +967,8 @@ in
 end
 
 // TODO: implement putx that prints a number in hex
+
+inline proc puti int in stdout fputi end
 
 inline proc putu int in stdout fputu end
 inline proc put0u int int in stdout fput0u end
@@ -1182,8 +1213,7 @@ in
   0                   // mode
   O_RDONLY            // flags
   file-path-cstr @ptr // pathname
-  // TODO: this is lame, let's just support negative numbers properly
-  0 100 - // AT_FDCWD            // dirfd
+  AT_FDCWD            // dirfd
   openat
 
   dup 0 < if
@@ -1225,6 +1255,8 @@ in
   end
 end
 
+inline proc neg int -- int in not 1 + end
+
 proc ?file-exist ptr -- bool in
   memory statbuf sizeof(stat) end
 
@@ -1232,7 +1264,7 @@ proc ?file-exist ptr -- bool in
 
   dup 0 = if
     drop true
-  else dup 0 ENOENT - = if* // @negative
+  else dup ENOENT neg = if*
     drop false
   else
     drop false
@@ -1473,8 +1505,7 @@ in
           0                   // mode
           O_RDONLY            // flags
           "/dev/null"c        // pathname
-          // TODO: this is lame, let's just support negative numbers properly @negative
-          0 100 - // AT_FDCWD // dirfd
+          AT_FDCWD // dirfd
           openat
 
           dup 0 < if
@@ -1497,7 +1528,7 @@ in
           NULL
           0
           wstatus
-          0 1 - // TODO: replace this with -1 when we support negative numbers @negative
+          -1
           wait4 0 < if
             "[ERROR] could not wait until the child process has finished executing\n" eputs
             1 exit

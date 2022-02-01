@@ -7,7 +7,7 @@ proc test-try-parse-int int ptr in
     let x ok in
       ok if
         "Successfully parsed " puts
-        x                      putu
+        x                      puti
         "\n"                   puts
       else
         "\""                   puts
@@ -24,7 +24,6 @@ proc main in
   "1234"       test-try-parse-int
   "0987654321" test-try-parse-int
   "abcd"       test-try-parse-int
-
-  // TODO: try-parse-int does not parse negative numbers
-  // "-1234" test-try-parse-int
+  "-1234"      test-try-parse-int
+  "-"          test-try-parse-int
 end
