@@ -1779,8 +1779,7 @@ in
     420                            // mode
     O_CREAT O_WRONLY or O_TRUNC or // flags
     file-path                      // pathname
-    // TODO: this is lame, let's just support negative numbers properly @negative
-    0 100 -                        // AT_FDCWD
+    AT_FDCWD
     openat
 
     let fd in

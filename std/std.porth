@@ -345,7 +345,7 @@ const SYS_process_vm_writev 311 end
 const SYS_kcmp 312 end
 const SYS_finit_module 313 end
 
-const AT_FDCWD 0 100 - end
+const AT_FDCWD -100 end
 
 const O_RDONLY 0 end
 const O_WRONLY 1 end
@@ -890,7 +890,6 @@ end
 
 const PUTU_BUFFER_CAP 32 end
 // TODO: fputu should fail if write call fails
-// TODO: fputu does not print negative numbers
 proc fputu
   int // number
   int // fd
@@ -1214,8 +1213,7 @@ in
   0                   // mode
   O_RDONLY            // flags
   file-path-cstr @ptr // pathname
-  // TODO: this is lame, let's just support negative numbers properly
-  0 100 - // AT_FDCWD            // dirfd
+  AT_FDCWD            // dirfd
   openat
 
   dup 0 < if
@@ -1257,6 +1255,8 @@ in
   end
 end
 
+inline proc neg int -- int in not 1 + end
+
 proc ?file-exist ptr -- bool in
   memory statbuf sizeof(stat) end
 
@@ -1264,7 +1264,7 @@ proc ?file-exist ptr -- bool in
 
   dup 0 = if
     drop true
-  else dup 0 ENOENT - = if* // @negative
+  else dup ENOENT neg = if*
     drop false
   else
     drop false
@@ -1505,8 +1505,7 @@ in
           0                   // mode
           O_RDONLY            // flags
           "/dev/null"c        // pathname
-          // TODO: this is lame, let's just support negative numbers properly @negative
-          0 100 - // AT_FDCWD // dirfd
+          AT_FDCWD // dirfd
           openat
 
           dup 0 < if
@@ -1529,7 +1528,7 @@ in
           NULL
           0
           wstatus
-          0 1 - // TODO: replace this with -1 when we support negative numbers @negative
+          -1
           wait4 0 < if
             "[ERROR] could not wait until the child process has finished executing\n" eputs
             1 exit
