@@ -2802,12 +2802,6 @@ in
   end
 
   let path-cstr in
-    silent @bool lnot if
-      "[INFO] Compiling "   puts
-      path-cstr cstr-to-str puts
-      "\n"                  puts
-    end
-
     modules-count @int
     sizeof(Module) *
     modules +ptr
@@ -2872,7 +2866,7 @@ in
 
     let i path in
       i include-paths-count @int < if
-        path cstr-to-str true
+        path cstr-to-str normpath true
       else
         str-null false
       end
@@ -2884,6 +2878,12 @@ proc compile-file-into-ops
   ptr  // file path cstr
 in
   let file-path-cstr in
+    silent @bool lnot if
+      "[INFO] Compiling "        puts
+      file-path-cstr cstr-to-str puts
+      "\n"                       puts
+    end
+
     memory lexer sizeof(Lexer) end
     sizeof(Lexer) 0 lexer memset drop
     file-path-cstr map-file    lexer Lexer.content   ptr+ !Str
@@ -3089,9 +3089,9 @@ in
               1 exit
             end
 
-            fpb-end
 
             tmp-end
+            let s in
               token Token.value ptr+ @Str include-paths-resolve-file lnot if
                 token Token.loc ptr+        eputloc
                 ": ERROR: file `"           eputs
@@ -3099,15 +3099,24 @@ in
                 "` not found\n"             eputs
                 1 exit
               end
-              fpb-append drop
-              1 fpb-alloc drop
-            tmp-rewind
 
-            let include-path in
-              include-path module-lookup
+              let n s in
+                fpb-end
+                n s fpb-append drop
+                1 fpb-alloc drop
+
+                fpb-end
+                n s abspath fpb-append drop
+                1 fpb-alloc drop
+              end
+              s tmp-rewind
+            end
+
+            let include-path abs-include-path in
+              abs-include-path module-lookup
               let module in
                 module NULL ptr= if
-                  include-path module-start
+                  abs-include-path module-start
                     include-path compile-file-into-ops
                   true swap Module.finished ptr+ !bool
                 else module Module.finished ptr+ @bool lnot if*
@@ -3558,6 +3567,7 @@ proc compile-program-into-ops ptr in
           1 exit
         end
 
+        // TODO: should we normalize the entry module path before the compilation?
         file-path-cstr module-start
           file-path-cstr compile-file-into-ops
         true swap Module.finished ptr+ !bool

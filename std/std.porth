@@ -357,8 +357,16 @@ const O_NONBLOCK 2048 end
 const F_SETFL 4 end
 const F_GETFL 3 end
 
+const EACCES 13 end
 const EAGAIN 11 end
+const EFAULT 14 end
+const EIO 5 end
+const ELOOP 40 end
+const ENAMETOOLONG 36 end
 const ENOENT 2 end
+const ENOMEM 12 end
+const ENOTDIR 20 end
+const EPERM 1 end
 
 const CLOCK_MONOTONIC 1 end
 const TIMER_ABSTIME 1 end
@@ -486,6 +494,7 @@ inline proc bind int ptr int -- int in SYS_bind syscall3 end
 inline proc listen int int -- int in SYS_listen syscall2 end
 inline proc accept ptr ptr int -- int in SYS_accept syscall3 end
 inline proc getcwd int ptr -- int in SYS_getcwd syscall2 end
+inline proc chroot ptr -- int in SYS_chroot syscall1 end
 
 inline proc /    int int -- int in divmod drop end
 inline proc %    int int -- int in divmod swap drop end
@@ -1654,19 +1663,29 @@ end
 
 const PATH_MAX 4096 end
 
+proc isabs int ptr -- bool in
+  let n s in
+    n 0 > if s @8 '/' = else false end
+  end
+end
+
 proc abspath int ptr -- int ptr in
   let n s in
-    PATH_MAX tmp-alloc
-    let buf in
-      PATH_MAX buf getcwd 0 < if
-        "ERROR: getcwd failed\n" eputs
-        1 exit
+    n s isabs if
+      n s normpath
+    else
+      PATH_MAX tmp-alloc
+      let buf in
+        PATH_MAX buf getcwd 0 < if
+          "ERROR: getcwd failed\n" eputs
+          1 exit
+        end
+        tmp-end
+        buf cstr-to-str tmp-append drop
+        "/"             tmp-append drop
+        n s             tmp-append drop
+        let s in tmp-end s ptr-diff s normpath end
       end
-      tmp-end
-      buf cstr-to-str tmp-append drop
-      "/"             tmp-append drop
-      n s             tmp-append drop
-      let s in tmp-end s ptr-diff s normpath end
     end
   end
 end
