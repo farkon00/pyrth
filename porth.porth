@@ -1984,6 +1984,7 @@ in
   memory token sizeof(Token) end
 
   token lexer @ptr lexer-next-token lnot if
+    token Token.loc ptr+ lexer @ptr lexer-get-loc
     token Token.loc ptr+                               eputloc
     ": ERROR: expected procedure name after keyword `" eputs
     KEYWORD_CALL_LIKE keyword-name                     eputs
@@ -2033,6 +2034,7 @@ in
   memory token sizeof(Token) end
 
   token lexer @ptr lexer-next-token lnot if
+    token Token.loc ptr+ lexer @ptr lexer-get-loc
     token Token.loc ptr+                               eputloc
     ": ERROR: expected procedure name after keyword `" eputs
     KEYWORD_ADDR_OF keyword-name                       eputs
