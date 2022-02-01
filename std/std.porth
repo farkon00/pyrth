@@ -848,24 +848,39 @@ proc try-parse-int
   int bool
 in
   over 0 > if
-    0 // result
-    while
-      peek n s result in
-        n 0 > if s @8 ?digit else false end
-      end
-    do
-      let n s result in
+    let n s in
+      s @8 '-' =
+
+      dup if
         n 1 -
         s 1 ptr+
-
-        result 10 *
-        s @8 '0' -
-        +
-      end
+      else n s end
     end
 
-    let n _ result in
-      result n 0 <=
+    over 0 > if
+      0 // result
+      while
+        peek n s result in
+          n 0 > if s @8 ?digit else false end
+        end
+      do
+        let n s result in
+          n 1 -
+          s 1 ptr+
+
+          result 10 *
+          s @8 '0' -
+          +
+        end
+      end
+
+      let minus n _ result in
+        result
+        minus if not 1 + end
+        n 0 <=
+      end
+    else
+      let _ _ _ in 0 false end
     end
   else
     drop drop
@@ -898,6 +913,21 @@ in
     buffer PUTU_BUFFER_CAP ptr+ swap ptr-diff swap fd @64 fputs
   end
   drop
+end
+
+proc fputi
+  int // number
+  int // fd
+in
+  let number fd in
+    number 0 < if
+      "-" fd fputs
+      number not 1 +
+    else
+      number
+    end
+    fd fputu
+  end
 end
 
 proc fput0u
@@ -938,6 +968,8 @@ in
 end
 
 // TODO: implement putx that prints a number in hex
+
+inline proc puti int in stdout fputi end
 
 inline proc putu int in stdout fputu end
 inline proc put0u int int in stdout fput0u end
