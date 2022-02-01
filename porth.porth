@@ -2872,7 +2872,7 @@ in
 
     let i path in
       i include-paths-count @int < if
-        path cstr-to-str true
+        path cstr-to-str abspath true
       else
         str-null false
       end
@@ -3558,6 +3558,7 @@ proc compile-program-into-ops ptr in
           1 exit
         end
 
+        // TODO: should we normalize the entry module path before the compilation?
         file-path-cstr module-start
           file-path-cstr compile-file-into-ops
         true swap Module.finished ptr+ !bool
