@@ -484,6 +484,7 @@ inline proc socket int int int -- int in SYS_socket syscall3 end
 inline proc bind int ptr int -- int in SYS_bind syscall3 end
 inline proc listen int int -- int in SYS_listen syscall2 end
 inline proc accept ptr ptr int -- int in SYS_accept syscall3 end
+inline proc getcwd int ptr -- int in SYS_getcwd syscall2 end
 
 inline proc /    int int -- int in divmod drop end
 inline proc %    int int -- int in divmod swap drop end
@@ -1614,6 +1615,25 @@ proc normpath int ptr -- int ptr in
         end
         tmp-end s ptr-diff s
       end
+    end
+  end
+end
+
+const PATH_MAX 4096 end
+
+proc abspath int ptr -- int ptr in
+  let n s in
+    PATH_MAX tmp-alloc
+    let buf in
+      PATH_MAX buf getcwd 0 < if
+        "ERROR: getcwd failed\n" eputs
+        1 exit
+      end
+      tmp-end
+      buf cstr-to-str tmp-append drop
+      "/"             tmp-append drop
+      n s             tmp-append drop
+      let s in tmp-end s ptr-diff s normpath end
     end
   end
 end
