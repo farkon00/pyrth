@@ -1984,10 +1984,11 @@ in
   memory token sizeof(Token) end
 
   token lexer @ptr lexer-next-token lnot if
+    token Token.loc ptr+ lexer @ptr lexer-get-loc
     token Token.loc ptr+                               eputloc
     ": ERROR: expected procedure name after keyword `" eputs
     KEYWORD_CALL_LIKE keyword-name                     eputs
-    "`. But got nothing."                              eputs
+    "`. But got nothing.\n"                            eputs
     1 exit
   end
 
@@ -2000,6 +2001,7 @@ in
       KEYWORD_CALL_LIKE keyword-name             eputs
       "` but got "                               eputs
       dup HUMAN_SINGULAR human-token-type        eputs
+      "\n"                                       eputs
       1 exit
     end
   drop
@@ -2033,10 +2035,11 @@ in
   memory token sizeof(Token) end
 
   token lexer @ptr lexer-next-token lnot if
+    token Token.loc ptr+ lexer @ptr lexer-get-loc
     token Token.loc ptr+                               eputloc
     ": ERROR: expected procedure name after keyword `" eputs
     KEYWORD_ADDR_OF keyword-name                       eputs
-    "`. But got nothing."                              eputs
+    "`. But got nothing.\n"                            eputs
     1 exit
   end
 
@@ -2049,6 +2052,7 @@ in
       KEYWORD_ADDR_OF keyword-name               eputs
       "` but got "                               eputs
       dup HUMAN_SINGULAR human-token-type        eputs
+      "\n"                                       eputs
       1 exit
     end
   drop
