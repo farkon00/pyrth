@@ -358,6 +358,7 @@ const F_SETFL 4 end
 const F_GETFL 3 end
 
 const EAGAIN 11 end
+const ENOENT 2 end
 
 const CLOCK_MONOTONIC 1 end
 const TIMER_ABSTIME 1 end
@@ -636,6 +637,8 @@ inline proc !Str int ptr ptr in
     s p !Str.data
   end
 end
+
+inline proc str-null -- int ptr in 0 NULL end
 
 inline proc str-chop-one-left ptr in
    dup Str.count dec64
@@ -1229,8 +1232,7 @@ proc ?file-exist ptr -- bool in
 
   dup 0 = if
     drop true
-    // TODO: introduce ENOENT when the negative number stuff is fixed
-  else dup 0 2 - = if*
+  else dup 0 ENOENT - = if* // @negative
     drop false
   else
     drop false
@@ -1637,3 +1639,5 @@ proc abspath int ptr -- int ptr in
     end
   end
 end
+
+inline proc ?null ptr -- bool in NULL ptr= end

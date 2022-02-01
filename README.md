@@ -123,7 +123,7 @@ If you wanna use the Porth compiler separately from its codebase you only need t
 - `./porth` native executable - the compiler itself (see [Bootstrapping](#bootstrapping) for more info on how to get it),
 - [./std/](./std/) - the standard library.
 
-By default the compiler searches files to include in `./` and `./std/`. ~~You can add more search paths via the `-I` flag before the subcommand: `./porth -I <custom-path> com ...`. See `./porth help` for more info.~~ (this is currently broken)
+By default the compiler searches files to include in `./` and `./std/`. You can add more search paths via the `-I` flag before the subcommand: `./porth -I <custom-path> com ...`. See `./porth help` for more info.
 
 ### Editor Support
 
