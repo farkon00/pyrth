@@ -4,5 +4,6 @@
 :i returncode 1
 :b stdout 0
 
-:b stderr 113
+:b stderr 114
 ./tests/addr-of-no-proc-name.porth:2:12: ERROR: expected procedure name after keyword `addr-of`. But got nothing.
+
