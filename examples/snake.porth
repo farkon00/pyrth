@@ -234,7 +234,7 @@ proc main in
   fcntl
   drop
 
-  5 5 DIR_RIGHT 4 spawn-snake
+  5 5 DIR_RIGHT 3 spawn-snake
   spawn-egg
 
   display
