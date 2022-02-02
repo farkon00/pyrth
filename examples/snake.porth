@@ -137,6 +137,7 @@ memory score sizeof(int) end
 memory input 1 end
 
 proc display in
+  "Score: " puts score @int putu "\n" puts
   0 while dup ROWS < do
     0 while dup COLS < do
       peek y x in
@@ -159,6 +160,7 @@ proc display in
     "\n" puts
     1 +
   end drop
+  "WASD to move, Q to quit, SPACE to toggle pause\n" puts
 end
 
 proc spawn-egg in
@@ -235,10 +237,11 @@ proc main in
   5 5 DIR_RIGHT 4 spawn-snake
   spawn-egg
 
+  display
   while quit @bool lnot do
-    "Score: " puts score @int putu "\n" puts
+    27 putch "[" puts ROWS 2 + putu "A" puts
+    27 putch "[" puts COLS     putu "D" puts
     display
-    "WASD to move, Q to quit\n" puts
 
     1 input stdin read
     let ret in
@@ -286,9 +289,6 @@ proc main in
           end
         end
       end
-
-      27 putch "[" puts ROWS 2 + putu "A" puts
-      27 putch "[" puts COLS     putu "D" puts
 
       NULL delta_time 0 CLOCK_MONOTONIC clock_nanosleep drop
     end
