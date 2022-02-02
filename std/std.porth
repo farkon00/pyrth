@@ -409,8 +409,6 @@ inline proc putu int in stdout fputu end
 inline proc put0u int int in stdout fput0u end
 inline proc eputu int in stderr fputu end
 
-// TODO: there is no fputi function that would print signed integers
-
 proc memcpy
   int // size
   ptr // src
