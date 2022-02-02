@@ -1,5 +1,5 @@
-// $ stty -echo -icanon && ./porth com -r ./examples/snake.porth
 include "std.porth"
+include "termios.porth"
 
 const ROWS 10 end
 const COLS 25 end
@@ -195,6 +195,31 @@ in
 end
 
 proc main in
+  memory saved-tattr sizeof(termios) end
+  memory tattr sizeof(termios) end
+
+  stdin isatty lnot if
+    "ERROR: this game can only be played in a terminal" eputs
+    1 exit
+  end
+  drop // ignore the errno, does not really matter in this case
+
+  saved-tattr stdin tcgetattr drop
+  tattr stdin tcgetattr drop
+  tattr termios.c_lflag ptr+
+  let c_lflag in
+    c_lflag @int
+    ICANON ECHO or not
+    and
+    c_lflag !int
+  end
+  tattr termios.c_cc ptr+
+  let c_cc in
+    1 c_cc VMIN  ptr+ !8
+    0 c_cc VTIME ptr+ !8
+  end
+  tattr TCSAFLUSH stdin tcsetattr drop
+
   memory delta_time sizeof(timespec) end
   200000000 delta_time timespec.tv_nsec ptr+ !int
   0 delta_time timespec.tv_sec  ptr+ !int
@@ -243,7 +268,7 @@ proc main in
       let cell in
         cell CELL_SNAKE = if
           "YOU LOST ZULUL\n" puts
-          0 exit
+          true quit !bool
         else cell CELL_EGG = if*
           head-pos @Point snake-add
           spawn-egg
@@ -259,4 +284,8 @@ proc main in
       NULL delta_time 0 CLOCK_MONOTONIC clock_nanosleep drop
     end
   end
+
+  // TODO: restore the terminal state on SIGINT
+  // requires being able to handle POSIX signals I guess
+  saved-tattr TCSANOW stdin tcsetattr drop
 end

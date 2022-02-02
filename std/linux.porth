@@ -344,6 +344,7 @@ const ENOENT 2 end
 const ENOMEM 12 end
 const ENOTDIR 20 end
 const EPERM 1 end
+const EINVAL 22 end
 
 const CLOCK_MONOTONIC 1 end
 const TIMER_ABSTIME 1 end
@@ -435,6 +436,7 @@ inline proc listen int int -- int in SYS_listen syscall2 end
 inline proc accept ptr ptr int -- int in SYS_accept syscall3 end
 inline proc getcwd int ptr -- int in SYS_getcwd syscall2 end
 inline proc chroot ptr -- int in SYS_chroot syscall1 end
+inline proc ioctl ptr int int -- int in SYS_ioctl syscall3 end
 
 inline proc WIFSTOPPED int -- bool in
   // (((x) & 0xff) == 0x7f)
@@ -473,3 +475,47 @@ inline proc WEXITSTATUS int -- int in
 end
 
 const PATH_MAX 4096 end
+
+const sizeof(tcflag_t) sizeof(u32) end
+const sizeof(cc_t) sizeof(u8) end
+const NCCS 32 end
+const termios.c_iflag 0 end
+const termios.c_oflag 4 end
+const termios.c_cflag 8 end
+const termios.c_lflag 12 end
+const termios.c_cc 17 end
+const sizeof(termios) 60 end
+
+// STRUCT winsize { unsigned short ws_row, ws_col, ws_xpixel, ws_ypixel; };
+const winsize.ws_row sizeof(u16) offset end
+const winsize.ws_col sizeof(u16) offset end
+const winsize.ws_xpixel sizeof(u16) offset end
+const winsize.ws_ypixel sizeof(u16) offset end
+const sizeof(winsize) reset end
+
+const TIOCGWINSZ 21523 end // @hex
+const TCGETS 21505 end // @hex
+const TCSETS 21506 end // @hex
+const ICANON 2 end
+const ECHO   8 end
+const VTIME     5 end
+const VMIN      6 end
+
+const TCSAFLUSH 2 end
+const TCSANOW 0 end
+
+proc isatty
+  int // fd
+  --
+  int  // errno
+  bool // is a tty?
+in
+  memory wsz sizeof(winsize) end
+  let fd in
+    wsz TIOCGWINSZ fd ioctl
+    let ret in
+      ret neg
+      ret 0 =
+    end
+  end
+end
