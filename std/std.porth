@@ -1,3 +1,6 @@
+// The main standard library that you probably want to include into
+// your Porth program
+
 include "core.porth"
 include "linux.porth"
 
