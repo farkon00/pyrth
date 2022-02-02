@@ -1,5 +1,5 @@
-// $ stty -echo -icanon && ./porth com -r ./examples/snake.porth
 include "std.porth"
+include "termios.porth"
 
 const ROWS 10 end
 const COLS 25 end
@@ -132,9 +132,12 @@ memory head-pos sizeof(Point) end
 memory head-dir sizeof(Dir) end
 
 memory quit sizeof(bool) end
+memory pause sizeof(bool) end
+memory score sizeof(int) end
 memory input 1 end
 
 proc display in
+  "Score: " puts score @int putu "\n" puts
   0 while dup ROWS < do
     0 while dup COLS < do
       peek y x in
@@ -157,6 +160,7 @@ proc display in
     "\n" puts
     1 +
   end drop
+  "WASD to move, Q to quit, SPACE to toggle pause\n" puts
 end
 
 proc spawn-egg in
@@ -195,6 +199,31 @@ in
 end
 
 proc main in
+  memory saved-tattr sizeof(termios) end
+  memory tattr sizeof(termios) end
+
+  stdin isatty lnot if
+    "ERROR: this game can only be played in a terminal" eputs
+    1 exit
+  end
+  drop // ignore the errno, does not really matter in this case
+
+  saved-tattr stdin tcgetattr drop
+  tattr stdin tcgetattr drop
+  tattr termios.c_lflag ptr+
+  let c_lflag in
+    c_lflag @int
+    ICANON ECHO or not
+    and
+    c_lflag !int
+  end
+  tattr termios.c_cc ptr+
+  let c_cc in
+    1 c_cc VMIN  ptr+ !8
+    0 c_cc VTIME ptr+ !8
+  end
+  tattr TCSAFLUSH stdin tcsetattr drop
+
   memory delta_time sizeof(timespec) end
   200000000 delta_time timespec.tv_nsec ptr+ !int
   0 delta_time timespec.tv_sec  ptr+ !int
@@ -205,10 +234,13 @@ proc main in
   fcntl
   drop
 
-  5 5 DIR_RIGHT 4 spawn-snake
+  5 5 DIR_RIGHT 3 spawn-snake
   spawn-egg
 
+  display
   while quit @bool lnot do
+    27 putch "[" puts ROWS 2 + putu "A" puts
+    27 putch "[" puts COLS     putu "D" puts
     display
 
     1 input stdin read
@@ -227,6 +259,8 @@ proc main in
             DIR_RIGHT head-dir !int
           else cmd 'q' = if*
             true quit !bool
+          else cmd ' ' = if*
+            pause toggle
           end
         end
       else ret 0 EAGAIN - != if*
@@ -234,29 +268,33 @@ proc main in
         1 exit
       end
 
-      head-pos @Point
-      head-dir @int
-      step-point
-      head-pos !Point
+      pause @bool lnot if
+        head-pos @Point
+        head-dir @int
+        step-point
+        head-pos !Point
 
-      head-pos @Point cell-at @int
-      let cell in
-        cell CELL_SNAKE = if
-          "YOU LOST ZULUL\n" puts
-          0 exit
-        else cell CELL_EGG = if*
-          head-pos @Point snake-add
-          spawn-egg
-        else cell CELL_EMPTY = if*
-          snake-del
-          head-pos @Point snake-add
+        head-pos @Point cell-at @int
+        let cell in
+          cell CELL_SNAKE = if
+            "You Died with Score: " puts score @int putu "\n" puts
+            true quit !bool
+          else cell CELL_EGG = if*
+            head-pos @Point snake-add
+            score inc64
+            spawn-egg
+          else cell CELL_EMPTY = if*
+            snake-del
+            head-pos @Point snake-add
+          end
         end
       end
-
-      27 putch "[" puts ROWS putu "A" puts
-      27 putch "[" puts COLS putu "D" puts
 
       NULL delta_time 0 CLOCK_MONOTONIC clock_nanosleep drop
     end
   end
+
+  // TODO: restore the terminal state on SIGINT
+  // requires being able to handle POSIX signals I guess
+  saved-tattr TCSANOW stdin tcsetattr drop
 end
