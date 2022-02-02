@@ -2878,12 +2878,6 @@ proc compile-file-into-ops
   ptr  // file path cstr
 in
   let file-path-cstr in
-    silent @bool lnot if
-      "[INFO] Compiling "        puts
-      file-path-cstr cstr-to-str puts
-      "\n"                       puts
-    end
-
     memory lexer sizeof(Lexer) end
     sizeof(Lexer) 0 lexer memset drop
     file-path-cstr map-file    lexer Lexer.content   ptr+ !Str
@@ -3117,6 +3111,11 @@ in
               let module in
                 module NULL ptr= if
                   abs-include-path module-start
+                    silent @bool lnot if
+                      "[INFO] Including "      puts
+                      include-path cstr-to-str puts
+                      "\n"                     puts
+                    end
                     include-path compile-file-into-ops
                   true swap Module.finished ptr+ !bool
                 else module Module.finished ptr+ @bool lnot if*
@@ -3569,6 +3568,11 @@ proc compile-program-into-ops ptr in
 
         // TODO: should we normalize the entry module path before the compilation?
         file-path-cstr module-start
+          silent @bool lnot if
+            "[INFO] Compiling "        puts
+            file-path-cstr cstr-to-str puts
+            "\n"                       puts
+          end
           file-path-cstr compile-file-into-ops
         true swap Module.finished ptr+ !bool
       "[INFO] Compilation" silent @bool timeit/to-here
