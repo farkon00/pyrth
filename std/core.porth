@@ -1,5 +1,6 @@
 // Core fundamental definitions of Porth that are used by all layers
-// of abstraction
+// of abstraction. This stuff should just work regardless of the
+// target platform.
 
 const NULL 0 cast(ptr) end
 
