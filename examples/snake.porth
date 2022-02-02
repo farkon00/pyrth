@@ -132,6 +132,7 @@ memory head-pos sizeof(Point) end
 memory head-dir sizeof(Dir) end
 
 memory quit sizeof(bool) end
+memory pause sizeof(bool) end
 memory score sizeof(int) end
 memory input 1 end
 
@@ -255,6 +256,8 @@ proc main in
             DIR_RIGHT head-dir !int
           else cmd 'q' = if*
             true quit !bool
+          else cmd ' ' = if*
+            pause toggle
           end
         end
       else ret 0 EAGAIN - != if*
@@ -262,23 +265,25 @@ proc main in
         1 exit
       end
 
-      head-pos @Point
-      head-dir @int
-      step-point
-      head-pos !Point
+      pause @bool lnot if
+        head-pos @Point
+        head-dir @int
+        step-point
+        head-pos !Point
 
-      head-pos @Point cell-at @int
-      let cell in
-        cell CELL_SNAKE = if
-          "YOU LOST ZULUL\n" puts
-          true quit !bool
-        else cell CELL_EGG = if*
-          head-pos @Point snake-add
-          score inc64
-          spawn-egg
-        else cell CELL_EMPTY = if*
-          snake-del
-          head-pos @Point snake-add
+        head-pos @Point cell-at @int
+        let cell in
+          cell CELL_SNAKE = if
+            "You Died with Score: " puts score @int putu "\n" puts
+            true quit !bool
+          else cell CELL_EGG = if*
+            head-pos @Point snake-add
+            score inc64
+            spawn-egg
+          else cell CELL_EMPTY = if*
+            snake-del
+            head-pos @Point snake-add
+          end
         end
       end
 

@@ -114,3 +114,5 @@ inline proc dec8 ptr in dup @8 1 - swap !8 end
 inline proc neg int -- int in not 1 + end
 
 inline proc ?null ptr -- bool in NULL ptr= end
+
+inline proc toggle ptr in dup @bool lnot swap !64 end
