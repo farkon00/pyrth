@@ -27,12 +27,15 @@ proc sort-xs in
   N 1 - i !64
   while i @64 1 > do
     0 while dup i @64 < do
-      dup   sizeof(u64) * xs +ptr @64
-      i @64 sizeof(u64) * xs +ptr @64
-      > if
-        dup   sizeof(u64) * xs +ptr
-        i @64 sizeof(u64) * xs +ptr
-        swap64
+      dup   sizeof(u64) * xs +ptr
+      i @64 sizeof(u64) * xs +ptr
+      let a b in
+        a @int b @int > if
+          a @int
+          b @int
+          a !int
+          b !int
+        end
       end
       1 +
     end drop
