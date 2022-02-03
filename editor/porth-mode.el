@@ -57,8 +57,9 @@
 ;;;###autoload
 (define-derived-mode porth-mode prog-mode "porth"
   "Major Mode for editing Porth source code."
+  :syntax-table porth-mode-syntax-table
   (setq font-lock-defaults '(porth-highlights))
-  (set-syntax-table porth-mode-syntax-table))
+  (setq-local comment-start "// "))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.porth\\'" . porth-mode))
