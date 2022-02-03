@@ -788,82 +788,85 @@ end
 // This will make the code more relocatable which will make it easily inlinable
 
 assert "Exhaustive push IR instructions definition for data types. For each data type we must have a corresponding OP_PUSH_<TYPE> instruction." COUNT_DATATYPES 4 = end
-// Push an integer onto the data stack.
+// OP_PUSH_INT: Push an integer onto the data stack.
 //
 // operand type:    int
 // operand purpose: The number we are pushing.
 const OP_PUSH_INT        1 offset end
-// Push a boolean onto the data stack.
+// OP_PUSH_BOOL: Push a boolean onto the data stack.
 //
 // operand type:    bool
 // operand purpose: The boolean we are pushing.
 const OP_PUSH_BOOL       1 offset end
-// Push a pointer onto the data stack.
+// OP_PUSH_PTR: Push a pointer onto the data stack.
 //
 // operand type:    ptr
 // operand purpose: The pointer we are pushing.
 const OP_PUSH_PTR        1 offset end
-// Push a procedure address onto the data stack.
+// OP_PUSH_ADDR: Push a procedure address onto the data stack.
 //
 // operand type:    addr
 // operand purpose: The procedure address we are pushing.
 const OP_PUSH_ADDR       1 offset end
-// Push a pointer to a local memory region located in the return stack
-// onto the data stack.
+// OP_PUSH_LOCAL_MEM: Push a pointer to a local memory region that is
+// located in the return stack onto the data stack.
 //
 // operand type:    int
 // operand purpose: The offset from the top of the return stack in bytes.
 //                  The pushed pointer should be an absolute value computed
 //                  at runtime using the provided offset.
 const OP_PUSH_LOCAL_MEM  1 offset end
-// Push a pointer to a global memory region onto the data stack.
+// OP_PUSH_GLOBAL_MEM: Push a pointer to a global memory region onto
+// the data stack.
 //
 // operand type:    int
 // operand purpose: The offset from the start of the uninitialized global
 //                  memory region. The pushed pointer should be an absolute
 //                  value computed at compile time using the provided offset.
 const OP_PUSH_GLOBAL_MEM 1 offset end
-// Push a sized string onto the data stack. Pushes two words onto the
-// data stack.  The first word is the size of the string. The second
-// word is the pointer to an initialized global memory region
-// containing the characters of the string.
+// OP_PUSH_STR: Push a sized string onto the data stack. Actually
+// pushes two words onto the data stack. The first word is the size of
+// the string. The second word is the pointer to an initialized global
+// memory region containing the characters of the string.
 //
 // operand type:    int
-// operand purpose: An index in strlits array (See Strlit section for more information).
+// operand purpose: An index in the global strlits array
+//                  (See Strlit section).
 const OP_PUSH_STR        1 offset end
-// Push an unsized NULL-terminated C-style string onto the data
-// stack. Pushes a pointer to an initialized global memory region
-// containing the characters of the string. The sequence of characters
-// of the string always ends with '\0'.
+// OP_PUSH_CSTR: Push an unsized NULL-terminated C-style string onto
+// the data stack. Pushes a pointer to an initialized global memory
+// region containing the characters of the string. The sequence of
+// characters of the string always ends with '\0'.
 //
 // operand type:    int
 // operand purpose: An index in strlits array (See Strlit section for more information).
 const OP_PUSH_CSTR       1 offset end
-// Performs a conditional jump based on the consumed value from the
-// top of the data stack. If the value is `false` jump to the provided
-// address, otherwise "fall-through" to the next instruction. The
-// target jump address - 1 should be always pointing at OP_END or
-// OP_ELSE instruction denoting the boundaries of the if-block.
+// OP_IF: Performs a conditional jump based on the consumed value from
+// the top of the data stack. If the value is `false` jump to the
+// provided address, otherwise "fall-through" to the next
+// instruction. The target jump address - 1 should be always pointing
+// at OP_END or OP_ELSE instruction denoting the boundaries of the
+// if-block.
 //
 // operand type:    addr
 // operand purpose: The address of the code to jump to when the consumed value
 //                  is `false`.
 const OP_IF              1 offset end
-// Performs a conditional jump based on the consumed value from the
-// top of the data stack. If the value is `false` jump to the provided
-// address, otherwise "fall-through" to the next instruction. Always
-// follows OP_ELSE instruction.  The target jump address - 1 should be
-// always pointing at OP_END or OP_ELSE instruction denoting the
-// boundaries of the if-block.
+// OP_IFSTAR: Performs a conditional jump based on the consumed value
+// from the top of the data stack. If the value is `false` jump to the
+// provided address, otherwise "fall-through" to the next
+// instruction. Always follows OP_ELSE instruction. The target jump
+// address - 1 should be always pointing at OP_END or OP_ELSE
+// instruction denoting the boundaries of the if-block.
 //
 // operand type:    addr
 // operand purpose: The address of the code to jump to when the consumed value
 //                  is `false`.
 const OP_IFSTAR          1 offset end
-// Performs an unconditional jump. Always follows OP_IF or OP_IFSTAR
-// instruction. Always jumps to another OP_ELSE or OP_END instruction
-// to short-circuit the entire if-else-if*-end chain when the right
-// condition is found.
+// OP_ELSE: Performs an unconditional jump. Always follows OP_IF or
+// OP_IFSTAR instruction. Always jumps to another OP_ELSE or OP_END
+// instruction to short-circuit the entire if-else-if*-end chain when
+// the right condition is found.
 //
 // TODO: We need to double check the invariants stated above. I don't
 // remember 100% if OP_ELSE works like this right now.
@@ -871,31 +874,108 @@ const OP_IFSTAR          1 offset end
 // operand type:    addr
 // operand purpose: The address of the code to jump to.
 const OP_ELSE            1 offset end
-// Performs an unconditional jump. Always follows OP_DO, OP_IF,
-// OP_IFSTAR, OP_ELSE instructions to denote the ends of the
+// OP_END: Performs an unconditional jump. Always follows OP_DO,
+// OP_IF, OP_IFSTAR, OP_ELSE instructions to denote the ends of the
 // corresponding blocks. Usually jumps to the next instruction or to
 // OP_WHILE if the block it closes is a loop.
 //
 // TODO: OP_END is too semantically overloaded. We may wanna split it
-// into OP_END_IF and OP_END_WHILE (from the use perspective both of
+// into OP_END_IF and OP_END_WHILE (from the user perspective both of
 // them should stay just KEYWORD_END of course). With such semantic
 // separtion it will be easier to distinguish different kinds of
-// blocks which may help in implementation of the WebAssembly target.
+// blocks which may help in the implementation of the WebAssembly
+// target where the entire control flow is built around different
+// kinds of blocks intead of labels and direct jumps.
 //
 // operand type:    addr
 // operand purpose: The address of the code to jump to.
 const OP_END             1 offset end
+// OP_PREP_PROC: Denotes the start of the procedure. Could be used by
+// the targets as an opportuinity to do target specific procedure
+// preparation.
+//
+// operand type:    int
+// operand purpose: the amount of bytes of local memory to allocate
+//                  on the return stack.
 const OP_PREP_PROC       1 offset end
+// OP_RET: Return from the procedure call.
+//
+// operand type:    int
+// operand purpose: the amount of bytes of local memory to deallocate
+//                  from the return stack before trying to pop an actual
+//                  return address from it.
 const OP_RET             1 offset end
+// OP_CALL: Call a procedure.
+//
+// TODO: the operand should be an index in the procs array (See Proc section).
+// This will make the procedures more relocatable which may help with
+// Dead Code Elimination.
+//
+// operand type:    addr
+// operand purpose: the address of the procedure to call
 const OP_CALL            1 offset end
+// OP_INLINED: Denotes the start of the sequence of instructions that
+// were inlined from another procedure. The end of such sequence is
+// denoted by the size of the inlined procedure.
+//
+// operand type:    int
+// operand purpose: the index of the inlined procedure in the global
+//                  procs array (See Proc section)
 const OP_INLINED         1 offset end
+// OP_WHILE: Denotes the beginning of the while loop. Acts like a
+// label for the corresponding OP_END instruction.
+//
+// operand type:    void
+// operand purpose: the operand of this instruction is ignored
 const OP_WHILE           1 offset end
+// OP_DO: Performs a conditional jump based on the consumed value from
+// the top of the data stack. If the value is `false` jump to the
+// provided address, otherwise "fall-through" to the next
+// instruction. Always follows OP_WHILE instruction. The target jump
+// address - 1 should be always pointing at OP_END instruction
+// denoting the boundaries of the while-do-end-block.
+//
+// operand type:    addr
+// operand purpose: The address of the code to jump to when the consumed value
+//                  is `false`.
 const OP_DO              1 offset end
+// OP_INTRINSIC: Calls a built in intrinsic procedure.
+//
+// operand type:    int
+// operand purpose: the id number of the intrinsic procedure
+//                  (See Intrinsics section)
 const OP_INTRINSIC       1 offset end
+// OP_CALL_LIKE: Calls a procedure by the addresss consumed from the
+// top of the data stack.
+//
+// operand type:    int
+// operand purpose: the index of the procedure in the global procs array (See Procs Section)
+//                  to use to type check the call.
 const OP_CALL_LIKE       1 offset end
-const OP_BIND            1 offset end
-const OP_PEEK            1 offset end
+// OP_BIND_LET: Pops N elements from the top of the data stack and
+// pushes them to the return stack
+//
+// operand type:    int
+// operand purpose: the amount of elements to "bind"
+const OP_BIND_LET        1 offset end
+// OP_BIND_PEEK: Takes N elements from the top of the data stack and
+// pushes them to the return stack without removing them from the data
+// stack.
+//
+// operand type:    int
+// operand purpose: the amount of elements to "bind"
+const OP_BIND_PEEK       1 offset end
+// OP_PUSH_BIND: Pushes the value of the bound variable from the
+// return stack onto the data stack
+//
+// operand type:    int
+// operand purpose: the index of the value on the return stack to push onto the data stack.
+//                  The indexing starts from top of the return stack.
 const OP_PUSH_BIND       1 offset end
+// OP_UNBIND: Removes N elements from the return stack.
+//
+// operand type:    int
+// operand purpose: the amount of elements to "unbind"
 const OP_UNBIND          1 offset end
 const COUNT_OPS             reset end
 
@@ -925,8 +1005,8 @@ in
   else dup OP_WHILE           =  if* "OP_WHILE"
   else dup OP_DO              =  if* "OP_DO"
   else dup OP_CALL_LIKE       =  if* "OP_CALL_LIKE"
-  else dup OP_BIND            =  if* "OP_BIND"
-  else dup OP_PEEK            =  if* "OP_PEEK"
+  else dup OP_BIND_LET        =  if* "OP_BIND_LET"
+  else dup OP_BIND_PEEK       =  if* "OP_BIND_PEEK"
   else dup OP_UNBIND          =  if* "OP_UNBIND"
   else dup OP_PUSH_BIND       =  if* "OP_PUSH_BIND"
   else
@@ -1476,7 +1556,7 @@ in
            "    call rbx\n"                 fd fputs
            "    mov [ret_stack_rsp], rsp\n" fd fputs
            "    mov rsp, rax\n"             fd fputs
-        else type OP_BIND = if*
+        else type OP_BIND_LET = if*
           "    mov rax, [ret_stack_rsp]\n"  fd fputs
           "    sub rax, "                   fd fputs
           operand 8 *       fd fputu
@@ -1490,7 +1570,7 @@ in
             "], rbx\n"      fd fputs
             1 -
           end drop
-        else type OP_PEEK = if*
+        else type OP_BIND_PEEK = if*
           "    mov rax, [ret_stack_rsp]\n"  fd fputs
           "    sub rax, "                   fd fputs operand 8 * fd fputu "\n" fd fputs
           "    mov [ret_stack_rsp], rax\n"  fd fputs
@@ -3140,9 +3220,9 @@ in
 
               local-memories-clean
               false inside-proc !bool
-            else dup Op.type ptr+ @64 OP_BIND = if*
+            else dup Op.type ptr+ @64 OP_BIND_LET = if*
               over token enclose-let
-            else dup Op.type ptr+ @64 OP_PEEK = if*
+            else dup Op.type ptr+ @64 OP_BIND_PEEK = if*
               over token enclose-let
             else
               token Token.loc ptr+ eputloc ": ERROR: `end` can only close `if`, `if*`, `else`, `do`, `proc`, `let` or `peek` blocks\n" eputs
@@ -3365,7 +3445,7 @@ in
             ops-count @int
             parse-block-stack-push
 
-            OP_BIND
+            OP_BIND_LET
             lexer parse-bind-list
             token
             push-op
@@ -3373,7 +3453,7 @@ in
             ops-count @int
             parse-block-stack-push
 
-            OP_PEEK
+            OP_BIND_PEEK
             lexer parse-bind-list
             token
             push-op
@@ -3973,7 +4053,7 @@ in
   memory ins sizeof(TypeStack) end
   memory outs sizeof(TypeStack) end
 
-  // TODO: check if the index to the procedure valid
+  // TODO: assert if the index to the procedure valid
   op @ptr Op.operand ptr+ @int sizeof(Proc) * procs +ptr
     sizeof(TypeStack) over Proc.ins  ptr+ ins  memcpy drop
     sizeof(TypeStack) over Proc.outs ptr+ outs memcpy drop
@@ -4304,7 +4384,7 @@ in
         context TypeContext.ip ptr+ inc64
 
         true // continue
-      else op Op.type ptr+ @int OP_BIND = if*
+      else op Op.type ptr+ @int OP_BIND_LET = if*
         op Op.operand ptr+ @int
         op Op.token ptr+
         context
@@ -4312,7 +4392,7 @@ in
 
         context TypeContext.ip ptr+ inc64
         true // continue
-      else op Op.type ptr+ @int OP_PEEK = if*
+      else op Op.type ptr+ @int OP_BIND_PEEK = if*
         op Op.operand ptr+ @int
         op Op.token ptr+
         context
