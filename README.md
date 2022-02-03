@@ -67,16 +67,9 @@ proc main in
   34 35 + print
 end
 $ ./porth com program.porth
-[INFO] Compiling ./program.porth
-[INFO] Compilation took 0.000285715 secs
-[INFO] Type checking took 0.000175608 secs
-[INFO] Generating ./program.asm
-[CMD] fasm -m 524288 ./program.asm ./program.tmp
-flat assembler  version 1.73.09  (524288 kilobytes memory)
-3 passes, 391 bytes.
-[INFO] renaming ./program.tmp -> ./program
-[CMD] chmod +x ./program
-[INFO] Generation took 0.004627095 secs
+...
+... compilation logs ...
+...
 $ ./program
 69
 ```
@@ -153,6 +146,7 @@ The code above pushes 10 and 20 onto the data stack and sums them up with `+` op
 
 Currently a string is any sequence of bytes sandwiched between two `"`. No newlines inside of the strings are allowed. No special support for Unicode is provided right now. You can escape only these things for now:
 - `\n` - new line
+- `\r` - carriage return
 - `\\` - back slash
 - `\"` - double quote
 - `\'` - single quote
@@ -194,13 +188,13 @@ proc main in
   //                    postfix that indicates a C-style string
 
   dup 0 < if
-      "ERROR: could not open the file\n" eputs
-      1 exit
-  else
-      "Successfully opened the file!\n" puts
+    "ERROR: could not open the file\n" eputs
+    1 exit
   end
 
-  close
+  "Successfully opened the file!\n" puts
+
+  close drop
 end
 ```
 
@@ -410,13 +404,13 @@ memory buffer N end
 proc main in
   0 while dup N < do
     dup 'a' +
-    over buffer +
+    over buffer +ptr
     !8
 
     1 +
   end drop
 
-  N buffer puts
+  N buffer puts "\n" puts
 end
 ```
 
@@ -425,13 +419,14 @@ end
 ```porth
 include "std.porth"
 
-proc fib int in
+proc fib int -- int in
   memory a sizeof(u64) end
   memory b sizeof(u64) end
 
   dup 1 > if
     dup 1 - fib a !64
     dup 2 - fib b !64
+    drop
     a @64 b @64 +
   end
 end
@@ -482,7 +477,9 @@ const SAT 1 offset end
 const SUN 1 offset end
 const WEEK_DAYS reset end
 
-"There is " puts WEEK_DAYS putu " days in a week\n" puts
+proc main in
+  "There is " puts WEEK_DAYS putu " days in a week\n" puts
+end
 ```
 
 #### Structs
