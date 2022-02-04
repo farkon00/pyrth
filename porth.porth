@@ -855,7 +855,7 @@ const OP_PUSH_CSTR       1 offset end
 // the top of the data stack. If the value is `false` jump to the
 // provided address, otherwise "fall-through" to the next
 // instruction. The target jump address - 1 should be always pointing
-// at OP_END or OP_ELSE instruction denoting the boundaries of the
+// at OP_END_IF or OP_ELSE instruction denoting the boundaries of the
 // if-block.
 //
 // operand type:    addr
@@ -866,7 +866,7 @@ const OP_IF              1 offset end
 // from the top of the data stack. If the value is `false` jump to the
 // provided address, otherwise "fall-through" to the next
 // instruction. Always follows OP_ELSE instruction. The target jump
-// address - 1 should be always pointing at OP_END or OP_ELSE
+// address - 1 should be always pointing at OP_END_IF or OP_ELSE
 // instruction denoting the boundaries of the if-block.
 //
 // operand type:    addr
@@ -874,7 +874,7 @@ const OP_IF              1 offset end
 //                  is `false`.
 const OP_IFSTAR          1 offset end
 // OP_ELSE: Performs an unconditional jump. Always follows OP_IF or
-// OP_IFSTAR instruction. Always jumps to another OP_ELSE or OP_END
+// OP_IFSTAR instruction. Always jumps to another OP_ELSE or OP_END_IF
 // instruction to short-circuit the entire if-else-if*-end chain when
 // the right condition is found.
 //
@@ -934,7 +934,7 @@ const OP_CALL            1 offset end
 //                  procs array (See Proc section)
 const OP_INLINED         1 offset end
 // OP_WHILE: Denotes the beginning of the while loop. Acts like a
-// label for the corresponding OP_END instruction.
+// label for the corresponding OP_END_WHILE instruction.
 //
 // operand type:    void
 // operand purpose: ignored
@@ -943,7 +943,7 @@ const OP_WHILE           1 offset end
 // the top of the data stack. If the value is `false` jump to the
 // provided address, otherwise "fall-through" to the next
 // instruction. Always follows OP_WHILE instruction. The target jump
-// address - 1 should be always pointing at OP_END instruction
+// address - 1 should be always pointing at OP_END_WHILE instruction
 // denoting the boundaries of the while-do-end-block.
 //
 // operand type:    addr
