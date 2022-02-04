@@ -9,6 +9,16 @@ const Loc.row sizeof(u64) offset end
 const Loc.col sizeof(u64) offset end
 const sizeof(Loc) reset end
 
+inline proc bputloc ptr ptr in
+  let loc bfd in
+    loc Loc.file-path ptr+ @Str bfd bputs
+    ":"                         bfd bputs
+    loc Loc.row ptr+ @64        bfd bputu
+    ":"                         bfd bputs
+    loc Loc.col ptr+ @64        bfd bputu
+  end
+end
+
 inline proc fputloc ptr int in
   let loc fd in
     loc Loc.file-path ptr+ @Str fd fputs
@@ -1434,53 +1444,6 @@ inline proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
 const X86_64_RET_STACK_CAP 64 1024 * end
 
 /// BEGIN Code Generator //////////////////////////////
-const BUFFED_FD_CAP 64 1024 * end
-const BuffedFd.fd    sizeof(int) offset end
-const BuffedFd.buff  sizeof(ptr) offset end
-const BuffedFd.size  sizeof(int) offset end
-const sizeof(BuffedFd) reset end
-
-proc bflush ptr in
-  dup BuffedFd.size ptr+       swap
-  dup BuffedFd.fd ptr+ @int    swap
-      BuffedFd.buff ptr+ @ptr
-  let psize fd buff in
-    psize @int buff fd fputs
-    0 psize !int
-  end
-end
-
-proc bputs
-  int ptr
-  ptr
-in
-  let n s bfd in
-    bfd BuffedFd.size ptr+
-    bfd BuffedFd.fd ptr+ @int
-    bfd BuffedFd.buff ptr+ @ptr
-    let psize fd buff in
-      psize @int n + BUFFED_FD_CAP > if bfd bflush end
-      psize @int n + BUFFED_FD_CAP > if
-        n s fd fputs
-      else
-        n s buff psize @int ptr+ memcpy drop
-        psize n inc64-by
-      end
-    end
-  end
-end
-
-proc bputu
-  int
-  ptr
-in
-  let x bfd in
-    tmp-end
-      x tmp-utos bfd bputs
-    tmp-rewind
-  end
-end
-
 proc bputdecstr
   int ptr
   ptr
@@ -1498,44 +1461,6 @@ in
       end
     end
     drop drop drop
-  end
-end
-
-proc bputloc
-  ptr
-  ptr
-in
-  let loc bfd in
-    loc Loc.file-path ptr+ @Str bfd bputs
-    ":"                         bfd bputs
-    loc Loc.row ptr+ @64        bfd bputu
-    ":"                         bfd bputs
-    loc Loc.col ptr+ @64        bfd bputu
-  end
-end
-
-proc fputdecstr
-  int ptr
-  int
-in
-  memory fd sizeof(u64) end
-  fd !64
-
-  memory str sizeof(Str) end
-  str !Str
-
-  memory first sizeof(bool) end
-  true first !bool
-
-  while str @Str.count 0 > do
-    first @bool if
-      false first !bool
-    else
-      ","    fd @64 fputs
-    end
-
-    str @Str.data @8 fd @64 fputu
-    str str-chop-one-left
   end
 end
 
@@ -2013,8 +1938,8 @@ end
 proc generate-fasm-linux-x86_64
   ptr // file-path
 in
-  memory bfd sizeof(BuffedFd) end
-  sizeof(BuffedFd) 0 bfd memset drop
+  memory bfd sizeof(Bfd) end
+  sizeof(Bfd) 0 bfd memset drop
 
   let file-path in
     silent @bool lnot if
@@ -2029,10 +1954,10 @@ in
     AT_FDCWD
     openat
 
-    BUFFED_FD_CAP tmp-alloc
+    BFD_CAP tmp-alloc
     let fd buff in
-      fd   bfd BuffedFd.fd  ptr+ !int
-      buff bfd BuffedFd.buff ptr+ !ptr
+      fd   bfd Bfd.fd  ptr+ !int
+      buff bfd Bfd.buff ptr+ !ptr
 
       fd 0 < if
         "[ERROR] could not open `output.asm`\n" eputs
