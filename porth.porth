@@ -884,22 +884,23 @@ const OP_IFSTAR          1 offset end
 // operand type:    addr
 // operand purpose: The address of the code to jump to.
 const OP_ELSE            1 offset end
-// OP_END: Performs an unconditional jump. Always follows OP_DO,
-// OP_IF, OP_IFSTAR, OP_ELSE instructions to denote the ends of the
-// corresponding blocks. Usually jumps to the next instruction or to
-// OP_WHILE if the block it closes is a loop.
+// OP_END_IF: Denotes the end of the if-else-if* block. Does not
+// really do anything else. Follows OP_IF, OP_ELSE or OP_IFSTAR
+// instructions. Could be simply ignored during target-specific code
+// generation.
 //
-// TODO: OP_END is too semantically overloaded. We may wanna split it
-// into OP_END_IF and OP_END_WHILE (from the user perspective both of
-// them should stay just KEYWORD_END of course). With such semantic
-// separtion it will be easier to distinguish different kinds of
-// blocks which may help in the implementation of the WebAssembly
-// target where the entire control flow is built around different
-// kinds of blocks intead of labels and direct jumps.
+// operand type:    void
+// operand purpose: ignored
+const OP_END_IF          1 offset end
+// OP_END_WHILE: Performs an unconditional jump to OP_WHILE
+// instruction denoting the end of the while-do block. Follows OP_DO
+// instruction. The address of the target OP_WHILE instruction is
+// always lower than the address of the corresponding OP_END_WHILE
+// instruction.
 //
 // operand type:    addr
-// operand purpose: The address of the code to jump to.
-const OP_END             1 offset end
+// operand purpose: address of the OP_WHILE instruction
+const OP_END_WHILE       1 offset end
 // OP_PREP_PROC: Denotes the start of the procedure. Could be used by
 // the targets as an opportuinity to do target specific procedure
 // preparation.
@@ -936,7 +937,7 @@ const OP_INLINED         1 offset end
 // label for the corresponding OP_END instruction.
 //
 // operand type:    void
-// operand purpose: the operand of this instruction is ignored
+// operand purpose: ignored
 const OP_WHILE           1 offset end
 // OP_DO: Performs a conditional jump based on the consumed value from
 // the top of the data stack. If the value is `false` jump to the
@@ -994,7 +995,7 @@ proc op-type-as-str
   --
   int ptr // str
 in
-  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 24 = end
+  assert "Exhaustive handling of Op types in print-op-type" COUNT_OPS 25 = end
        dup OP_PUSH_INT        =  if  "OP_PUSH_INT"
   else dup OP_PUSH_BOOL       =  if* "OP_PUSH_BOOL"
   else dup OP_PUSH_PTR        =  if* "OP_PUSH_PTR"
@@ -1007,7 +1008,8 @@ in
   else dup OP_IF              =  if* "OP_IF"
   else dup OP_IFSTAR          =  if* "OP_IFSTAR"
   else dup OP_ELSE            =  if* "OP_ELSE"
-  else dup OP_END             =  if* "OP_END"
+  else dup OP_END_IF          =  if* "OP_END_IF"
+  else dup OP_END_WHILE       =  if* "OP_END_WHILE"
   else dup OP_PREP_PROC       =  if* "OP_PREP_PROC"
   else dup OP_RET             =  if* "OP_RET"
   else dup OP_CALL            =  if* "OP_CALL"
@@ -1541,7 +1543,7 @@ in
       op Op.type ptr+ @int
       op Op.operand ptr+ @int
       let type operand in
-        assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 24 = end
+        assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 25 = end
         type OP_PUSH_INT = if
            "    mov rax, "   bfd bputs operand bfd bputu "\n" bfd bputs
            "    push rax\n"  bfd bputs
@@ -1645,8 +1647,10 @@ in
            "    jz addr_"        bfd bputs operand bfd bputu "\n" bfd bputs
         else type OP_ELSE = if*
            "    jmp addr_"       bfd bputs operand bfd bputu "\n" bfd bputs
-        else type OP_END = if*
+        else type OP_END_WHILE = if*
            "    jmp addr_"       bfd bputs operand bfd bputu "\n" bfd bputs
+        else type OP_END_IF = if*
+           // NOTE: nothing to generate for x86_64
         else type OP_WHILE = if*
            // NOTE: nothing to generate. `while` is basically a label
         else type OP_DO = if*
@@ -2569,7 +2573,7 @@ in
     1 exit
   end
 
-  OP_END while-ip @int token push-op
+  OP_END_WHILE while-ip @int token push-op
 
   ops-count @int
     dup do-op    @ptr Op.operand ptr+ !int
@@ -2650,10 +2654,7 @@ in
   else-op @ptr Op.operand ptr+
   !int
 
-  OP_END
-  ops-count @int 1 +
-  token
-  push-op
+  OP_END_IF 0 token push-op
 end
 
 proc introduce-proc
@@ -3200,12 +3201,12 @@ in
 
             dup Op.type ptr+ @64 OP_IF = if
               dup ops-count @64 swap Op.operand ptr+ !64
-              OP_END ops-count @64 1 + token push-op
+              OP_END_IF 0 token push-op
             else dup Op.type ptr+ @64 OP_IFSTAR = if*
               over token enclose-else-if*
             else dup Op.type ptr+ @64 OP_ELSE = if*
               dup ops-count @64 swap Op.operand ptr+ !64
-              OP_END ops-count @64 1 + token push-op
+              OP_END_IF 0 token push-op
             else dup Op.type ptr+ @64 OP_DO = if*
               over token enclose-while-do
             else dup Op.type ptr+ @64 OP_PREP_PROC = if*
@@ -3489,7 +3490,7 @@ in
         end
 
         token Token.value ptr+ // token.value
-          assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 24 = end
+          assert "Exhaustive handling of Op types in compile-file-into-ops" COUNT_OPS 25 = end
           dup @Str intrinsic-by-name if
             OP_INTRINSIC swap token push-op
           else drop dup @Str bind-table-lookup if*
@@ -4272,7 +4273,7 @@ in
       op
       memcpy drop
 
-      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 24 = end
+      assert "Exhaustive handling of Op types in type-check-program-from" COUNT_OPS 25 = end
 
       op Op.type ptr+ @int OP_PUSH_INT = if
         DATATYPE_INT
@@ -4370,7 +4371,10 @@ in
       else op Op.type ptr+ @int OP_ELSE = if*
         op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
         true // continue
-      else op Op.type ptr+ @int OP_END = if*
+      else op Op.type ptr+ @int OP_END_IF = if*
+        context TypeContext.ip ptr+ inc64
+        true // continue
+      else op Op.type ptr+ @int OP_END_WHILE = if*
         op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
         true // continue
       else op Op.type ptr+ @int OP_PREP_PROC = if*
