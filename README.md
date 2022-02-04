@@ -46,9 +46,7 @@ end
 
 Since Porth is self-hosted you need to bootstrap it first. There are some pre-compiled assembly files in [./bootstrap/](./bootstrap/) folder that you can use for that.
 
-#### FASM
-
-You will need to install [fasm](https://flatassembler.net/) first.
+First you will need to install [fasm](https://flatassembler.net/).
 
 ```console
 $ fasm -m 524288 ./bootstrap/porth-linux-x86_64.fasm
