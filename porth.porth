@@ -1434,16 +1434,16 @@ inline proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
 const X86_64_RET_STACK_CAP 64 1024 * end
 
 /// BEGIN Code Generator //////////////////////////////
-const BUFFED_FD_CAP 64 1024 * end
-const BuffedFd.fd    sizeof(int) offset end
-const BuffedFd.buff  sizeof(ptr) offset end
-const BuffedFd.size  sizeof(int) offset end
-const sizeof(BuffedFd) reset end
+const BFD_CAP 64 1024 * end
+const Bfd.fd    sizeof(int) offset end
+const Bfd.buff  sizeof(ptr) offset end
+const Bfd.size  sizeof(int) offset end
+const sizeof(Bfd) reset end
 
 proc bflush ptr in
-  dup BuffedFd.size ptr+       swap
-  dup BuffedFd.fd ptr+ @int    swap
-      BuffedFd.buff ptr+ @ptr
+  dup Bfd.size ptr+       swap
+  dup Bfd.fd ptr+ @int    swap
+      Bfd.buff ptr+ @ptr
   let psize fd buff in
     psize @int buff fd fputs
     0 psize !int
@@ -1455,12 +1455,12 @@ proc bputs
   ptr
 in
   let n s bfd in
-    bfd BuffedFd.size ptr+
-    bfd BuffedFd.fd ptr+ @int
-    bfd BuffedFd.buff ptr+ @ptr
+    bfd Bfd.size ptr+
+    bfd Bfd.fd ptr+ @int
+    bfd Bfd.buff ptr+ @ptr
     let psize fd buff in
-      psize @int n + BUFFED_FD_CAP > if bfd bflush end
-      psize @int n + BUFFED_FD_CAP > if
+      psize @int n + BFD_CAP > if bfd bflush end
+      psize @int n + BFD_CAP > if
         n s fd fputs
       else
         n s buff psize @int ptr+ memcpy drop
@@ -2013,8 +2013,8 @@ end
 proc generate-fasm-linux-x86_64
   ptr // file-path
 in
-  memory bfd sizeof(BuffedFd) end
-  sizeof(BuffedFd) 0 bfd memset drop
+  memory bfd sizeof(Bfd) end
+  sizeof(Bfd) 0 bfd memset drop
 
   let file-path in
     silent @bool lnot if
@@ -2029,10 +2029,10 @@ in
     AT_FDCWD
     openat
 
-    BUFFED_FD_CAP tmp-alloc
+    BFD_CAP tmp-alloc
     let fd buff in
-      fd   bfd BuffedFd.fd  ptr+ !int
-      buff bfd BuffedFd.buff ptr+ !ptr
+      fd   bfd Bfd.fd  ptr+ !int
+      buff bfd Bfd.buff ptr+ !ptr
 
       fd 0 < if
         "[ERROR] could not open `output.asm`\n" eputs
