@@ -1109,3 +1109,50 @@ proc abspath int ptr -- int ptr in
     end
   end
 end
+
+const BFD_CAP 64 1024 * end
+const Bfd.fd    sizeof(int) offset end
+const Bfd.buff  sizeof(ptr) offset end
+const Bfd.size  sizeof(int) offset end
+const sizeof(Bfd) reset end
+
+proc bflush ptr in
+  dup Bfd.size ptr+       swap
+  dup Bfd.fd ptr+ @int    swap
+      Bfd.buff ptr+ @ptr
+  let psize fd buff in
+    psize @int buff fd fputs
+    0 psize !int
+  end
+end
+
+proc bputs
+  int ptr
+  ptr
+in
+  let n s bfd in
+    bfd Bfd.size ptr+
+    bfd Bfd.fd ptr+ @int
+    bfd Bfd.buff ptr+ @ptr
+    let psize fd buff in
+      psize @int n + BFD_CAP > if bfd bflush end
+      psize @int n + BFD_CAP > if
+        n s fd fputs
+      else
+        n s buff psize @int ptr+ memcpy drop
+        psize n inc64-by
+      end
+    end
+  end
+end
+
+proc bputu
+  int
+  ptr
+in
+  let x bfd in
+    tmp-end
+      x tmp-utos bfd bputs
+    tmp-rewind
+  end
+end
