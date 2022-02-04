@@ -5120,7 +5120,7 @@ proc main in
         NULL          tmp-append-ptr
         silent @bool lnot cmd-echoed
       fpb-rewind
-    "[INFO] FASM" silent @bool timeit/to-here
+    "[INFO] fasm" silent @bool timeit/to-here
 
     run @bool if
       tmp-end
