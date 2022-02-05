@@ -2544,43 +2544,6 @@ in
   bikeshedder @bool
 end
 
-proc enclose-while-do
-  int // do-ip
-  ptr // token
-in
-  memory token sizeof(Token) end
-  sizeof(Token) swap token memcpy drop
-
-  memory do-ip sizeof(int) end
-  do-ip !int
-
-  memory do-op sizeof(ptr) end
-  do-ip @int sizeof(Op) * ops +ptr do-op !ptr
-
-  memory while-ip sizeof(int) end
-  do-op @ptr Op.operand ptr+ @int while-ip !int
-
-  while-ip @int ops-count @int >= if
-    here eputs ": Assertion Failed: out of range\n" eputs
-    1 exit
-  end
-
-  memory while-op sizeof(ptr) end
-  while-ip @int sizeof(Op) * ops +ptr while-op !ptr
-
-  while-op @ptr Op.type ptr+ @int OP_WHILE != if
-    here eputs ": Assertion Failed: `do` does not precede `while`\n" eputs
-    1 exit
-  end
-
-  OP_END_WHILE while-ip @int token push-op
-
-  ops-count @int
-    dup do-op    @ptr Op.operand ptr+ !int
-    dup while-op @ptr Op.operand ptr+ !int
-  drop
-end
-
 proc chain-else-if*
   int // if*-ip
   ptr // token
@@ -3198,7 +3161,29 @@ in
                       ops-count @int begin-op Op.operand ptr+ !int
                       OP_END_IF 0 token push-op
                     else begin-type OP_DO = if*
-                      begin-ip token enclose-while-do
+                      begin-op Op.operand ptr+ @int
+                      let while-ip in
+                        while-ip ops-count @int >= if
+                          here eputs ": Assertion Failed: out of range\n" eputs
+                          1 exit
+                        end
+
+                        while-ip sizeof(Op) * ops +ptr
+                        let while-op in
+                          while-op Op.type ptr+ @int OP_WHILE != if
+                            here eputs ": Assertion Failed: `do` does not preceed `while`\n" eputs
+                            1 exit
+                          end
+
+                          OP_END_WHILE while-ip token push-op
+
+                          ops-count @int
+                          let current-ip in
+                            current-ip begin-op Op.operand ptr+ !int
+                            current-ip while-op Op.operand ptr+ !int
+                          end
+                        end
+                      end
                     else begin-type OP_PREP_PROC = if*
                       local-memory-capacity @64
                       begin-op Op.operand ptr+
