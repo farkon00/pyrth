@@ -3134,24 +3134,25 @@ in
                 1 exit
               end
 
-              parse-block-stack-pop   // if_ip
-              dup sizeof(Op) * ops +ptr  // if_op
-
-              dup Op.type ptr+ @64 OP_IF = if
-                ops-count @64 1 + over Op.operand ptr+ !64
-
-                ops-count @64 parse-block-stack-push
-                OP_ELSE 0 token push-op
-              else dup Op.type ptr+ @64 OP_IFSTAR = if*
-                over token chain-else-if*
-              else
-                loc eputloc
-                ": ERROR: `else` can only come after `if` or `if*`\n" eputs
-                1 exit
+              parse-block-stack-pop
+              dup sizeof(Op) * ops +ptr
+              dup Op.type ptr+ @int
+              let if-ip if-op if-type in
+                if-type OP_IF = if
+                  ops-count @int
+                  let current-ip in
+                    current-ip 1 + if-op Op.operand ptr+ !64
+                    current-ip parse-block-stack-push
+                    OP_ELSE 0 token push-op
+                  end
+                else if-type OP_IFSTAR = if*
+                  if-ip token chain-else-if*
+                else
+                  loc eputloc
+                  ": ERROR: `else` can only come after `if` or `if*`\n" eputs
+                  1 exit
+                end
               end
-
-              drop // if_op
-              drop // if_ip
             else keyword KEYWORD_WHILE = if*
               current-proc
               let p in
