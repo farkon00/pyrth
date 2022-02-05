@@ -3362,10 +3362,10 @@ in
                     1 exit
                   end
 
-                  token Token.type ptr+ @int TOKEN_KEYWORD =
-                  value @int KEYWORD_PROC =
+                  type  @int TOKEN_KEYWORD =
+                  value @int KEYWORD_PROC  =
                   land lnot if
-                    loc                                        eputloc
+                    loc                                                         eputloc
                     ": ERROR: Expected keyword `proc` after `inline` but got `" eputs
                     token Token.text ptr+ @Str                                  eputs
                     "`\n"                                                       eputs
@@ -3417,12 +3417,12 @@ in
                         8 *
 
                         current-proc
-                        let p in
-                          p NULL ptr!= if
-                            p Proc.inlinable ptr+ @bool if
+                        let prok in
+                          prok NULL ptr!= if
+                            prok Proc.inlinable ptr+ @bool if
                               loc                                                                     eputloc
                               ": ERROR: local memories are not allowed in inlinable procedures yet\n" eputs
-                              p Proc.loc ptr+                                                         eputloc
+                              prok Proc.loc ptr+                                                      eputloc
                               ": NOTE: the procedure starts here\n"                                   eputs
                               1 exit
                             end
@@ -3446,23 +3446,24 @@ in
                     1 exit
                   end
 
-                  token Token.type ptr+ @64 TOKEN_STR != if
-                    loc eputloc
+                  type @int TOKEN_STR != if
                     // TODO: report what was found instead of a string
+                    loc                                          eputloc
                     ": expected assert message to be a string\n" eputs
                     1 exit
                   end
 
                   lexer eval-const-value
+                  let assert-type assert-value in
+                    assert-type DATATYPE_BOOL != if
+                      loc eputloc ": ERROR: assertion expects the expression to be of type `bool`\n" eputs
+                      1 exit
+                    end
 
-                  swap DATATYPE_BOOL != if
-                    loc eputloc ": ERROR: assertion expects the expression to be of type `bool`\n" eputs
-                    1 exit
-                  end
-
-                  cast(bool) lnot if
-                    loc eputloc ": ERROR: Static Assertion Failed: " eputs value @Str eputs "\n" eputs
-                    1 exit
+                    assert-value cast(bool) lnot if
+                      loc eputloc ": ERROR: Static Assertion Failed: " eputs value @Str eputs "\n" eputs
+                      1 exit
+                    end
                   end
                 else keyword KEYWORD_HERE = if*
                   OP_PUSH_STR
@@ -3507,7 +3508,7 @@ in
               end
             else type @int TOKEN_WORD = if*
               inside-proc @bool lnot if
-                loc                                     eputloc
+                loc                                                      eputloc
                 ": ERROR: "                                              eputs
                 token Token.type ptr+ @int HUMAN_PLURAL human-token-type eputs
                 " are not allowed at the top level of the program\n"     eputs
