@@ -3063,7 +3063,6 @@ in
     file-path-cstr cstr-to-str lexer Lexer.file-path ptr+ !Str
 
     memory token sizeof(Token) end
-    memory konst sizeof(Const) end
     memory memori sizeof(Memory) end
 
     false inside-proc !64
@@ -3336,26 +3335,27 @@ in
                 1 exit
               end
 
-              token Token.type ptr+ @64 TOKEN_WORD != if
-                loc eputloc
+              type @int TOKEN_WORD != if
                 // TODO: report what was found instead of a word
+                loc                                       eputloc
                 ": expected constant name to be a word\n" eputs
                 1 exit
               end
 
-              value @Str
-              loc
-              check-name-redefinition
+              value @Str loc check-name-redefinition
 
-              value @Str konst Const.name ptr+ !Str
-              sizeof(Loc) loc konst Const.loc ptr+ memcpy drop
+              tmp-end
+                sizeof(Const) tmp-alloc
+                let konst in
+                  value @Str konst Const.name ptr+ !Str
+                  sizeof(Loc) loc konst Const.loc ptr+ memcpy drop
 
-              lexer eval-const-value
-
-              konst Const.value ptr+ !64
-              konst Const.type ptr+ !64
-
-              konst const-define
+                  lexer eval-const-value
+                  konst Const.value ptr+ !64
+                  konst Const.type ptr+ !64
+                  konst const-define
+                end
+              tmp-rewind
             else keyword KEYWORD_INLINE = if*
               token lexer lexer-next-token lnot if
                 loc eputloc
