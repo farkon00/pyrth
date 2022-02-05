@@ -2544,47 +2544,6 @@ in
   bikeshedder @bool
 end
 
-proc chain-else-if*
-  int // if*-ip
-  ptr // token
-in
-  memory token sizeof(Token) end
-  sizeof(Token) swap token memcpy drop
-
-  memory ifstar-ip sizeof(int) end
-  ifstar-ip !int
-
-  memory ifstar-op sizeof(ptr) end
-  ifstar-ip @int sizeof(Op) * ops +ptr ifstar-op !ptr
-
-  ifstar-op @ptr Op.type ptr+ @int OP_IFSTAR != if
-    here eputs ": Assertion Failed: expected `if*`\n" eputs
-    1 exit
-  end
-
-  memory else-ip sizeof(int) end
-  parse-block-stack-pop else-ip !int
-
-  memory else-op sizeof(ptr) end
-  else-ip @int sizeof(Op) * ops +ptr else-op !ptr
-
-  ops-count @int 1 +
-  ifstar-op @ptr Op.operand ptr+
-  !int
-
-  ops-count @int
-  else-op @ptr Op.operand ptr+
-  !int
-
-  ops-count @int
-  parse-block-stack-push
-
-  OP_ELSE
-  0
-  token
-  push-op
-end
-
 proc introduce-proc
   ptr // token
   ptr // lexer
@@ -3042,7 +3001,19 @@ in
                         OP_ELSE 0 token push-op
                       end
                     else if-type OP_IFSTAR = if*
-                      if-ip token chain-else-if*
+                      if-op Op.type ptr+ @int OP_IFSTAR != if
+                        here eputs ": Assertion Failed: expected `if*`\n" eputs
+                        1 exit
+                      end
+
+                      parse-block-stack-pop sizeof(Op) * ops +ptr
+                      ops-count @int
+                      let else-op current-ip in
+                        current-ip 1 + if-op   Op.operand ptr+ !int
+                        current-ip     else-op Op.operand ptr+ !int
+                        current-ip parse-block-stack-push
+                      end
+                      OP_ELSE 0 token push-op
                     else
                       loc eputloc
                       ": ERROR: `else` can only come after `if` or `if*`\n" eputs
@@ -3116,13 +3087,8 @@ in
                           1 exit
                         end
 
-                        ops-count @int 1 +
-                        begin-op Op.operand ptr+
-                        !int
-
-                        ops-count @int
-                        else-op Op.operand ptr+
-                        !int
+                        ops-count @int 1 + begin-op Op.operand ptr+ !int
+                        ops-count @int else-op Op.operand ptr+ !int
 
                         OP_END_IF 0 token push-op
                       end
