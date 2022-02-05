@@ -3071,6 +3071,7 @@ in
     while token lexer lexer-next-token do
       assert "Exhaustive handling of Token types" COUNT_TOKENS 6 = end
 
+      // @token-ref-value
       token Token.type ptr+ @64
       token Token.loc ptr+
       token Token.value ptr+
@@ -3203,57 +3204,68 @@ in
               end
 
               parse-block-stack-pop   // ip
-              ops over sizeof(Op) * ptr+ // op
+              dup sizeof(Op) * ops +ptr // op
+              dup Op.type ptr+ @int
+              let
+                begin-ip begin-op begin-type
+              in
+                begin-type OP_IF = if
+                  ops-count @int begin-op Op.operand ptr+ !int
+                  OP_END_IF 0 token push-op
+                else begin-type OP_IFSTAR = if*
+                  begin-ip token enclose-else-if*
+                else begin-type OP_ELSE = if*
+                  ops-count @int begin-op Op.operand ptr+ !int
+                  OP_END_IF 0 token push-op
+                else begin-type OP_DO = if*
+                  begin-ip token enclose-while-do
+                else begin-type OP_PREP_PROC = if*
+                  local-memory-capacity @64
+                  begin-op Op.operand ptr+
+                  !64
 
-              dup Op.type ptr+ @64 OP_IF = if
-                dup ops-count @64 swap Op.operand ptr+ !64
-                OP_END_IF 0 token push-op
-              else dup Op.type ptr+ @64 OP_IFSTAR = if*
-                over token enclose-else-if*
-              else dup Op.type ptr+ @64 OP_ELSE = if*
-                dup ops-count @64 swap Op.operand ptr+ !64
-                OP_END_IF 0 token push-op
-              else dup Op.type ptr+ @64 OP_DO = if*
-                over token enclose-while-do
-              else dup Op.type ptr+ @64 OP_PREP_PROC = if*
-                local-memory-capacity @64
-                over Op.operand ptr+
-                !64
+                  // Compute the size of the procedure
+                  current-proc
+                  let prok in
+                    prok ?null if
+                      here eputs ": Assertion failed: OP_PREP_PROC outside of actual proc\n" eputs
+                      loc located-here
+                      1 exit
+                    end
 
-                inside-proc @bool lnot if
-                  here eputs ": Assertion failed: OP_PREP_PROC outside of actual proc\n" eputs
+                    ops-count @int
+                    prok Proc.addr ptr+ @int -
+                    1 -
+
+                    prok Proc.size ptr+ !int
+                  end
+
+                  OP_RET
+                  local-memory-capacity @64
+                  token
+                  push-op
+
+                  local-memories-clean
+                  false inside-proc !bool
+                else begin-type OP_BIND_LET = if*
+                  begin-ip token enclose-let
+                else begin-type OP_BIND_PEEK = if*
+                  begin-ip token enclose-let
+                else
+                  begin-op Op.token ptr+
+                  let begin-token in
+                    loc                                                                                         eputloc
+                    ": ERROR: `end` can only close `if`, `if*`, `else`, `do`, `proc`, `let` or `peek` blocks\n" eputs
+                    begin-token Token.loc ptr+                                                                  eputloc
+                    ": NOTE: found `"                                                                           eputs
+                    begin-token Token.text ptr+ @Str                                                            eputs
+                    "` instead\n"                                                                               eputs
+                  end
                   1 exit
                 end
-
-                // Compute the size of the procedure
-                procs-count @int 1 - sizeof(Proc) * procs +ptr
-                  ops-count @int
-                  over Proc.addr ptr+ @int -
-                  1 -
-
-                  over Proc.size ptr+ !int
-                drop
-
-                OP_RET
-                local-memory-capacity @64
-                token
-                push-op
-
-                local-memories-clean
-                false inside-proc !bool
-              else dup Op.type ptr+ @64 OP_BIND_LET = if*
-                over token enclose-let
-              else dup Op.type ptr+ @64 OP_BIND_PEEK = if*
-                over token enclose-let
-              else
-                loc eputloc ": ERROR: `end` can only close `if`, `if*`, `else`, `do`, `proc`, `let` or `peek` blocks\n" eputs
-                dup Op.token ptr+ Token.loc ptr+ eputloc ": NOTE: found `" eputs dup Op.token ptr+ Token.text ptr+ @Str eputs "` instead\n" eputs
-                1 exit
               end
-
-              drop // op
-              drop // ip
             else keyword KEYWORD_INCLUDE = if*
+              // TODO: this is actually dangerous because at the beginning of the loop we bind Token.loc and Token.value by reference which makes them update when we override the token, but Token.type by value. (See @token-ref-value)
               token lexer lexer-next-token lnot if
                 loc eputloc
                 ": ERROR: expected path to the include file but found nothing\n" eputs
