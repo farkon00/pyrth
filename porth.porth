@@ -3063,7 +3063,6 @@ in
     file-path-cstr cstr-to-str lexer Lexer.file-path ptr+ !Str
 
     memory token sizeof(Token) end
-    memory memori sizeof(Memory) end
 
     false inside-proc !64
 
@@ -3383,60 +3382,63 @@ in
                 1 exit
               end
 
-              token Token.type ptr+ @64 TOKEN_WORD != if
-                loc eputloc
+              type @int TOKEN_WORD != if
+                loc                                              eputloc
                 ": expected memory name to be a word but found " eputs
-                token Token.type ptr+ @64 HUMAN_SINGULAR human-token-type eputs
-                " instead\n" eputs
+                type @int HUMAN_SINGULAR human-token-type        eputs
+                " instead\n"                                     eputs
                 1 exit
               end
 
-              value @Str
-              loc
-              check-name-redefinition
+              value @Str loc check-name-redefinition
 
-              sizeof(Str) value memori Memory.name ptr+ memcpy drop
-              sizeof(Loc) token Token.loc   ptr+ memori Memory.loc  ptr+ memcpy drop
+              tmp-end
+                sizeof(Memory) tmp-alloc
+                let memori in
+                  sizeof(Str) value memori Memory.name ptr+ memcpy drop
+                  sizeof(Loc) loc   memori Memory.loc  ptr+ memcpy drop
 
-              lexer eval-const-value
-              let type size in
-                type DATATYPE_INT != if
-                  loc                    eputloc
-                  ": ERROR: Expected memory size to be `" eputs
-                  DATATYPE_INT datatype-name              eputs
-                  "` but got `"                           eputs
-                  type datatype-name                      eputs
-                  "` instead\n"                           eputs
-                  1 exit
-                end
-
-                // NOTE: align all the memories to the size of the word
-                size
-                7 +
-                8 /
-                8 *
-
-                current-proc
-                let p in
-                  p NULL ptr!= if
-                    p Proc.inlinable ptr+ @bool if
-                      loc                                                    eputloc
-                      ": ERROR: local memories are not allowed in inlinable procedures yet\n" eputs
-                      p Proc.loc ptr+                                                     eputloc
-                      ": NOTE: the procedure starts here\n"                               eputs
+                  lexer eval-const-value
+                  let const-type memory-size in
+                    const-type DATATYPE_INT != if
+                      loc                                     eputloc
+                      ": ERROR: Expected memory size to be `" eputs
+                      DATATYPE_INT datatype-name              eputs
+                      "` but got `"                           eputs
+                      const-type datatype-name                eputs
+                      "` instead\n"                           eputs
                       1 exit
                     end
 
-                    local-memory-capacity @64 memori Memory.offset ptr+ !64
-                    local-memory-capacity @64 + local-memory-capacity !64
-                    memori local-memory-define
-                  else
-                    global-memory-capacity @64 memori Memory.offset ptr+ !64
-                    global-memory-capacity @64 + global-memory-capacity !64
-                    memori global-memory-define
+                    // NOTE: align all the memories to the size of the word
+                    memory-size
+                    7 +
+                    8 /
+                    8 *
+
+                    current-proc
+                    let p in
+                      p NULL ptr!= if
+                        p Proc.inlinable ptr+ @bool if
+                          loc                                                                     eputloc
+                          ": ERROR: local memories are not allowed in inlinable procedures yet\n" eputs
+                          p Proc.loc ptr+                                                         eputloc
+                          ": NOTE: the procedure starts here\n"                                   eputs
+                          1 exit
+                        end
+
+                        local-memory-capacity @int memori Memory.offset ptr+ !int
+                        local-memory-capacity @int + local-memory-capacity !int
+                        memori local-memory-define
+                      else
+                        global-memory-capacity @int memori Memory.offset ptr+ !int
+                        global-memory-capacity @int + global-memory-capacity !int
+                        memori global-memory-define
+                      end
+                    end
                   end
                 end
-              end
+              tmp-rewind
             else keyword KEYWORD_ASSERT = if*
               token lexer lexer-next-token lnot if
                 loc eputloc
