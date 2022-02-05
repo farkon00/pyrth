@@ -3175,21 +3175,26 @@ in
                 1 exit
               end
 
-              parse-block-stack-pop  // ip
-              dup sizeof(Op) * ops +ptr // op
+              parse-block-stack-pop
+              dup sizeof(Op) * ops +ptr
+              dup Op.type ptr+ @int
+              over Op.token ptr+
+              let
+                while-ip while-op while-type while-token
+              in
+                while-type OP_WHILE != if
+                  loc                                          eputloc
+                  ": ERROR: `do` is not preceded by `while`\n" eputs
+                  while-token Token.loc  ptr+                  eputloc
+                  ": NOTE: preceded by `"                      eputs
+                  while-token Token.text ptr+ @Str             eputs
+                  "` instead\n"                                eputs
+                  1 exit
+                end
 
-              dup Op.type ptr+ @64 OP_WHILE != if
-                loc eputloc ": ERROR: `do` is not preceded by `while`\n" eputs
-                dup Op.token ptr+ Token.loc ptr+ eputloc ": NOTE: preceded by `" eputs dup Op.token ptr+ Token.text ptr+ @Str eputs "` instead\n" eputs
-                1 exit
+                ops-count @64 parse-block-stack-push
+                OP_DO while-ip token push-op
               end
-
-              swap
-
-              ops-count @64 parse-block-stack-push
-
-              OP_DO swap token push-op
-              drop // op
             else keyword KEYWORD_END = if*
               parse-block-stack-count @64 0 <= if
                 loc eputloc
