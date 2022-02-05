@@ -2544,119 +2544,6 @@ in
   bikeshedder @bool
 end
 
-proc enclose-while-do
-  int // do-ip
-  ptr // token
-in
-  memory token sizeof(Token) end
-  sizeof(Token) swap token memcpy drop
-
-  memory do-ip sizeof(int) end
-  do-ip !int
-
-  memory do-op sizeof(ptr) end
-  do-ip @int sizeof(Op) * ops +ptr do-op !ptr
-
-  memory while-ip sizeof(int) end
-  do-op @ptr Op.operand ptr+ @int while-ip !int
-
-  while-ip @int ops-count @int >= if
-    here eputs ": Assertion Failed: out of range\n" eputs
-    1 exit
-  end
-
-  memory while-op sizeof(ptr) end
-  while-ip @int sizeof(Op) * ops +ptr while-op !ptr
-
-  while-op @ptr Op.type ptr+ @int OP_WHILE != if
-    here eputs ": Assertion Failed: `do` does not precede `while`\n" eputs
-    1 exit
-  end
-
-  OP_END_WHILE while-ip @int token push-op
-
-  ops-count @int
-    dup do-op    @ptr Op.operand ptr+ !int
-    dup while-op @ptr Op.operand ptr+ !int
-  drop
-end
-
-proc chain-else-if*
-  int // if*-ip
-  ptr // token
-in
-  memory token sizeof(Token) end
-  sizeof(Token) swap token memcpy drop
-
-  memory ifstar-ip sizeof(int) end
-  ifstar-ip !int
-
-  memory ifstar-op sizeof(ptr) end
-  ifstar-ip @int sizeof(Op) * ops +ptr ifstar-op !ptr
-
-  ifstar-op @ptr Op.type ptr+ @int OP_IFSTAR != if
-    here eputs ": Assertion Failed: expected `if*`\n" eputs
-    1 exit
-  end
-
-  memory else-ip sizeof(int) end
-  parse-block-stack-pop else-ip !int
-
-  memory else-op sizeof(ptr) end
-  else-ip @int sizeof(Op) * ops +ptr else-op !ptr
-
-  ops-count @int 1 +
-  ifstar-op @ptr Op.operand ptr+
-  !int
-
-  ops-count @int
-  else-op @ptr Op.operand ptr+
-  !int
-
-  ops-count @int
-  parse-block-stack-push
-
-  OP_ELSE
-  0
-  token
-  push-op
-end
-
-proc enclose-else-if*
-  int // ip-if*
-  ptr // token
-in
-  memory token sizeof(Token) end
-  sizeof(Token) swap token memcpy drop
-
-  memory ifstar-ip sizeof(int) end
-  ifstar-ip !int
-
-  memory ifstar-op sizeof(ptr) end
-  ifstar-ip @int sizeof(Op) * ops +ptr ifstar-op !ptr
-
-  ifstar-op @ptr Op.type ptr+ @int OP_IFSTAR != if
-    here eputs ": Assertion Failed: expected `if*`\n" eputs
-    1 exit
-  end
-
-  memory else-ip sizeof(int) end
-  parse-block-stack-pop else-ip !int
-
-  memory else-op sizeof(ptr) end
-  else-ip @int sizeof(Op) * ops +ptr else-op !ptr
-
-  ops-count @int 1 +
-  ifstar-op @ptr Op.operand ptr+
-  !int
-
-  ops-count @int
-  else-op @ptr Op.operand ptr+
-  !int
-
-  OP_END_IF 0 token push-op
-end
-
 proc introduce-proc
   ptr // token
   ptr // lexer
@@ -2779,15 +2666,6 @@ proc bind-table-push int ptr in
   bind-table-count inc64
 end
 
-proc bind-table-pop in
-  bind-table-count @int 0 <= if
-    here eputs ": Assertion Failed: bind table underflow!\n" eputs
-    1 exit
-  end
-
-  bind-table-count dec64
-end
-
 proc bind-table-lookup
   int ptr
   --
@@ -2907,28 +2785,6 @@ in
   count @int bind-table-rev-top
 
   count @int
-end
-
-proc enclose-let
-  int // let ip
-  ptr // token
-in
-  memory token sizeof(Token) end
-  sizeof(Token) swap token memcpy drop
-
-  memory bind-count sizeof(int) end
-  sizeof(Op) * ops +ptr Op.operand ptr+ @int
-  bind-count !int
-
-  OP_UNBIND
-  bind-count @int
-  token
-  push-op
-
-  while bind-count @int 0 > do
-    bind-table-pop
-    bind-count dec64
-  end
 end
 
 // TODO: more reliable id of the file we've already included
@@ -3145,7 +3001,19 @@ in
                         OP_ELSE 0 token push-op
                       end
                     else if-type OP_IFSTAR = if*
-                      if-ip token chain-else-if*
+                      if-op Op.type ptr+ @int OP_IFSTAR != if
+                        here eputs ": Assertion Failed: expected `if*`\n" eputs
+                        1 exit
+                      end
+
+                      parse-block-stack-pop sizeof(Op) * ops +ptr
+                      ops-count @int
+                      let else-op current-ip in
+                        current-ip 1 + if-op   Op.operand ptr+ !int
+                        current-ip     else-op Op.operand ptr+ !int
+                        current-ip parse-block-stack-push
+                      end
+                      OP_ELSE 0 token push-op
                     else
                       loc eputloc
                       ": ERROR: `else` can only come after `if` or `if*`\n" eputs
@@ -3211,12 +3079,46 @@ in
                       ops-count @int begin-op Op.operand ptr+ !int
                       OP_END_IF 0 token push-op
                     else begin-type OP_IFSTAR = if*
-                      begin-ip token enclose-else-if*
+                      parse-block-stack-pop sizeof(Op) * ops +ptr
+                      let else-op in
+                        else-op Op.type ptr+ @int OP_ELSE != if
+                          here eputs ": Assertion Failed: `else-if*-end` chain is broken. Lost `else` somewhere.\n" eputs
+                          loc located-here
+                          1 exit
+                        end
+
+                        ops-count @int 1 + begin-op Op.operand ptr+ !int
+                        ops-count @int else-op Op.operand ptr+ !int
+
+                        OP_END_IF 0 token push-op
+                      end
                     else begin-type OP_ELSE = if*
                       ops-count @int begin-op Op.operand ptr+ !int
                       OP_END_IF 0 token push-op
                     else begin-type OP_DO = if*
-                      begin-ip token enclose-while-do
+                      begin-op Op.operand ptr+ @int
+                      let while-ip in
+                        while-ip ops-count @int >= if
+                          here eputs ": Assertion Failed: out of range\n" eputs
+                          1 exit
+                        end
+
+                        while-ip sizeof(Op) * ops +ptr
+                        let while-op in
+                          while-op Op.type ptr+ @int OP_WHILE != if
+                            here eputs ": Assertion Failed: `do` does not preceed `while`\n" eputs
+                            1 exit
+                          end
+
+                          OP_END_WHILE while-ip token push-op
+
+                          ops-count @int
+                          let current-ip in
+                            current-ip begin-op Op.operand ptr+ !int
+                            current-ip while-op Op.operand ptr+ !int
+                          end
+                        end
+                      end
                     else begin-type OP_PREP_PROC = if*
                       local-memory-capacity @64
                       begin-op Op.operand ptr+
@@ -3245,10 +3147,20 @@ in
 
                       local-memories-clean
                       false inside-proc !bool
-                    else begin-type OP_BIND_LET = if*
-                      begin-ip token enclose-let
-                    else begin-type OP_BIND_PEEK = if*
-                      begin-ip token enclose-let
+                    else begin-type OP_BIND_LET = begin-type OP_BIND_PEEK = lor if*
+                      begin-op Op.operand ptr+ @int
+                      let bind-count in
+                        OP_UNBIND bind-count token push-op
+
+                        bind-table-count @int bind-count < if
+                          here eputs ": Assertion Failed: bind table underflow!\n" eputs
+                          1 exit
+                        end
+
+                        bind-table-count @int
+                        bind-count -
+                        bind-table-count !int
+                      end
                     else
                       begin-op Op.token ptr+
                       let begin-token in
