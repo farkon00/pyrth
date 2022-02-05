@@ -2707,15 +2707,6 @@ proc bind-table-push int ptr in
   bind-table-count inc64
 end
 
-proc bind-table-pop in
-  bind-table-count @int 0 <= if
-    here eputs ": Assertion Failed: bind table underflow!\n" eputs
-    1 exit
-  end
-
-  bind-table-count dec64
-end
-
 proc bind-table-lookup
   int ptr
   --
@@ -2835,28 +2826,6 @@ in
   count @int bind-table-rev-top
 
   count @int
-end
-
-proc enclose-let
-  int // let ip
-  ptr // token
-in
-  memory token sizeof(Token) end
-  sizeof(Token) swap token memcpy drop
-
-  memory bind-count sizeof(int) end
-  sizeof(Op) * ops +ptr Op.operand ptr+ @int
-  bind-count !int
-
-  OP_UNBIND
-  bind-count @int
-  token
-  push-op
-
-  while bind-count @int 0 > do
-    bind-table-pop
-    bind-count dec64
-  end
 end
 
 // TODO: more reliable id of the file we've already included
@@ -3212,10 +3181,20 @@ in
 
                       local-memories-clean
                       false inside-proc !bool
-                    else begin-type OP_BIND_LET = if*
-                      begin-ip token enclose-let
-                    else begin-type OP_BIND_PEEK = if*
-                      begin-ip token enclose-let
+                    else begin-type OP_BIND_LET = begin-type OP_BIND_PEEK = lor if*
+                      begin-op Op.operand ptr+ @int
+                      let bind-count in
+                        OP_UNBIND bind-count token push-op
+
+                        bind-table-count @int bind-count < if
+                          here eputs ": Assertion Failed: bind table underflow!\n" eputs
+                          1 exit
+                        end
+
+                        bind-table-count @int
+                        bind-count -
+                        bind-table-count !int
+                      end
                     else
                       begin-op Op.token ptr+
                       let begin-token in
