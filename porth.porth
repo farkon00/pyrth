@@ -3271,21 +3271,21 @@ in
                 1 exit
               end
 
-              token Token.type ptr+ @64 TOKEN_STR != if
-                loc eputloc
+              type @int TOKEN_STR != if
+                loc                                                                    eputloc
                 ": ERROR: expected path to the include file to be a string but found " eputs
-                token Token.type ptr+ @int HUMAN_SINGULAR human-token-type eputs
-                "\n" eputs
+                type @int HUMAN_SINGULAR human-token-type                              eputs
+                "\n"                                                                   eputs
                 1 exit
               end
 
               tmp-end
               let s in
                 value @Str include-paths-resolve-file lnot if
-                  loc        eputloc
-                  ": ERROR: file `"           eputs
-                  value @Str eputs
-                  "` not found\n"             eputs
+                  loc               eputloc
+                  ": ERROR: file `" eputs
+                  value @Str        eputs
+                  "` not found\n"   eputs
                   1 exit
                 end
 
@@ -3323,7 +3323,7 @@ in
                     // order should resolve everything.
                     //
                     // - rexim 05.02.2022
-                    loc eputloc
+                    loc                       eputloc
                     ": ERROR: include loop\n" eputs
                     1 exit
                   end
