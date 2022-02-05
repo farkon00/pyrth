@@ -3112,17 +3112,18 @@ in
               ops-count @64 parse-block-stack-push
               OP_IF 0 token push-op
             else keyword KEYWORD_IFSTAR = if*
-              parse-block-stack-top lnot if
-                loc eputloc ": ERROR: `if*` can only come after `else`, but found nothing\n" eputs
-                1 exit
-              end
+              parse-block-stack-top
+              let else-ip ok in
+                ok lnot if
+                  loc eputloc ": ERROR: `if*` can only come after `else`, but found nothing\n" eputs
+                  1 exit
+                end
 
-              sizeof(Op) * ops +ptr
-                dup Op.type ptr+ @int OP_ELSE != if
+                else-ip sizeof(Op) * ops +ptr Op.type ptr+ @int OP_ELSE != if
                   loc eputloc ": ERROR: `if*` can only come after `else`\n" eputs
                   1 exit
                 end
-              drop
+              end
 
               ops-count @int parse-block-stack-push
               OP_IFSTAR 0 token push-op
