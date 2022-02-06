@@ -1,10 +1,10 @@
 :i argc 0
 :b stdin 0
 
-:i returncode 1
-:b stdout 0
+:i returncode 0
+:b stdout 7
+69
+420
 
-:b stderr 154
-./tests/inline-if.porth:2:16: ERROR: conditions are not allowed in inlinable procedures yet
-./tests/inline-if.porth:1:13: NOTE: the procedure starts here
+:b stderr 0
 

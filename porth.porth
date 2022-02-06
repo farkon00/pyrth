@@ -852,26 +852,26 @@ const OP_PUSH_STR        1 offset end
 // operand purpose: An index in strlits array (See Strlit section for more information).
 const OP_PUSH_CSTR       1 offset end
 // OP_IF: Performs a conditional jump based on the consumed value from
-// the top of the data stack. If the value is `false` jump to the
-// provided address, otherwise "fall-through" to the next
-// instruction. The target jump address - 1 should be always pointing
-// at OP_END_IF or OP_ELSE instruction denoting the boundaries of the
-// if-block.
+// the top of the data stack. If the value is `false` jump by the
+// provided address offset forward, otherwise "fall-through" to the
+// next instruction. The target jump offset - 1 should be always
+// pointing at OP_END_IF or OP_ELSE instruction denoting the
+// boundaries of the if-block.
 //
-// operand type:    addr
-// operand purpose: The address of the code to jump to when the consumed value
-//                  is `false`.
+// operand type:    int
+// operand purpose: The address offset to jump by forward
+//                  when the consumed value is `false`.
 const OP_IF              1 offset end
 // OP_IFSTAR: Performs a conditional jump based on the consumed value
-// from the top of the data stack. If the value is `false` jump to the
-// provided address, otherwise "fall-through" to the next
-// instruction. Always follows OP_ELSE instruction. The target jump
-// address - 1 should be always pointing at OP_END_IF or OP_ELSE
-// instruction denoting the boundaries of the if-block.
+// from the top of the data stack. If the value is `false` jump by the
+// provided address offset forward, otherwise "fall-through" to the
+// next instruction. Always follows OP_ELSE instruction. The target
+// jump address offset - 1 should be always pointing at OP_END_IF or
+// OP_ELSE instruction denoting the boundaries of the if-block.
 //
-// operand type:    addr
-// operand purpose: The address of the code to jump to when the consumed value
-//                  is `false`.
+// operand type:    int
+// operand purpose: The address offset to jump by forward
+//                  when the consumed value is `false`.
 const OP_IFSTAR          1 offset end
 // OP_ELSE: Performs an unconditional jump. Always follows OP_IF or
 // OP_IFSTAR instruction. Always jumps to another OP_ELSE or OP_END_IF
@@ -881,8 +881,8 @@ const OP_IFSTAR          1 offset end
 // TODO: We need to double check the invariants stated above. I don't
 // remember 100% if OP_ELSE works like this right now.
 //
-// operand type:    addr
-// operand purpose: The address of the code to jump to.
+// operand type:    int
+// operand purpose: The address offset to jump by forward.
 const OP_ELSE            1 offset end
 // OP_END_IF: Denotes the end of the if-else-if* block. Does not
 // really do anything else. Follows OP_IF, OP_ELSE or OP_IFSTAR
@@ -894,12 +894,11 @@ const OP_ELSE            1 offset end
 const OP_END_IF          1 offset end
 // OP_END_WHILE: Performs an unconditional jump to OP_WHILE
 // instruction denoting the end of the while-do block. Follows OP_DO
-// instruction. The address of the target OP_WHILE instruction is
-// always lower than the address of the corresponding OP_END_WHILE
-// instruction.
+// instruction. The address offset should be always used to jump
+// *BACKWARDS*.
 //
-// operand type:    addr
-// operand purpose: address of the OP_WHILE instruction
+// operand type:    int
+// operand purpose: the address offset to jump by *BACKWARDS*.
 const OP_END_WHILE       1 offset end
 // OP_PREP_PROC: Denotes the start of the procedure. Could be used by
 // the targets as an opportuinity to do target specific procedure
@@ -936,19 +935,22 @@ const OP_INLINED         1 offset end
 // OP_WHILE: Denotes the beginning of the while loop. Acts like a
 // label for the corresponding OP_END_WHILE instruction.
 //
-// operand type:    void
-// operand purpose: ignored
+// operand type:    addr
+// operand purpose: The address offset to jump by forward to reach the instruction
+//                  after the corresponding OP_END_WHILE. Denotes the size
+//                  of the while loop. Can be used by a type checker to
+//                  skip the whole loop after it was properly type checked.
 const OP_WHILE           1 offset end
 // OP_DO: Performs a conditional jump based on the consumed value from
-// the top of the data stack. If the value is `false` jump to the
-// provided address, otherwise "fall-through" to the next
-// instruction. Always follows OP_WHILE instruction. The target jump
-// address - 1 should be always pointing at OP_END_WHILE instruction
-// denoting the boundaries of the while-do-end-block.
+// the top of the data stack. If the value is `false` jump by the
+// provided address offset forward, otherwise "fall-through" to the
+// next instruction. Always follows OP_WHILE instruction. The target
+// jump address offset - 1 should be always pointing at OP_END_WHILE
+// instruction denoting the boundaries of the while-do-end-block.
 //
 // operand type:    addr
-// operand purpose: The address of the code to jump to when the consumed value
-//                  is `false`.
+// operand purpose: The address offset to jump by forward
+//                  when the consumed value is `false`.
 const OP_DO              1 offset end
 // OP_INTRINSIC: Calls a built in intrinsic procedure.
 //
@@ -1640,15 +1642,15 @@ in
         else type OP_IF = if*
            "    pop rax\n"       bfd bputs
            "    test rax, rax\n" bfd bputs
-           "    jz addr_"        bfd bputs operand bfd bputu "\n" bfd bputs
+           "    jz addr_"        bfd bputs ip operand + bfd bputu "\n" bfd bputs
         else type OP_IFSTAR = if*
            "    pop rax\n"       bfd bputs
            "    test rax, rax\n" bfd bputs
-           "    jz addr_"        bfd bputs operand bfd bputu "\n" bfd bputs
+           "    jz addr_"        bfd bputs ip operand + bfd bputu "\n" bfd bputs
         else type OP_ELSE = if*
-           "    jmp addr_"       bfd bputs operand bfd bputu "\n" bfd bputs
+           "    jmp addr_"       bfd bputs ip operand + bfd bputu "\n" bfd bputs
         else type OP_END_WHILE = if*
-           "    jmp addr_"       bfd bputs operand bfd bputu "\n" bfd bputs
+           "    jmp addr_"       bfd bputs ip operand - bfd bputu "\n" bfd bputs
         else type OP_END_IF = if*
            // NOTE: nothing to generate for x86_64
         else type OP_WHILE = if*
@@ -1656,7 +1658,7 @@ in
         else type OP_DO = if*
            "    pop rax\n"       bfd bputs
            "    test rax, rax\n" bfd bputs
-           "    jz addr_"        bfd bputs operand bfd bputu "\n" bfd bputs
+           "    jz addr_"        bfd bputs ip operand + bfd bputu "\n" bfd bputs
         else type OP_PREP_PROC = if*
            "    sub rsp, "                  bfd bputs
            operand                          bfd bputu
@@ -2946,24 +2948,6 @@ in
               let keyword in
                 assert "Exhaustive handling of keywords in compile-file-into-ops" COUNT_KEYWORDS 21 = end
                 keyword KEYWORD_IF = if
-                  current-proc
-                  let p in
-                    p NULL ptr!= if
-                      p Proc.inlinable ptr+ @bool if
-                        // NOTE: `if*` and `else` are also not allowed in inlinable procedures yet,
-                        // but because they can't exist in without just `if` we don't check this
-                        // condition for them
-                        //
-                        // - rexim 30.01.2022
-                        loc                                                                 eputloc
-                        ": ERROR: conditions are not allowed in inlinable procedures yet\n" eputs
-                        p Proc.loc ptr+                                                     eputloc
-                        ": NOTE: the procedure starts here\n"                               eputs
-                        1 exit
-                      end
-                    end
-                  end
-
                   ops-count @64 parse-block-stack-push
                   OP_IF 0 token push-op
                 else keyword KEYWORD_IFSTAR = if*
@@ -2996,21 +2980,22 @@ in
                     if-type OP_IF = if
                       ops-count @int
                       let current-ip in
-                        current-ip 1 + if-op Op.operand ptr+ !64
+                        current-ip if-ip - 1 + if-op Op.operand ptr+ !64
                         current-ip parse-block-stack-push
                         OP_ELSE 0 token push-op
                       end
                     else if-type OP_IFSTAR = if*
-                      if-op Op.type ptr+ @int OP_IFSTAR != if
-                        here eputs ": Assertion Failed: expected `if*`\n" eputs
-                        1 exit
-                      end
-
-                      parse-block-stack-pop sizeof(Op) * ops +ptr
+                      parse-block-stack-pop
+                      dup sizeof(Op) * ops +ptr
                       ops-count @int
-                      let else-op current-ip in
-                        current-ip 1 + if-op   Op.operand ptr+ !int
-                        current-ip     else-op Op.operand ptr+ !int
+                      let else-ip else-op current-ip in
+                        else-op Op.type ptr+ @int OP_ELSE != if
+                          here eputs ": Assertion Failed: expected OP_ELSE\n" eputs
+                          1 exit
+                        end
+
+                        current-ip if-ip   - 1 + if-op   Op.operand ptr+ !int
+                        current-ip else-ip -     else-op Op.operand ptr+ !int
                         current-ip parse-block-stack-push
                       end
                       OP_ELSE 0 token push-op
@@ -3021,19 +3006,6 @@ in
                     end
                   end
                 else keyword KEYWORD_WHILE = if*
-                  current-proc
-                  let p in
-                    p NULL ptr!= if
-                      p Proc.inlinable ptr+ @bool if
-                        loc                                                 eputloc
-                        ": ERROR: while loops are not allowed in inlinable procedures yet\n" eputs
-                        p Proc.loc ptr+                                                      eputloc
-                        ": NOTE: the procedure starts here\n"                                eputs
-                        1 exit
-                      end
-                    end
-                  end
-
                   ops-count @64 parse-block-stack-push
                   OP_WHILE 0 token push-op
                 else keyword KEYWORD_DO = if*
@@ -3060,6 +3032,13 @@ in
                     end
 
                     ops-count @64 parse-block-stack-push
+                    // NOTE: temporarily storring the absolute address
+                    // of OP_WHILE in OP_DO operand so we can use it
+                    // for OP_END_WHILE later.
+                    //
+                    // TODO: Maybe we should use block-stack for now?
+                    //
+                    // - rexim 06.02.2022
                     OP_DO while-ip token push-op
                   end
                 else keyword KEYWORD_END = if*
@@ -3076,24 +3055,25 @@ in
                     begin-ip begin-op begin-type
                   in
                     begin-type OP_IF = if
-                      ops-count @int begin-op Op.operand ptr+ !int
+                      ops-count @int begin-ip - begin-op Op.operand ptr+ !int
                       OP_END_IF 0 token push-op
                     else begin-type OP_IFSTAR = if*
-                      parse-block-stack-pop sizeof(Op) * ops +ptr
-                      let else-op in
+                      parse-block-stack-pop
+                      dup sizeof(Op) * ops +ptr
+                      let else-ip else-op in
                         else-op Op.type ptr+ @int OP_ELSE != if
                           here eputs ": Assertion Failed: `else-if*-end` chain is broken. Lost `else` somewhere.\n" eputs
                           loc located-here
                           1 exit
                         end
 
-                        ops-count @int 1 + begin-op Op.operand ptr+ !int
-                        ops-count @int else-op Op.operand ptr+ !int
+                        ops-count @int begin-ip - 1 + begin-op Op.operand ptr+ !int
+                        ops-count @int else-ip  -     else-op  Op.operand ptr+ !int
 
                         OP_END_IF 0 token push-op
                       end
                     else begin-type OP_ELSE = if*
-                      ops-count @int begin-op Op.operand ptr+ !int
+                      ops-count @int begin-ip - begin-op Op.operand ptr+ !int
                       OP_END_IF 0 token push-op
                     else begin-type OP_DO = if*
                       begin-op Op.operand ptr+ @int
@@ -3110,12 +3090,12 @@ in
                             1 exit
                           end
 
-                          OP_END_WHILE while-ip token push-op
-
                           ops-count @int
                           let current-ip in
-                            current-ip begin-op Op.operand ptr+ !int
-                            current-ip while-op Op.operand ptr+ !int
+                            OP_END_WHILE current-ip while-ip - token push-op
+
+                            current-ip 1 + begin-ip - begin-op Op.operand ptr+ !int
+                            current-ip 1 + while-ip - while-op Op.operand ptr+ !int
                           end
                         end
                       end
@@ -4294,7 +4274,13 @@ in
         context TypeContext.ip ptr+ dec64
 
         // else branch
-        op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
+        context TypeContext.ip ptr+
+        let ip in
+          ip @int
+          op Op.operand ptr+ @int
+          +
+          ip !int
+        end
         true // continue
       else op Op.type ptr+ @int OP_IFSTAR = if*
         op Op.token ptr+ context TypeContext.stack ptr+ type-check-if-op
@@ -4305,16 +4291,34 @@ in
         context TypeContext.ip ptr+ dec64
 
         // else branch
-        op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
+        context TypeContext.ip ptr+
+        let ip in
+          ip @int
+          op Op.operand ptr+ @int
+          +
+          ip !int
+        end
         true // continue
       else op Op.type ptr+ @int OP_ELSE = if*
-        op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
+        context TypeContext.ip ptr+
+        let ip in
+          ip @int
+          op Op.operand ptr+ @int
+          +
+          ip !int
+        end
         true // continue
       else op Op.type ptr+ @int OP_END_IF = if*
         context TypeContext.ip ptr+ inc64
         true // continue
       else op Op.type ptr+ @int OP_END_WHILE = if*
-        op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
+        context TypeContext.ip ptr+
+        let ip in
+          ip @int
+          op Op.operand ptr+ @int
+          -
+          ip !int
+        end
         true // continue
       else op Op.type ptr+ @int OP_PREP_PROC = if*
         context TypeContext.ip ptr+ inc64
@@ -4408,7 +4412,12 @@ in
           type-context-from-parts
           type-check-program-from
 
-          op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
+          context TypeContext.ip ptr+
+          let ip in
+            ip @int
+            op Op.operand ptr+ @int +
+            ip !int
+          end
           true // continue
         else
           false // break, we repeated the loop
