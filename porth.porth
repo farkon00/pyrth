@@ -900,7 +900,7 @@ const OP_END_IF          1 offset end
 //
 // operand type:    addr
 // operand purpose: address of the OP_WHILE instruction
-const OP_END_WHILE       1 offset end
+const OP_END_WHILE_       1 offset end
 // OP_PREP_PROC: Denotes the start of the procedure. Could be used by
 // the targets as an opportuinity to do target specific procedure
 // preparation.
@@ -1012,7 +1012,7 @@ in
   else dup OP_IFSTAR_          =  if* "OP_IFSTAR"
   else dup OP_ELSE_            =  if* "OP_ELSE"
   else dup OP_END_IF          =  if* "OP_END_IF"
-  else dup OP_END_WHILE       =  if* "OP_END_WHILE"
+  else dup OP_END_WHILE_       =  if* "OP_END_WHILE"
   else dup OP_PREP_PROC       =  if* "OP_PREP_PROC"
   else dup OP_RET             =  if* "OP_RET"
   else dup OP_CALL            =  if* "OP_CALL"
@@ -1650,8 +1650,8 @@ in
            "    jz addr_"        bfd bputs ip operand + bfd bputu "\n" bfd bputs
         else type OP_ELSE_ = if*
            "    jmp addr_"       bfd bputs ip operand + bfd bputu "\n" bfd bputs
-        else type OP_END_WHILE = if*
-           "    jmp addr_"       bfd bputs operand bfd bputu "\n" bfd bputs
+        else type OP_END_WHILE_ = if*
+           "    jmp addr_"       bfd bputs ip operand - bfd bputu "\n" bfd bputs
         else type OP_END_IF = if*
            // NOTE: nothing to generate for x86_64
         else type OP_WHILE = if*
@@ -3122,12 +3122,12 @@ in
                             1 exit
                           end
 
-                          OP_END_WHILE while-ip token push-op
-
                           ops-count @int
                           let current-ip in
-                            current-ip begin-ip - begin-op Op.operand ptr+ !int
-                            current-ip            while-op Op.operand ptr+ !int
+                            OP_END_WHILE_ current-ip while-ip - token push-op
+
+                            current-ip 1 + begin-ip - begin-op Op.operand ptr+ !int
+                            current-ip 1 +            while-op Op.operand ptr+ !int
                           end
                         end
                       end
@@ -4343,8 +4343,14 @@ in
       else op Op.type ptr+ @int OP_END_IF = if*
         context TypeContext.ip ptr+ inc64
         true // continue
-      else op Op.type ptr+ @int OP_END_WHILE = if*
-        op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
+      else op Op.type ptr+ @int OP_END_WHILE_ = if*
+        context TypeContext.ip ptr+
+        let ip in
+          ip @int
+          op Op.operand ptr+ @int
+          -
+          ip !int
+        end
         true // continue
       else op Op.type ptr+ @int OP_PREP_PROC = if*
         context TypeContext.ip ptr+ inc64
