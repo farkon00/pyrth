@@ -941,7 +941,7 @@ const OP_INLINED         1 offset end
 //                  Denotes the size of the while loop. Can be used by
 //                  a type checker to skip the whole loop after it was
 //                  properly type checked.
-const OP_WHILE           1 offset end
+const OP_WHILE_           1 offset end
 // OP_DO: Performs a conditional jump based on the consumed value from
 // the top of the data stack. If the value is `false` jump to the
 // provided address, otherwise "fall-through" to the next
@@ -1017,7 +1017,7 @@ in
   else dup OP_RET             =  if* "OP_RET"
   else dup OP_CALL            =  if* "OP_CALL"
   else dup OP_INLINED         =  if* "OP_INLINED"
-  else dup OP_WHILE           =  if* "OP_WHILE"
+  else dup OP_WHILE_           =  if* "OP_WHILE"
   else dup OP_DO_              =  if* "OP_DO"
   else dup OP_CALL_LIKE       =  if* "OP_CALL_LIKE"
   else dup OP_BIND_LET        =  if* "OP_BIND_LET"
@@ -1654,7 +1654,7 @@ in
            "    jmp addr_"       bfd bputs ip operand - bfd bputu "\n" bfd bputs
         else type OP_END_IF = if*
            // NOTE: nothing to generate for x86_64
-        else type OP_WHILE = if*
+        else type OP_WHILE_ = if*
            // NOTE: nothing to generate. `while` is basically a label
         else type OP_DO_ = if*
            "    pop rax\n"       bfd bputs
@@ -3039,7 +3039,7 @@ in
                   end
 
                   ops-count @64 parse-block-stack-push
-                  OP_WHILE 0 token push-op
+                  OP_WHILE_ 0 token push-op
                 else keyword KEYWORD_DO = if*
                   parse-block-stack-count @64 0 <= if
                     loc eputloc ": ERROR: `do` is not preceded by `while`\n" eputs
@@ -3053,7 +3053,7 @@ in
                   let
                     while-ip while-op while-type while-token
                   in
-                    while-type OP_WHILE != if
+                    while-type OP_WHILE_ != if
                       loc                                          eputloc
                       ": ERROR: `do` is not preceded by `while`\n" eputs
                       while-token Token.loc  ptr+                  eputloc
@@ -3117,7 +3117,7 @@ in
 
                         while-ip sizeof(Op) * ops +ptr
                         let while-op in
-                          while-op Op.type ptr+ @int OP_WHILE != if
+                          while-op Op.type ptr+ @int OP_WHILE_ != if
                             here eputs ": Assertion Failed: `do` does not preceed `while`\n" eputs
                             1 exit
                           end
@@ -3127,7 +3127,7 @@ in
                             OP_END_WHILE_ current-ip while-ip - token push-op
 
                             current-ip 1 + begin-ip - begin-op Op.operand ptr+ !int
-                            current-ip 1 +            while-op Op.operand ptr+ !int
+                            current-ip 1 + while-ip - while-op Op.operand ptr+ !int
                           end
                         end
                       end
@@ -4432,7 +4432,7 @@ in
         context TypeContext.ip ptr+ !int
 
         true // continue
-      else op Op.type ptr+ @int OP_WHILE = if*
+      else op Op.type ptr+ @int OP_WHILE_ = if*
         context TypeContext.ip ptr+ @int
         context TypeContext.block-start-ip ptr+ @int != if
           context TypeContext.stack ptr+
@@ -4444,7 +4444,12 @@ in
           type-context-from-parts
           type-check-program-from
 
-          op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
+          context TypeContext.ip ptr+
+          let ip in
+            ip @int
+            op Op.operand ptr+ @int +
+            ip !int
+          end
           true // continue
         else
           false // break, we repeated the loop
@@ -4776,7 +4781,7 @@ in
     context TypeContext.outs ptr+  TypeStack.top ptr+ @ptr TypeFrame.type ptr+ @int
     != if
       context TypeContext.block-start-ip ptr+ @int sizeof(Op) * ops +ptr
-        dup Op.type ptr+ @int OP_WHILE = if
+        dup Op.type ptr+ @int OP_WHILE_ = if
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
             ": ERROR: Unexpected data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations.\n" eputs
@@ -4817,7 +4822,7 @@ in
   context TypeContext.outs ptr+  TypeStack.count ptr+ @int
     over over > if
       context TypeContext.block-start-ip ptr+ @int sizeof(Op) * ops +ptr
-        dup Op.type ptr+ @int OP_WHILE = if
+        dup Op.type ptr+ @int OP_WHILE_ = if
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
             ": ERROR: Unhandled data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations. Here are the elements currently on the stack:\n" eputs
@@ -4840,7 +4845,7 @@ in
 
     over over < if
       context TypeContext.block-start-ip ptr+ @int sizeof(Op) * ops +ptr
-        dup Op.type ptr+ @int OP_WHILE = if
+        dup Op.type ptr+ @int OP_WHILE_ = if
           dup Op.token ptr+ Token.loc ptr+ eputloc
           dup Op.type ptr+ @int
             ": ERROR: Insufficient data on the stack after a single iteration of the loop. The types and the amount of elements on the stack are not allowed to change between the iterations. Here are the elements currently on the stack:\n" eputs
