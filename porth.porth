@@ -936,8 +936,11 @@ const OP_INLINED         1 offset end
 // OP_WHILE: Denotes the beginning of the while loop. Acts like a
 // label for the corresponding OP_END_WHILE instruction.
 //
-// operand type:    void
-// operand purpose: ignored
+// operand type:    addr
+// operand purpose: the address of the instruction after OP_END_WHILE.
+//                  Denotes the size of the while loop. Can be used by
+//                  a type checker to skip the whole loop after it was
+//                  properly type checked.
 const OP_WHILE           1 offset end
 // OP_DO: Performs a conditional jump based on the consumed value from
 // the top of the data stack. If the value is `false` jump to the
