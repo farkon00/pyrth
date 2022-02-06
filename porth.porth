@@ -2949,24 +2949,6 @@ in
               let keyword in
                 assert "Exhaustive handling of keywords in compile-file-into-ops" COUNT_KEYWORDS 21 = end
                 keyword KEYWORD_IF = if
-                  current-proc
-                  let p in
-                    p NULL ptr!= if
-                      p Proc.inlinable ptr+ @bool if
-                        // NOTE: `if*` and `else` are also not allowed in inlinable procedures yet,
-                        // but because they can't exist in without just `if` we don't check this
-                        // condition for them
-                        //
-                        // - rexim 30.01.2022
-                        loc                                                                 eputloc
-                        ": ERROR: conditions are not allowed in inlinable procedures yet\n" eputs
-                        p Proc.loc ptr+                                                     eputloc
-                        ": NOTE: the procedure starts here\n"                               eputs
-                        1 exit
-                      end
-                    end
-                  end
-
                   ops-count @64 parse-block-stack-push
                   OP_IF_ 0 token push-op
                 else keyword KEYWORD_IFSTAR = if*
