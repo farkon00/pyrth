@@ -3007,19 +3007,6 @@ in
                     end
                   end
                 else keyword KEYWORD_WHILE = if*
-                  current-proc
-                  let p in
-                    p NULL ptr!= if
-                      p Proc.inlinable ptr+ @bool if
-                        loc                                                 eputloc
-                        ": ERROR: while loops are not allowed in inlinable procedures yet\n" eputs
-                        p Proc.loc ptr+                                                      eputloc
-                        ": NOTE: the procedure starts here\n"                                eputs
-                        1 exit
-                      end
-                    end
-                  end
-
                   ops-count @64 parse-block-stack-push
                   OP_WHILE_ 0 token push-op
                 else keyword KEYWORD_DO = if*
