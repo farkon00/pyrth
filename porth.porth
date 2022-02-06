@@ -952,7 +952,7 @@ const OP_WHILE           1 offset end
 // operand type:    addr
 // operand purpose: The address of the code to jump to when the consumed value
 //                  is `false`.
-const OP_DO              1 offset end
+const OP_DO_              1 offset end
 // OP_INTRINSIC: Calls a built in intrinsic procedure.
 //
 // operand type:    int
@@ -1018,7 +1018,7 @@ in
   else dup OP_CALL            =  if* "OP_CALL"
   else dup OP_INLINED         =  if* "OP_INLINED"
   else dup OP_WHILE           =  if* "OP_WHILE"
-  else dup OP_DO              =  if* "OP_DO"
+  else dup OP_DO_              =  if* "OP_DO"
   else dup OP_CALL_LIKE       =  if* "OP_CALL_LIKE"
   else dup OP_BIND_LET        =  if* "OP_BIND_LET"
   else dup OP_BIND_PEEK       =  if* "OP_BIND_PEEK"
@@ -1656,10 +1656,10 @@ in
            // NOTE: nothing to generate for x86_64
         else type OP_WHILE = if*
            // NOTE: nothing to generate. `while` is basically a label
-        else type OP_DO = if*
+        else type OP_DO_ = if*
            "    pop rax\n"       bfd bputs
            "    test rax, rax\n" bfd bputs
-           "    jz addr_"        bfd bputs operand bfd bputu "\n" bfd bputs
+           "    jz addr_"        bfd bputs ip operand + bfd bputu "\n" bfd bputs
         else type OP_PREP_PROC = if*
            "    sub rsp, "                  bfd bputs
            operand                          bfd bputu
@@ -3064,7 +3064,14 @@ in
                     end
 
                     ops-count @64 parse-block-stack-push
-                    OP_DO while-ip token push-op
+                    // NOTE: temporarily storring the absolute address
+                    // of OP_WHILE in OP_DO operand so we can use it
+                    // for OP_END_WHILE later.
+                    //
+                    // TODO: Maybe we should use block-stack for now?
+                    //
+                    // - rexim 06.02.2022
+                    OP_DO_ while-ip token push-op
                   end
                 else keyword KEYWORD_END = if*
                   parse-block-stack-count @64 0 <= if
@@ -3100,7 +3107,7 @@ in
                     else begin-type OP_ELSE_ = if*
                       ops-count @int begin-ip - begin-op Op.operand ptr+ !int
                       OP_END_IF 0 token push-op
-                    else begin-type OP_DO = if*
+                    else begin-type OP_DO_ = if*
                       begin-op Op.operand ptr+ @int
                       let while-ip in
                         while-ip ops-count @int >= if
@@ -3119,8 +3126,8 @@ in
 
                           ops-count @int
                           let current-ip in
-                            current-ip begin-op Op.operand ptr+ !int
-                            current-ip while-op Op.operand ptr+ !int
+                            current-ip begin-ip - begin-op Op.operand ptr+ !int
+                            current-ip            while-op Op.operand ptr+ !int
                           end
                         end
                       end
@@ -4436,7 +4443,7 @@ in
         else
           false // break, we repeated the loop
         end
-      else op Op.type ptr+ @int OP_DO = if*
+      else op Op.type ptr+ @int OP_DO_ = if*
         op Op.token ptr+ context TypeContext.stack ptr+ type-check-if-op
 
         // then branch
