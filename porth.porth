@@ -861,7 +861,7 @@ const OP_PUSH_CSTR       1 offset end
 // operand type:    addr
 // operand purpose: The address of the code to jump to when the consumed value
 //                  is `false`.
-const OP_IF              1 offset end
+const OP_IF_              1 offset end
 // OP_IFSTAR: Performs a conditional jump based on the consumed value
 // from the top of the data stack. If the value is `false` jump to the
 // provided address, otherwise "fall-through" to the next
@@ -872,7 +872,7 @@ const OP_IF              1 offset end
 // operand type:    addr
 // operand purpose: The address of the code to jump to when the consumed value
 //                  is `false`.
-const OP_IFSTAR          1 offset end
+const OP_IFSTAR_          1 offset end
 // OP_ELSE: Performs an unconditional jump. Always follows OP_IF or
 // OP_IFSTAR instruction. Always jumps to another OP_ELSE or OP_END_IF
 // instruction to short-circuit the entire if-else-if*-end chain when
@@ -883,7 +883,7 @@ const OP_IFSTAR          1 offset end
 //
 // operand type:    addr
 // operand purpose: The address of the code to jump to.
-const OP_ELSE            1 offset end
+const OP_ELSE_            1 offset end
 // OP_END_IF: Denotes the end of the if-else-if* block. Does not
 // really do anything else. Follows OP_IF, OP_ELSE or OP_IFSTAR
 // instructions. Could be simply ignored during target-specific code
@@ -1005,9 +1005,9 @@ in
   else dup OP_PUSH_STR        =  if* "OP_PUSH_STR"
   else dup OP_PUSH_CSTR       =  if* "OP_PUSH_CSTR"
   else dup OP_INTRINSIC       =  if* "OP_INTRINSIC"
-  else dup OP_IF              =  if* "OP_IF"
-  else dup OP_IFSTAR          =  if* "OP_IFSTAR"
-  else dup OP_ELSE            =  if* "OP_ELSE"
+  else dup OP_IF_              =  if* "OP_IF"
+  else dup OP_IFSTAR_          =  if* "OP_IFSTAR"
+  else dup OP_ELSE_            =  if* "OP_ELSE"
   else dup OP_END_IF          =  if* "OP_END_IF"
   else dup OP_END_WHILE       =  if* "OP_END_WHILE"
   else dup OP_PREP_PROC       =  if* "OP_PREP_PROC"
@@ -1637,16 +1637,16 @@ in
            "    push str_"      bfd bputs
            operand bfd bputu
            "\n"                 bfd bputs
-        else type OP_IF = if*
+        else type OP_IF_ = if*
            "    pop rax\n"       bfd bputs
            "    test rax, rax\n" bfd bputs
-           "    jz addr_"        bfd bputs operand bfd bputu "\n" bfd bputs
-        else type OP_IFSTAR = if*
+           "    jz addr_"        bfd bputs ip operand + bfd bputu "\n" bfd bputs
+        else type OP_IFSTAR_ = if*
            "    pop rax\n"       bfd bputs
            "    test rax, rax\n" bfd bputs
-           "    jz addr_"        bfd bputs operand bfd bputu "\n" bfd bputs
-        else type OP_ELSE = if*
-           "    jmp addr_"       bfd bputs operand bfd bputu "\n" bfd bputs
+           "    jz addr_"        bfd bputs ip operand + bfd bputu "\n" bfd bputs
+        else type OP_ELSE_ = if*
+           "    jmp addr_"       bfd bputs ip operand + bfd bputu "\n" bfd bputs
         else type OP_END_WHILE = if*
            "    jmp addr_"       bfd bputs operand bfd bputu "\n" bfd bputs
         else type OP_END_IF = if*
@@ -2965,7 +2965,7 @@ in
                   end
 
                   ops-count @64 parse-block-stack-push
-                  OP_IF 0 token push-op
+                  OP_IF_ 0 token push-op
                 else keyword KEYWORD_IFSTAR = if*
                   parse-block-stack-top
                   let else-ip ok in
@@ -2974,14 +2974,14 @@ in
                       1 exit
                     end
 
-                    else-ip sizeof(Op) * ops +ptr Op.type ptr+ @int OP_ELSE != if
+                    else-ip sizeof(Op) * ops +ptr Op.type ptr+ @int OP_ELSE_ != if
                       loc eputloc ": ERROR: `if*` can only come after `else`\n" eputs
                       1 exit
                     end
                   end
 
                   ops-count @int parse-block-stack-push
-                  OP_IFSTAR 0 token push-op
+                  OP_IFSTAR_ 0 token push-op
                 else keyword KEYWORD_ELSE = if*
                   parse-block-stack-count @int 0 <= if
                     loc eputloc
@@ -2993,27 +2993,28 @@ in
                   dup sizeof(Op) * ops +ptr
                   dup Op.type ptr+ @int
                   let if-ip if-op if-type in
-                    if-type OP_IF = if
+                    if-type OP_IF_ = if
                       ops-count @int
                       let current-ip in
-                        current-ip 1 + if-op Op.operand ptr+ !64
+                        current-ip if-ip - 1 + if-op Op.operand ptr+ !64
                         current-ip parse-block-stack-push
-                        OP_ELSE 0 token push-op
+                        OP_ELSE_ 0 token push-op
                       end
-                    else if-type OP_IFSTAR = if*
-                      if-op Op.type ptr+ @int OP_IFSTAR != if
-                        here eputs ": Assertion Failed: expected `if*`\n" eputs
-                        1 exit
-                      end
-
-                      parse-block-stack-pop sizeof(Op) * ops +ptr
+                    else if-type OP_IFSTAR_ = if*
+                      parse-block-stack-pop
+                      dup sizeof(Op) * ops +ptr
                       ops-count @int
-                      let else-op current-ip in
-                        current-ip 1 + if-op   Op.operand ptr+ !int
-                        current-ip     else-op Op.operand ptr+ !int
+                      let else-ip else-op current-ip in
+                        else-op Op.type ptr+ @int OP_ELSE_ != if
+                          here eputs ": Assertion Failed: expected OP_ELSE\n" eputs
+                          1 exit
+                        end
+
+                        current-ip if-ip   - 1 + if-op   Op.operand ptr+ !int
+                        current-ip else-ip -     else-op Op.operand ptr+ !int
                         current-ip parse-block-stack-push
                       end
-                      OP_ELSE 0 token push-op
+                      OP_ELSE_ 0 token push-op
                     else
                       loc eputloc
                       ": ERROR: `else` can only come after `if` or `if*`\n" eputs
@@ -3075,25 +3076,26 @@ in
                   let
                     begin-ip begin-op begin-type
                   in
-                    begin-type OP_IF = if
-                      ops-count @int begin-op Op.operand ptr+ !int
+                    begin-type OP_IF_ = if
+                      ops-count @int begin-ip - begin-op Op.operand ptr+ !int
                       OP_END_IF 0 token push-op
-                    else begin-type OP_IFSTAR = if*
-                      parse-block-stack-pop sizeof(Op) * ops +ptr
-                      let else-op in
-                        else-op Op.type ptr+ @int OP_ELSE != if
+                    else begin-type OP_IFSTAR_ = if*
+                      parse-block-stack-pop
+                      dup sizeof(Op) * ops +ptr
+                      let else-ip else-op in
+                        else-op Op.type ptr+ @int OP_ELSE_ != if
                           here eputs ": Assertion Failed: `else-if*-end` chain is broken. Lost `else` somewhere.\n" eputs
                           loc located-here
                           1 exit
                         end
 
-                        ops-count @int 1 + begin-op Op.operand ptr+ !int
-                        ops-count @int else-op Op.operand ptr+ !int
+                        ops-count @int begin-ip - 1 + begin-op Op.operand ptr+ !int
+                        ops-count @int else-ip  -     else-op  Op.operand ptr+ !int
 
                         OP_END_IF 0 token push-op
                       end
-                    else begin-type OP_ELSE = if*
-                      ops-count @int begin-op Op.operand ptr+ !int
+                    else begin-type OP_ELSE_ = if*
+                      ops-count @int begin-ip - begin-op Op.operand ptr+ !int
                       OP_END_IF 0 token push-op
                     else begin-type OP_DO = if*
                       begin-op Op.operand ptr+ @int
@@ -4285,7 +4287,7 @@ in
         context TypeContext.ip ptr+ inc64
 
         true  // continue
-      else op Op.type ptr+ @int OP_IF = if*
+      else op Op.type ptr+ @int OP_IF_ = if*
         op Op.token ptr+ context TypeContext.stack ptr+ type-check-if-op
 
         // then branch
@@ -4294,9 +4296,15 @@ in
         context TypeContext.ip ptr+ dec64
 
         // else branch
-        op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
+        context TypeContext.ip ptr+
+        let ip in
+          ip @int
+          op Op.operand ptr+ @int
+          +
+          ip !int
+        end
         true // continue
-      else op Op.type ptr+ @int OP_IFSTAR = if*
+      else op Op.type ptr+ @int OP_IFSTAR_ = if*
         op Op.token ptr+ context TypeContext.stack ptr+ type-check-if-op
 
         // then branch
@@ -4305,10 +4313,22 @@ in
         context TypeContext.ip ptr+ dec64
 
         // else branch
-        op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
+        context TypeContext.ip ptr+
+        let ip in
+          ip @int
+          op Op.operand ptr+ @int
+          +
+          ip !int
+        end
         true // continue
-      else op Op.type ptr+ @int OP_ELSE = if*
-        op Op.operand ptr+ @int context TypeContext.ip ptr+ !int
+      else op Op.type ptr+ @int OP_ELSE_ = if*
+        context TypeContext.ip ptr+
+        let ip in
+          ip @int
+          op Op.operand ptr+ @int
+          +
+          ip !int
+        end
         true // continue
       else op Op.type ptr+ @int OP_END_IF = if*
         context TypeContext.ip ptr+ inc64
