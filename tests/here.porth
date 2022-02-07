@@ -1,5 +1,0 @@
-include "std.porth"
-
-proc main in
-  here puts ": FIXME: something needs to be done here\n" puts 69 exit
-end

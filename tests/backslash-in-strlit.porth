@@ -1,5 +1,0 @@
-include "std.porth"
-
-proc main in
-  "\\" puts
-end

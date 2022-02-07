@@ -1,5 +1,0 @@
-include "std.porth"
-
-if do
-   "test\n" puts
-end

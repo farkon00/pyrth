@@ -1,3 +1,0 @@
-proc main in
-  34 35 + 69 = if 69 end print
-end
