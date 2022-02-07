@@ -4,7 +4,7 @@ Due to certain individuals trying to disrupt the design and development process 
 
 In the meantime feel free to do whatever you want with the previous versions of the compiler under MIT license.
 
-To learn how the entire thing have started checkout the playlist with development streams: https://www.youtube.com/watch?v=8QP2fDBIxjM&list=PLpM-Dvs8t0VbMZA7wW9aR3EtBqe2kinu4
+To learn how the entire thing has started check out the playlist with development streams: https://www.youtube.com/watch?v=8QP2fDBIxjM&list=PLpM-Dvs8t0VbMZA7wW9aR3EtBqe2kinu4
 
 ## How to Access the Last Open Version
 
