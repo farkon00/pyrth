@@ -15,3 +15,13 @@ $ git clone https://gitlab.com/tsoding/porth.git
 $ cd porth
 $ git checkout c329007
 ```
+
+## Development Milestones
+
+- [x] Compiled to a native instruction set (only x86_64 for now)
+- [x] [Turing-complete](https://gitlab.com/tsoding/porth/-/blob/c3290073933bb4067339d3bc5550d4d9bf8b12c4/examples/rule110.porth)
+- [x] Statically typed (the type checking is inspired by [WASM validation](https://binji.github.io/posts/webassembly-type-checking/))
+- [x] [Self-hosted](https://en.wikipedia.org/wiki/Self-hosting_(compilers)) (See [./porth.porth](https://gitlab.com/tsoding/porth/-/blob/c3290073933bb4067339d3bc5550d4d9bf8b12c4/porth.porth), it is actually written in itself)
+- [ ] More or else close in convenience to C
+- [ ] Optimized
+- [ ] Crossplatform
