@@ -5015,7 +5015,7 @@ proc main in
         silent @bool cmd-dev-null-stdout !bool
         fpb-end
           tmp-end
-          "fasm"c       tmp-append-ptr
+          "fasm.x64"c       tmp-append-ptr
           "-m"c         tmp-append-ptr
           "524288"c     tmp-append-ptr
           fpb-end
