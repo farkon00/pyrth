@@ -1655,136 +1655,72 @@ in
             end
 
             operand INTRINSIC_PLUS = if
-                "stack.append(stack.pop() + stack.pop())\n" tabs bfd write-py-line
+                "stack.append(stack.pop() + stack.pop())\n"       tabs bfd write-py-line
             else operand INTRINSIC_MINUS = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    sub rbx, rax\n"        bfd bputs
-                "    push rbx\n"            bfd bputs
+                "m2, m1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+                "stack.append(m1 - m2); del m1, m2\n"             tabs bfd write-py-line
             else operand INTRINSIC_MUL = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    mul rbx\n"             bfd bputs
-                "    push rax\n"            bfd bputs
+                "stack.append(stack.pop() * stack.pop())\n"       tabs bfd write-py-line
             else operand INTRINSIC_DIVMOD = if*
-                "    xor rdx, rdx\n"        bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    pop rax\n"             bfd bputs
-                "    div rbx\n"             bfd bputs
-                "    push rax\n"            bfd bputs
-                "    push rdx\n"            bfd bputs
+                "d2, d1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+                "stack.append(d1 // d2)\n"                        tabs bfd write-py-line
+                "stack.append(d1 % d2); del d1, d2\n"             tabs bfd write-py-line
             else operand INTRINSIC_IDIVMOD = if*
-                "    pop rbx\n"             bfd bputs
-                "    pop rax\n"             bfd bputs
-                "    cqo\n"                 bfd bputs
-                "    idiv rbx\n"            bfd bputs
-                "    push rax\n"            bfd bputs
-                "    push rdx\n"            bfd bputs
+                "d2, d1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+                "stack.append(d1 // d2)\n"                        tabs bfd write-py-line
+                "stack.append(d1 % d2); del d1, d2\n"             tabs bfd write-py-line
             else operand INTRINSIC_MAX = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    cmp rbx, rax\n"        bfd bputs
-                "    cmovge rax, rbx\n"     bfd bputs
-                "    push rax\n"            bfd bputs
+                "stack.append(max((stack.pop(), stack.pop())))\n" tabs bfd write-py-line
             else operand INTRINSIC_SHR = if*
-                "    pop rcx\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    shr rbx, cl\n"         bfd bputs
-                "    push rbx\n"            bfd bputs
+                "n = stack.pop()\n"                               tabs bfd write-py-line
+                "val = stack.pop()\n"                             tabs bfd write-py-line
+                "if (val >= 0): stack.append(val >> n)\n"         tabs bfd write-py-line
+                "elif (n == 0): stack.append(val)\n"              tabs bfd write-py-line
+                "else: stack.append((val + 0x10000000) >> n)\n"   tabs bfd write-py-line
+                "del val, n\n"                                    tabs bfd write-py-line
             else operand INTRINSIC_SHL = if*
-                "    pop rcx\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    shl rbx, cl\n"         bfd bputs
-                "    push rbx\n"            bfd bputs
+                "n = stack.pop()\n"                               tabs bfd write-py-line
+                "val = stack.pop()\n"                             tabs bfd write-py-line
+                "if (val >= 0): stack.append(val << n)\n"         tabs bfd write-py-line
+                "elif (n == 0): stack.append(val)\n"              tabs bfd write-py-line
+                "else: stack.append((val + 0x10000000) << n)\n"   tabs bfd write-py-line
+                "del val, n\n"                                    tabs bfd write-py-line
             else operand INTRINSIC_OR = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    or rbx, rax\n"         bfd bputs
-                "    push rbx\n"            bfd bputs
+                "stack.append(stack.pop() or stack.pop())\n"      tabs bfd write-py-line
             else operand INTRINSIC_AND = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    and rbx, rax\n"        bfd bputs
-                "    push rbx\n"            bfd bputs
+                "stack.append(stack.pop() and stack.pop())\n"     tabs bfd write-py-line
             else operand INTRINSIC_NOT = if*
-                "    pop rax\n"             bfd bputs
-                "    not rax\n"             bfd bputs
-                "    push rax\n"            bfd bputs
+                "stack.append(not stack.pop())\n"                 tabs bfd write-py-line
             else operand INTRINSIC_PRINT = if*
-                "    pop rdi\n"             bfd bputs
-                "    call print\n"          bfd bputs
+                "print(stack.pop())\n"                            tabs bfd write-py-line
             else operand INTRINSIC_EQ = if*
-                "    mov rcx, 0\n"          bfd bputs
-                "    mov rdx, 1\n"          bfd bputs
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    cmp rax, rbx\n"        bfd bputs
-                "    cmove rcx, rdx\n"      bfd bputs
-                "    push rcx\n"            bfd bputs
+                "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+                "stack.append(c1 == c2); del c1, c2\n"            tabs bfd write-py-line
             else operand INTRINSIC_GT = if*
-                "    mov rcx, 0\n"          bfd bputs
-                "    mov rdx, 1\n"          bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    pop rax\n"             bfd bputs
-                "    cmp rax, rbx\n"        bfd bputs
-                "    cmovg rcx, rdx\n"      bfd bputs
-                "    push rcx\n"            bfd bputs
+                "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+                "stack.append(c1 > c2); del c1, c2\n"             tabs bfd write-py-line
             else operand INTRINSIC_LT = if*
-                "    mov rcx, 0\n"          bfd bputs
-                "    mov rdx, 1\n"          bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    pop rax\n"             bfd bputs
-                "    cmp rax, rbx\n"        bfd bputs
-                "    cmovl rcx, rdx\n"      bfd bputs
-                "    push rcx\n"            bfd bputs
+                "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+                "stack.append(c1 < c2); del c1, c2\n"             tabs bfd write-py-line
             else operand INTRINSIC_GE = if*
-                "    mov rcx, 0\n"          bfd bputs
-                "    mov rdx, 1\n"          bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    pop rax\n"             bfd bputs
-                "    cmp rax, rbx\n"        bfd bputs
-                "    cmovge rcx, rdx\n"     bfd bputs
-                "    push rcx\n"            bfd bputs
+                "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+                "stack.append(c1 >= c2); del c1, c2\n"            tabs bfd write-py-line
             else operand INTRINSIC_LE = if*
-                "    mov rcx, 0\n"          bfd bputs
-                "    mov rdx, 1\n"          bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    pop rax\n"             bfd bputs
-                "    cmp rax, rbx\n"        bfd bputs
-                "    cmovle rcx, rdx\n"     bfd bputs
-                "    push rcx\n"            bfd bputs
+                "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+                "stack.append(c1 <= c2); del c1, c2\n"            tabs bfd write-py-line
             else operand INTRINSIC_NE = if*
-                "    mov rcx, 0\n"          bfd bputs
-                "    mov rdx, 1\n"          bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    pop rax\n"             bfd bputs
-                "    cmp rax, rbx\n"        bfd bputs
-                "    cmovne rcx, rdx\n"     bfd bputs
-                "    push rcx\n"            bfd bputs
+                "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+                "stack.append(c1 != c2); del c1, c2\n"            tabs bfd write-py-line
             else operand INTRINSIC_DUP = if*
-                "    pop rax\n"             bfd bputs
-                "    push rax\n"            bfd bputs
-                "    push rax\n"            bfd bputs
+                "stack.append(stack[-1])\n"                       tabs bfd write-py-line
             else operand INTRINSIC_SWAP = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    push rax\n"            bfd bputs
-                "    push rbx\n"            bfd bputs
+                "stack[-2], stack[-1] = stack[-1], stack[-2]\n"   tabs bfd write-py-line
             else operand INTRINSIC_DROP = if*
                 "stack.pop()\n" tabs bfd write-py-line
             else operand INTRINSIC_OVER = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    push rbx\n"            bfd bputs
-                "    push rax\n"            bfd bputs
-                "    push rbx\n"            bfd bputs
+                "stack.append(stack[-2])\n"                       tabs bfd write-py-line
             else operand INTRINSIC_ROT = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    pop rcx\n"             bfd bputs
-                "    push rbx\n"            bfd bputs
-                "    push rax\n"            bfd bputs
-                "    push rcx\n"            bfd bputs
+                "stack.append(stack[-3]);del stack[-4]\n"         tabs bfd write-py-line
             else operand INTRINSIC_LOAD8 = if*
                 "    pop rax\n"             bfd bputs
                 "    xor rbx, rbx\n"        bfd bputs
