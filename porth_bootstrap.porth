@@ -1468,13 +1468,53 @@ in
   end
 end
 
+proc generate-print-intel-linux-x86_64
+  ptr // bfd
+in
+  let bfd in
+    "print:\n"                               bfd bputs
+    "    mov     r9, -3689348814741910323\n" bfd bputs
+    "    sub     rsp, 40\n"                  bfd bputs
+    "    mov     BYTE [rsp+31], 10\n"        bfd bputs
+    "    lea     rcx, [rsp+30]\n"            bfd bputs
+    ".L2:\n"                                 bfd bputs
+    "    mov     rax, rdi\n"                 bfd bputs
+    "    lea     r8, [rsp+32]\n"             bfd bputs
+    "    mul     r9\n"                       bfd bputs
+    "    mov     rax, rdi\n"                 bfd bputs
+    "    sub     r8, rcx\n"                  bfd bputs
+    "    shr     rdx, 3\n"                   bfd bputs
+    "    lea     rsi, [rdx+rdx*4]\n"         bfd bputs
+    "    add     rsi, rsi\n"                 bfd bputs
+    "    sub     rax, rsi\n"                 bfd bputs
+    "    add     eax, 48\n"                  bfd bputs
+    "    mov     BYTE [rcx], al\n"           bfd bputs
+    "    mov     rax, rdi\n"                 bfd bputs
+    "    mov     rdi, rdx\n"                 bfd bputs
+    "    mov     rdx, rcx\n"                 bfd bputs
+    "    sub     rcx, 1\n"                   bfd bputs
+    "    cmp     rax, 9\n"                   bfd bputs
+    "    ja      .L2\n"                      bfd bputs
+    "    lea     rax, [rsp+32]\n"            bfd bputs
+    "    mov     edi, 1\n"                   bfd bputs
+    "    sub     rdx, rax\n"                 bfd bputs
+    "    xor     eax, eax\n"                 bfd bputs
+    "    lea     rsi, [rsp+32+rdx]\n"        bfd bputs
+    "    mov     rdx, r8\n"                  bfd bputs
+    "    mov     rax, 1\n"                   bfd bputs
+    "    syscall\n"                          bfd bputs
+    "    add     rsp, 40\n"                  bfd bputs
+    "    ret\n"                              bfd bputs
+  end
+end
+
 proc generate-op-comment ptr ptr in
   let op bfd in
     op Op.type    ptr+ @int
     op Op.operand ptr+ @int
     op Op.token   ptr+
     let type operand token in
-      " # "                    bfd bputs
+      " ;; "                   bfd bputs
       token Token.loc ptr+     bfd bputloc
       ": "                     bfd bputs
       type op-type-as-str      bfd bputs
@@ -1489,27 +1529,15 @@ proc generate-op-comment ptr ptr in
   end
 end
 
-proc write-py-line 
-  int ptr // line
-  ptr // tabs
-  ptr // bfd
-in
-  let line.count line.data tabs bfd in
-    0 while tabs @64 over > do
-      "    " bfd bputs
-      1 +
-    end
-    drop
-    line.count line.data bfd bputs 
-  end
-end
-
-proc generate-op-python
+proc generate-op-intel-linux-x86_64
   int // ip
-  ptr // tabs
   ptr // bfd
 in
-  let ip tabs bfd in
+  let ip bfd in
+    "addr_" bfd bputs
+    ip      bfd bputu
+    ":"     bfd bputs
+
     ip sizeof(Op) * ops +ptr
     let op in
       op bfd generate-op-comment
@@ -1519,9 +1547,8 @@ in
       let type operand in
         assert "Exhaustive handling of Op types in generate-op-intel-linux-x86_64" COUNT_OPS 25 = end
         type OP_PUSH_INT = if
-          "stack.append(" tabs bfd write-py-line 
-          operand bfd bputu 
-          ")\n" bfd bputs 
+           "    mov rax, "   bfd bputs operand bfd bputu "\n" bfd bputs
+           "    push rax\n"  bfd bputs
         else type OP_PUSH_BOOL = if*
            "    mov rax, "   bfd bputs operand bfd bputu "\n" bfd bputs
            "    push rax\n"  bfd bputs
@@ -1633,12 +1660,19 @@ in
            "    test rax, rax\n" bfd bputs
            "    jz addr_"        bfd bputs ip operand + bfd bputu "\n" bfd bputs
         else type OP_PREP_PROC = if*
-          "def " tabs bfd write-py-line
-          op Op.token ptr+ Token.value ptr+ @Str bfd bputs
-          "(stack):\n" bfd bputs
-          tabs @64 1 + tabs !64 
+           "    sub rsp, "                  bfd bputs
+           operand                          bfd bputu
+           "\n"                             bfd bputs
+
+           "    mov [ret_stack_rsp], rsp\n" bfd bputs
+           "    mov rsp, rax\n"             bfd bputs
         else type OP_RET = if*
-           "return stack" tabs bfd write-py-line
+           "    mov rax, rsp\n"             bfd bputs
+           "    mov rsp, [ret_stack_rsp]\n" bfd bputs
+           "    add rsp, "                  bfd bputs
+           operand             bfd bputu
+           "\n"                             bfd bputs
+           "    ret\n"                      bfd bputs
         else type OP_CALL = if*
            "    mov rax, rsp\n"             bfd bputs
            "    mov rsp, [ret_stack_rsp]\n" bfd bputs
@@ -1655,7 +1689,10 @@ in
             end
 
             operand INTRINSIC_PLUS = if
-                "stack.append(stack.pop() + stack.pop())\n" tabs bfd write-py-line
+                "    pop rax\n"             bfd bputs
+                "    pop rbx\n"             bfd bputs
+                "    add rax, rbx\n"        bfd bputs
+                "    push rax\n"            bfd bputs
             else operand INTRINSIC_MINUS = if*
                 "    pop rax\n"             bfd bputs
                 "    pop rbx\n"             bfd bputs
@@ -1771,7 +1808,7 @@ in
                 "    push rax\n"            bfd bputs
                 "    push rbx\n"            bfd bputs
             else operand INTRINSIC_DROP = if*
-                "stack.pop()\n" tabs bfd write-py-line
+                "    pop rax\n"             bfd bputs
             else operand INTRINSIC_OVER = if*
                 "    pop rax\n"             bfd bputs
                 "    pop rbx\n"             bfd bputs
@@ -1904,18 +1941,16 @@ in
   end
 end
 
-proc generate-python-code
+proc generate-fasm-linux-x86_64
   ptr // file-path
 in
   memory bfd sizeof(Bfd) end
-  memory tabulations sizeof(int) end
-  0 tabulations !64
   sizeof(Bfd) 0 bfd memset drop
 
   let file-path in
     silent @bool lnot if
       "[INFO] Generating "       puts
-      file-path cstr-to-str      puts
+      file-path cstr-to-str puts
       "\n"                       puts
     end
 
@@ -1934,13 +1969,66 @@ in
         "[ERROR] could not open `output.asm`\n" eputs
         1 exit
       end
-      // 0 1 +
+
+      "format ELF64 executable 3\n"   bfd bputs
+      "segment readable executable\n" bfd bputs
+      bfd generate-print-intel-linux-x86_64
+
       0 while dup ops-count @64 < do
-        dup tabulations bfd generate-op-python
+        dup bfd generate-op-intel-linux-x86_64
         1 +
       end drop
 
-      "\nmain([])\n" bfd bputs
+      "addr_"       bfd bputs
+      ops-count @64 bfd bputu
+      ":\n"         bfd bputs
+
+      "entry start\n"                  bfd bputs
+      "start:\n"                       bfd bputs
+      "    mov [args_ptr], rsp\n"      bfd bputs
+      "    mov rax, ret_stack_end\n"   bfd bputs
+      "    mov [ret_stack_rsp], rax\n" bfd bputs
+
+      "main" proc-lookup-by-name
+      let main-proc in
+        main-proc NULL ptr= if
+          here eputs ": Assertion Failed: type checking phase did not check the existence of `main` procedure" eputs
+          1 exit
+        end
+
+        "    call addr_"              bfd bputs
+        main-proc Proc.addr ptr+ @int bfd bputu
+        "\n"                          bfd bputs
+      end
+
+      "    mov rax, 60\n"           bfd bputs
+      "    mov rdi, 0\n"            bfd bputs
+      "    syscall\n"               bfd bputs
+      "segment readable writable\n" bfd bputs
+      0 while dup strlits-count @64 < do
+        let i in
+          "str_" bfd bputs
+          i      bfd bputu
+          ":"    bfd bputs
+          i sizeof(Str) * strlits +ptr
+          let str in
+            str ?str-empty lnot if
+              " db "   bfd bputs
+              str @Str bfd bputdecstr
+            end
+          end
+          "\n" bfd bputs
+          i 1 +
+        end
+      end drop
+      // "segment .bss\n"           bfd bputs
+      "args_ptr: rq 1\n"         bfd bputs
+      "ret_stack_rsp: rq 1\n"    bfd bputs
+      "ret_stack: rb "           bfd bputs X86_64_RET_STACK_CAP bfd bputu "\n" bfd bputs
+      "ret_stack_end:\n"         bfd bputs
+      "mem: rb "                 bfd bputs
+      global-memory-capacity @64 bfd bputu
+      "\n"                       bfd bputs
 
       bfd bflush
       fd close drop
@@ -4916,11 +5004,71 @@ proc main in
     timeit/from-here
       fpb-end
         base-file-path @Str fpb-append drop
-        ".py"               fpb-append drop
+        ".asm"              fpb-append drop
         1                   fpb-alloc  drop
-        dup generate-python-code
+        dup generate-fasm-linux-x86_64
       fpb-rewind
     "[INFO] Generation" silent @bool timeit/to-here
+
+    timeit/from-here
+      cmd-dev-null-stdout @bool
+        silent @bool cmd-dev-null-stdout !bool
+        fpb-end
+          tmp-end
+          "fasm.x64"c       tmp-append-ptr
+          "-m"c         tmp-append-ptr
+          "524288"c     tmp-append-ptr
+          fpb-end
+            base-file-path @Str fpb-append drop
+            ".asm"              fpb-append drop
+            1                   fpb-alloc  drop
+            tmp-append-ptr
+          fpb-end
+            base-file-path @Str fpb-append drop
+            ".tmp"              fpb-append drop
+            1                   fpb-alloc  drop
+            tmp-append-ptr
+          NULL          tmp-append-ptr
+          silent @bool lnot cmd-echoed
+        fpb-rewind
+      cmd-dev-null-stdout !bool
+
+      fpb-end
+        fpb-end
+          base-file-path @Str fpb-append drop
+          1                   fpb-alloc  drop
+
+        fpb-end
+          base-file-path @Str fpb-append drop
+          ".tmp"              fpb-append drop
+          1                   fpb-alloc  drop
+
+        silent @bool lnot if
+          "[INFO] renaming " puts
+          dup cstr-to-str    puts
+          " -> "             puts
+          over cstr-to-str   puts
+          "\n"               puts
+        end
+
+        rename 0 < if
+          "ERROR: could not rename the file\n" eputs
+          1 exit
+        end
+      fpb-rewind
+
+      fpb-end
+        tmp-end
+        "chmod"c      tmp-append-ptr
+        "+x"c         tmp-append-ptr
+        fpb-end
+          base-file-path @Str fpb-append drop
+          1                   fpb-alloc  drop
+          tmp-append-ptr
+        NULL          tmp-append-ptr
+        silent @bool lnot cmd-echoed
+      fpb-rewind
+    "[INFO] fasm" silent @bool timeit/to-here
 
     run @bool if
       tmp-end

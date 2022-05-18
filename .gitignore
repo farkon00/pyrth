@@ -1,10 +1,13 @@
 output
 test
+foo.porth
 __pycache__/
 *.asm
 *.o
+*.py
 *.dot
 *.svg
 *.ppm
 porth
+porth_bootstrap
 *.swp
