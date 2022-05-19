@@ -1615,37 +1615,37 @@ in
            "\n"                 bfd bputs
         else type OP_IF = if*
           "if stack.pop():\n" tabs bfd write-py-line
-          tabs @64 1 + tabs !64 
+          tabs inc64
         else type OP_IFSTAR = if*
            "    pop rax\n"       bfd bputs
            "    test rax, rax\n" bfd bputs
            "    jz addr_"        bfd bputs ip operand + bfd bputu "\n" bfd bputs
         else type OP_ELSE = if*
-          tabs @64 1 - tabs !64 
+          tabs dec64 
           "else:\n" tabs bfd write-py-line
-          tabs @64 1 + tabs !64 
+          tabs inc64
         else type OP_END_WHILE = if*
-           "pass\n" tabs bfd write-py-line
-            tabs @64 1 - tabs !64
+          "pass\n" tabs bfd write-py-line
+          tabs dec64
         else type OP_END_IF = if*
           "pass\n" tabs bfd write-py-line
-          tabs @64 1 - tabs !64 
+          tabs dec64 
         else type OP_WHILE = if*
-           "def __while_condition__():\n" tabs bfd write-py-line
-           tabs @64 1 + tabs !64 
+          "def __while_condition__():\n" tabs bfd write-py-line
+          tabs inc64
         else type OP_DO = if*
-           "return stack.pop()\n" tabs bfd write-py-line
-           tabs @64 1 - tabs !64 
-           "while __while_condition__():\n" tabs bfd write-py-line
-           tabs @64 1 + tabs !64 
+          "return stack.pop()\n" tabs bfd write-py-line
+          tabs dec64 
+          "while __while_condition__():\n" tabs bfd write-py-line
+          tabs inc64
         else type OP_PREP_PROC = if*
           "def " tabs bfd write-py-line
           op Op.token ptr+ Token.value ptr+ @Str bfd bputs
           "(stack):\n" bfd bputs
-          tabs @64 1 + tabs !64 
+          tabs inc64
         else type OP_RET = if*
-            "return stack\n" tabs bfd write-py-line // Its kinda useless, because list is mutable. But we need smth to fill empty procs.
-            tabs @64 1 - tabs !64 
+          "return stack\n" tabs bfd write-py-line // Its kinda useless, because list is mutable. But we need smth to fill empty procs.
+          tabs dec64 
         else type OP_CALL = if*
           op Op.token ptr+ Token.value ptr+ @Str tabs bfd write-py-line 
           "(stack)\n" bfd bputs
