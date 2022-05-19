@@ -1574,9 +1574,9 @@ in
             1 - 
           end drop
         else type OP_PUSH_BIND = if*
-          "stack.append(let_stack[-\n" tabs bfd write-py-line
+          "stack.append(let_stack[-" tabs bfd write-py-line
           operand bfd bputu
-          "-1])\n" tabs bfd write-py-line
+          "-1])\n" bfd bputs
         else type OP_PUSH_LOCAL_MEM = if*
            "    mov rax, [ret_stack_rsp]\n" bfd bputs
            "    add rax, "                  bfd bputs
