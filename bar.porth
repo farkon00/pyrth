@@ -1,4 +1,0 @@
-
-proc main in 
-    1 cast(bool) print
-end
