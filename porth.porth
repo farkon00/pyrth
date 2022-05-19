@@ -1625,16 +1625,19 @@ in
           "else:\n" tabs bfd write-py-line
           tabs @64 1 + tabs !64 
         else type OP_END_WHILE = if*
-           "    jmp addr_"       bfd bputs ip operand - bfd bputu "\n" bfd bputs
+           "pass\n" tabs bfd write-py-line
+            tabs @64 1 - tabs !64
         else type OP_END_IF = if*
           "pass\n" tabs bfd write-py-line
           tabs @64 1 - tabs !64 
         else type OP_WHILE = if*
-           // NOTE: nothing to generate. `while` is basically a label
+           "def __while_temp_function__():\n" tabs bfd write-py-line
+           tabs @64 1 + tabs !64 
         else type OP_DO = if*
-           "    pop rax\n"       bfd bputs
-           "    test rax, rax\n" bfd bputs
-           "    jz addr_"        bfd bputs ip operand + bfd bputu "\n" bfd bputs
+           "return stack.pop()\n" tabs bfd write-py-line
+           tabs @64 1 - tabs !64 
+           "while __while_temp_function__():\n" tabs bfd write-py-line
+           tabs @64 1 + tabs !64 
         else type OP_PREP_PROC = if*
           "def " tabs bfd write-py-line
           op Op.token ptr+ Token.value ptr+ @Str bfd bputs
