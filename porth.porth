@@ -1546,28 +1546,9 @@ in
           end drop
           ""  tabs bfd write-py-line 
         else type OP_BIND_PEEK = if*
-          "    mov rax, [ret_stack_rsp]\n"  bfd bputs
-          "    sub rax, "                   bfd bputs operand 8 * bfd bputu "\n" bfd bputs
-          "    mov [ret_stack_rsp], rax\n"  bfd bputs
-
-          0
-          operand
-          while over over < do
-            let i n in
-              "    mov rbx, [rsp+" bfd bputs
-              i 8 *                bfd bputu
-              "]\n"                bfd bputs
-
-              "    mov [rax+"      bfd bputs
-              n i - 1 - 8 *        bfd bputu
-              "], rbx\n"           bfd bputs
-
-              i 1 +
-              n
-            end
-          end
-          drop
-          drop
+          "let_stack.extend(stack[" tabs bfd write-py-line
+          operand bfd bputu 
+          "::-1])\n" bfd bputs
         else type OP_UNBIND = if*
           operand while dup 0 > do
             "let_stack.pop()\n" tabs bfd write-py-line 
