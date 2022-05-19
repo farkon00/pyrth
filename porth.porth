@@ -1540,19 +1540,11 @@ in
            "    mov [ret_stack_rsp], rsp\n" bfd bputs
            "    mov rsp, rax\n"             bfd bputs
         else type OP_BIND_LET = if*
-          "    mov rax, [ret_stack_rsp]\n"  bfd bputs
-          "    sub rax, "                   bfd bputs
-          operand 8 *       bfd bputu
-          "\n"                              bfd bputs
-          "    mov [ret_stack_rsp], rax\n"  bfd bputs
-          operand
-          while dup 0 > do
-            "    pop rbx\n" bfd bputs
-            "    mov [rax+" bfd bputs
-            dup 1 - 8 *     bfd bputu
-            "], rbx\n"      bfd bputs
-            1 -
+          operand while dup 0 > do
+            "let_stack.append(stack.pop())\n" tabs bfd write-py-line 
+            1 - 
           end drop
+          ""  tabs bfd write-py-line 
         else type OP_BIND_PEEK = if*
           "    mov rax, [ret_stack_rsp]\n"  bfd bputs
           "    sub rax, "                   bfd bputs operand 8 * bfd bputu "\n" bfd bputs
@@ -1577,17 +1569,14 @@ in
           drop
           drop
         else type OP_UNBIND = if*
-          "    mov rax, [ret_stack_rsp]\n"  bfd bputs
-          "    add rax, "                   bfd bputs
-          operand 8 *       bfd bputu
-          "\n"                              bfd bputs
-          "    mov [ret_stack_rsp], rax\n"  bfd bputs
+          operand while dup 0 > do
+            "let_stack.pop()\n" tabs bfd write-py-line 
+            1 - 
+          end drop
         else type OP_PUSH_BIND = if*
-           "    mov rax, [ret_stack_rsp]\n" bfd bputs
-           "    add rax, "                  bfd bputs
-           operand 8 *      bfd bputu
-           "\n"                             bfd bputs
-           "    push QWORD [rax]\n"         bfd bputs
+          "stack.append(let_stack[-\n" tabs bfd write-py-line
+          operand bfd bputu
+          "-1])\n" tabs bfd write-py-line
         else type OP_PUSH_LOCAL_MEM = if*
            "    mov rax, [ret_stack_rsp]\n" bfd bputs
            "    add rax, "                  bfd bputs
@@ -1643,6 +1632,7 @@ in
           op Op.token ptr+ Token.value ptr+ @Str bfd bputs
           "(stack):\n" bfd bputs
           tabs inc64
+          "let_stack = []\n" tabs bfd write-py-line
         else type OP_RET = if*
           "return stack\n" tabs bfd write-py-line // Its kinda useless, because list is mutable. But we need smth to fill empty procs.
           tabs dec64 
