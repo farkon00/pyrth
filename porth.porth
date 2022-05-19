@@ -1631,12 +1631,12 @@ in
           "pass\n" tabs bfd write-py-line
           tabs @64 1 - tabs !64 
         else type OP_WHILE = if*
-           "def __while_temp_function__():\n" tabs bfd write-py-line
+           "def __while_condition__():\n" tabs bfd write-py-line
            tabs @64 1 + tabs !64 
         else type OP_DO = if*
            "return stack.pop()\n" tabs bfd write-py-line
            tabs @64 1 - tabs !64 
-           "while __while_temp_function__():\n" tabs bfd write-py-line
+           "while __while_condition__():\n" tabs bfd write-py-line
            tabs @64 1 + tabs !64 
         else type OP_PREP_PROC = if*
           "def " tabs bfd write-py-line
