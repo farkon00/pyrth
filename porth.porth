@@ -1627,7 +1627,8 @@ in
         else type OP_END_WHILE = if*
            "    jmp addr_"       bfd bputs ip operand - bfd bputu "\n" bfd bputs
         else type OP_END_IF = if*
-           tabs @64 1 - tabs !64 
+          "pass\n" tabs bfd write-py-line
+          tabs @64 1 - tabs !64 
         else type OP_WHILE = if*
            // NOTE: nothing to generate. `while` is basically a label
         else type OP_DO = if*
