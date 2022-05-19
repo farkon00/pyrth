@@ -1523,8 +1523,9 @@ in
           operand bfd bputu 
           ")\n" bfd bputs 
         else type OP_PUSH_BOOL = if*
-           "    mov rax, "   bfd bputs operand bfd bputu "\n" bfd bputs
-           "    push rax\n"  bfd bputs
+          "I have no idea why this even exists, it looks like its dead code, but it may work somewhere" puts
+          here eputs
+          1 exit
         else type OP_PUSH_PTR = if*
            "    mov rax, "   bfd bputs operand bfd bputu "\n" bfd bputs
            "    push rax\n"  bfd bputs
@@ -1638,15 +1639,11 @@ in
           "(stack):\n" bfd bputs
           tabs @64 1 + tabs !64 
         else type OP_RET = if*
-           "return stack" tabs bfd write-py-line
+            "return stack\n" tabs bfd write-py-line // Its kinda useless, because list is mutable. But we need smth to fill empty procs.
+            tabs @64 1 - tabs !64 
         else type OP_CALL = if*
-           "    mov rax, rsp\n"             bfd bputs
-           "    mov rsp, [ret_stack_rsp]\n" bfd bputs
-           "    call addr_"                 bfd bputs
-           operand             bfd bputu
-           "\n"                             bfd bputs
-           "    mov [ret_stack_rsp], rsp\n" bfd bputs
-           "    mov rsp, rax\n"             bfd bputs
+          op Op.token ptr+ Token.value ptr+ @Str tabs bfd write-py-line 
+          "(stack)\n" bfd bputs
         else type OP_INLINED = if*
            // ignored
         else type OP_INTRINSIC = if*
@@ -1692,7 +1689,7 @@ in
             else operand INTRINSIC_NOT = if*
                 "stack.append(not stack.pop())\n"                 tabs bfd write-py-line
             else operand INTRINSIC_PRINT = if*
-                "print(stack.pop())\n"                            tabs bfd write-py-line
+                "print(int(stack.pop()))\n"                            tabs bfd write-py-line
             else operand INTRINSIC_EQ = if*
                 "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
                 "stack.append(c1 == c2); del c1, c2\n"            tabs bfd write-py-line
