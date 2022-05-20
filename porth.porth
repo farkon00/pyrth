@@ -1633,11 +1633,13 @@ in
         else type OP_IF = if*
           "if stack.pop():\n" tabs bfd write-py-line
           tabs inc64
+          append-if-stack inc-if-stack
         else type OP_IFSTAR = if*
-           "    pop rax\n"       bfd bputs
-           "    test rax, rax\n" bfd bputs
-           "    jz addr_"        bfd bputs ip operand + bfd bputu "\n" bfd bputs
+           "if stack.pop():\n" tabs bfd write-py-line
+            tabs inc64
+            inc-if-stack
         else type OP_ELSE = if*
+          "pass\n" tabs bfd write-py-line
           tabs dec64 
           "else:\n" tabs bfd write-py-line
           tabs inc64
@@ -1645,8 +1647,12 @@ in
           "pass\n" tabs bfd write-py-line
           tabs dec64
         else type OP_END_IF = if*
-          "pass\n" tabs bfd write-py-line
-          tabs dec64 
+          pop-if-stack 
+          while dup 0 > do
+            "pass\n" tabs bfd write-py-line
+            tabs dec64
+            1 -
+          end drop
         else type OP_WHILE = if*
           "def __while_condition__():\n" tabs bfd write-py-line
           tabs inc64
