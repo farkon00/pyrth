@@ -1577,15 +1577,11 @@ in
            "    mov rax, "   bfd bputs operand bfd bputu "\n" bfd bputs
            "    push rax\n"  bfd bputs
         else type OP_PUSH_ADDR = if*
-           "    mov rax, addr_" bfd bputs operand bfd bputu "\n" bfd bputs
-           "    push rax\n"     bfd bputs
+          "stack.append(" tabs bfd write-py-line
+          operand proc-lookup-by-addr Proc.name ptr+ @Str bfd bputs 
+          ")\n" bfd bputs
         else type OP_CALL_LIKE = if*
-           "    pop rbx\n"                  bfd bputs
-           "    mov rax, rsp\n"             bfd bputs
-           "    mov rsp, [ret_stack_rsp]\n" bfd bputs
-           "    call rbx\n"                 bfd bputs
-           "    mov [ret_stack_rsp], rsp\n" bfd bputs
-           "    mov rsp, rax\n"             bfd bputs
+          "stack.pop()(stack)\n" tabs bfd write-py-line
         else type OP_BIND_LET = if*
           operand while dup 0 > do
             "let_stack.append(stack.pop())\n" tabs bfd write-py-line 
