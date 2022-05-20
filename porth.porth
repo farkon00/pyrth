@@ -1447,6 +1447,53 @@ inline proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
 // TODOO: an option to detect stack overflow at runtime
 const X86_64_RET_STACK_CAP 64 1024 * end
 
+/// BEGIN if* Stack //////////////////////////////
+const tab-stack.size sizeof(int) offset end
+const tab-stack.stack sizeof(ptr) offset end
+const sizeof(tab-stack) reset end
+
+const TAB_STACK_CAPACITY 1024 end
+
+memory if-stack sizeof(tab-stack) end
+memory if-stack-stack TAB_STACK_CAPACITY end
+
+proc inc-if-stack in
+  if-stack tab-stack.stack ptr+
+  if-stack tab-stack.size ptr+ @int
+  ptr+ inc8
+end
+
+proc append-if-stack in
+  if-stack tab-stack.size ptr+ 
+  dup inc64
+  @int if-stack swap ptr+
+  tab-stack.stack ptr+
+  0 swap !8
+end
+
+proc pop-if-stack -- int in 
+  if-stack tab-stack.stack ptr+
+  if-stack tab-stack.size ptr+ @int
+  ptr+ @8
+  if-stack tab-stack.size ptr+ dec64
+end
+
+proc init-if-stack in
+  0 if-stack tab-stack.size ptr+ !int
+  if-stack-stack if-stack tab-stack.stack ptr+ !8
+end
+
+proc debug-print-if-stack in
+  if-stack tab-stack.size ptr+ @int
+  while dup 0 > do
+    pop-if-stack
+    print
+    1 -
+  end 
+  drop
+end
+/// END if* Stack //////////////////////////////
+
 /// BEGIN Code Generator //////////////////////////////
 proc bputdecstr
   int ptr
