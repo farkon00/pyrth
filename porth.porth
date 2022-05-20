@@ -4886,16 +4886,16 @@ proc main in
 
     run @bool if
       tmp-end
-      fpb-end
-        base-file-path @Str fpb-append drop
-        1 fpb-alloc drop
-        tmp-append-ptr
-      while args @@ptr NULL ptr!= do
-        args @@ptr tmp-append-ptr
-        args sizeof(ptr) inc64-by
-      end
-      NULL        tmp-append-ptr
-      silent @bool lnot cmd-echoed
+        "python3"c                      tmp-append-ptr
+        fpb-end
+          base-file-path @Str fpb-append drop
+          ".py"               fpb-append drop
+          1                   fpb-alloc  drop
+          dup tmp-append-ptr
+        fpb-rewind
+        NULL                            tmp-append-ptr
+        dup true cmd-echoed
+      tmp-rewind
     end
   else args @@ptr "help"c cstreq if*
     program @ptr stdout usage
