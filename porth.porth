@@ -1682,173 +1682,170 @@ in
             end
 
             operand INTRINSIC_PLUS = if
-                "stack.append(stack.pop() + stack.pop())\n"       tabs bfd write-py-line
+              "stack.append(stack.pop() + stack.pop())\n"       tabs bfd write-py-line
             else operand INTRINSIC_MINUS = if*
-                "m2, m1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
-                "stack.append(m1 - m2); del m1, m2\n"             tabs bfd write-py-line
+              "m2, m1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+              "stack.append(m1 - m2); del m1, m2\n"             tabs bfd write-py-line
             else operand INTRINSIC_MUL = if*
-                "stack.append(stack.pop() * stack.pop())\n"       tabs bfd write-py-line
+              "stack.append(stack.pop() * stack.pop())\n"       tabs bfd write-py-line
             else operand INTRINSIC_DIVMOD = if*
-                "d2, d1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
-                "stack.append(d1 // d2)\n"                        tabs bfd write-py-line
-                "stack.append(d1 % d2); del d1, d2\n"             tabs bfd write-py-line
+              "d2, d1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+              "stack.append(d1 // d2)\n"                        tabs bfd write-py-line
+              "stack.append(d1 % d2); del d1, d2\n"             tabs bfd write-py-line
             else operand INTRINSIC_IDIVMOD = if*
-                "d2, d1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
-                "stack.append(d1 // d2)\n"                        tabs bfd write-py-line
-                "stack.append(d1 % d2); del d1, d2\n"             tabs bfd write-py-line
+              "d2, d1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+              "stack.append(d1 // d2)\n"                        tabs bfd write-py-line
+              "stack.append(d1 % d2); del d1, d2\n"             tabs bfd write-py-line
             else operand INTRINSIC_MAX = if*
-                "stack.append(max((stack.pop(), stack.pop())))\n" tabs bfd write-py-line
+              "stack.append(max((stack.pop(), stack.pop())))\n" tabs bfd write-py-line
             else operand INTRINSIC_SHR = if*
-                "n = stack.pop()\n"                               tabs bfd write-py-line
-                "val = stack.pop()\n"                             tabs bfd write-py-line
-                "if (val >= 0): stack.append(val >> n)\n"         tabs bfd write-py-line
-                "elif (n == 0): stack.append(val)\n"              tabs bfd write-py-line
-                "else: stack.append((val + 0x10000000) >> n)\n"   tabs bfd write-py-line
-                "del val, n\n"                                    tabs bfd write-py-line
+              "n = stack.pop()\n"                               tabs bfd write-py-line
+              "val = stack.pop()\n"                             tabs bfd write-py-line
+              "if (val >= 0): stack.append(val >> n)\n"         tabs bfd write-py-line
+              "elif (n == 0): stack.append(val)\n"              tabs bfd write-py-line
+              "else: stack.append((val + 0x10000000) >> n)\n"   tabs bfd write-py-line
+              "del val, n\n"                                    tabs bfd write-py-line
             else operand INTRINSIC_SHL = if*
-                "n = stack.pop()\n"                               tabs bfd write-py-line
-                "val = stack.pop()\n"                             tabs bfd write-py-line
-                "if (val >= 0): stack.append(val << n)\n"         tabs bfd write-py-line
-                "elif (n == 0): stack.append(val)\n"              tabs bfd write-py-line
-                "else: stack.append((val + 0x10000000) << n)\n"   tabs bfd write-py-line
-                "del val, n\n"                                    tabs bfd write-py-line
+              "n = stack.pop()\n"                               tabs bfd write-py-line
+              "val = stack.pop()\n"                             tabs bfd write-py-line
+              "if (val >= 0): stack.append(val << n)\n"         tabs bfd write-py-line
+              "elif (n == 0): stack.append(val)\n"              tabs bfd write-py-line
+              "else: stack.append((val + 0x10000000) << n)\n"   tabs bfd write-py-line
+              "del val, n\n"                                    tabs bfd write-py-line
             else operand INTRINSIC_OR = if*
-                "stack.append(stack.pop() or stack.pop())\n"      tabs bfd write-py-line
+              "stack.append(stack.pop() or stack.pop())\n"      tabs bfd write-py-line
             else operand INTRINSIC_AND = if*
-                "stack.append(stack.pop() and stack.pop())\n"     tabs bfd write-py-line
+              "stack.append(stack.pop() and stack.pop())\n"     tabs bfd write-py-line
             else operand INTRINSIC_NOT = if*
-                "stack.append(not stack.pop())\n"                 tabs bfd write-py-line
+              "stack.append(not stack.pop())\n"                 tabs bfd write-py-line
             else operand INTRINSIC_PRINT = if*
-                "print(int(stack.pop()))\n"                            tabs bfd write-py-line
+              "print(int(stack.pop()))\n"                            tabs bfd write-py-line
             else operand INTRINSIC_EQ = if*
-                "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
-                "stack.append(c1 == c2); del c1, c2\n"            tabs bfd write-py-line
+              "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+              "stack.append(c1 == c2); del c1, c2\n"            tabs bfd write-py-line
             else operand INTRINSIC_GT = if*
-                "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
-                "stack.append(c1 > c2); del c1, c2\n"             tabs bfd write-py-line
+              "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+              "stack.append(c1 > c2); del c1, c2\n"             tabs bfd write-py-line
             else operand INTRINSIC_LT = if*
-                "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
-                "stack.append(c1 < c2); del c1, c2\n"             tabs bfd write-py-line
+              "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+              "stack.append(c1 < c2); del c1, c2\n"             tabs bfd write-py-line
             else operand INTRINSIC_GE = if*
-                "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
-                "stack.append(c1 >= c2); del c1, c2\n"            tabs bfd write-py-line
+              "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+              "stack.append(c1 >= c2); del c1, c2\n"            tabs bfd write-py-line
             else operand INTRINSIC_LE = if*
-                "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
-                "stack.append(c1 <= c2); del c1, c2\n"            tabs bfd write-py-line
+              "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+              "stack.append(c1 <= c2); del c1, c2\n"            tabs bfd write-py-line
             else operand INTRINSIC_NE = if*
-                "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
-                "stack.append(c1 != c2); del c1, c2\n"            tabs bfd write-py-line
+              "c2, c1 = stack.pop(), stack.pop()\n"             tabs bfd write-py-line
+              "stack.append(c1 != c2); del c1, c2\n"            tabs bfd write-py-line
             else operand INTRINSIC_DUP = if*
-                "stack.append(stack[-1])\n"                       tabs bfd write-py-line
+              "stack.append(stack[-1])\n"                       tabs bfd write-py-line
             else operand INTRINSIC_SWAP = if*
-                "stack[-2], stack[-1] = stack[-1], stack[-2]\n"   tabs bfd write-py-line
+              "stack[-2], stack[-1] = stack[-1], stack[-2]\n"   tabs bfd write-py-line
             else operand INTRINSIC_DROP = if*
-                "stack.pop()\n" tabs bfd write-py-line
+              "stack.pop()\n" tabs bfd write-py-line
             else operand INTRINSIC_OVER = if*
-                "stack.append(stack[-2])\n"                       tabs bfd write-py-line
+              "stack.append(stack[-2])\n"                       tabs bfd write-py-line
             else operand INTRINSIC_ROT = if*
-                "stack.append(stack[-3]);del stack[-4]\n"         tabs bfd write-py-line
+              "stack.append(stack[-3]);del stack[-4]\n"         tabs bfd write-py-line
             else operand INTRINSIC_LOAD8 = if*
-                "stack.append(memory[stack.pop()])\n"             tabs bfd write-py-line
+              "stack.append(memory[stack.pop()])\n"             tabs bfd write-py-line
             else operand INTRINSIC_STORE8 = if*
-                "memory[stack[-1]] = stack[-2] % 256\n"           tabs bfd write-py-line
-                "stack.pop();stack.pop()\n"                       tabs bfd write-py-line
+              "memory[stack[-1]] = stack[-2] % 256\n"           tabs bfd write-py-line
+              "stack.pop();stack.pop()\n"                       tabs bfd write-py-line
             else operand INTRINSIC_LOAD16 = if*
-                "    pop rax\n"             bfd bputs
-                "    xor rbx, rbx\n"        bfd bputs
-                "    mov bx, [rax]\n"       bfd bputs
-                "    push rbx\n"            bfd bputs
+              "stack.append(memory[stack[-1]]*256+memory[stack.pop()])\n"             tabs bfd write-py-line
             else operand INTRINSIC_STORE16 = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    mov [rax], bx\n"       bfd bputs
+              "memory[stack[-1]+1] = stack[-2] % 256\n"         tabs bfd write-py-line
+              "memory[stack[-1]] = stack[-2] // 256\n"          tabs bfd write-py-line
+              "stack.pop();stack.pop()\n"                       tabs bfd write-py-line
             else operand INTRINSIC_LOAD32 = if*
-                "    pop rax\n"             bfd bputs
-                "    xor rbx, rbx\n"        bfd bputs
-                "    mov ebx, [rax]\n"      bfd bputs
-                "    push rbx\n"            bfd bputs
+              "    pop rax\n"             bfd bputs
+              "    xor rbx, rbx\n"        bfd bputs
+              "    mov ebx, [rax]\n"      bfd bputs
+              "    push rbx\n"            bfd bputs
             else operand INTRINSIC_STORE32 = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    mov [rax], ebx\n"      bfd bputs
+              "    pop rax\n"             bfd bputs
+              "    pop rbx\n"             bfd bputs
+              "    mov [rax], ebx\n"      bfd bputs
             else operand INTRINSIC_LOAD64 = if*
-                "    pop rax\n"             bfd bputs
-                "    xor rbx, rbx\n"        bfd bputs
-                "    mov rbx, [rax]\n"      bfd bputs
-                "    push rbx\n"            bfd bputs
+              "    pop rax\n"             bfd bputs
+              "    xor rbx, rbx\n"        bfd bputs
+              "    mov rbx, [rax]\n"      bfd bputs
+              "    push rbx\n"            bfd bputs
             else operand INTRINSIC_STORE64 = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    mov [rax], rbx\n"      bfd bputs
+              "    pop rax\n"             bfd bputs
+              "    pop rbx\n"             bfd bputs
+              "    mov [rax], rbx\n"      bfd bputs
             else operand INTRINSIC_ARGC = if*
-                "    mov rax, [args_ptr]\n" bfd bputs
-                "    mov rax, [rax]\n"      bfd bputs
-                "    push rax\n"            bfd bputs
+              "    mov rax, [args_ptr]\n" bfd bputs
+              "    mov rax, [rax]\n"      bfd bputs
+              "    push rax\n"            bfd bputs
             else operand INTRINSIC_ARGV = if*
-                "    mov rax, [args_ptr]\n" bfd bputs
-                "    add rax, 8\n"          bfd bputs
-                "    push rax\n"            bfd bputs
+              "    mov rax, [args_ptr]\n" bfd bputs
+              "    add rax, 8\n"          bfd bputs
+              "    push rax\n"            bfd bputs
             else operand INTRINSIC_ENVP = if*
-                "    mov rax, [args_ptr]\n" bfd bputs
-                "    mov rax, [rax]\n"      bfd bputs
-                "    add rax, 2\n"          bfd bputs
-                "    shl rax, 3\n"          bfd bputs
-                "    mov rbx, [args_ptr]\n" bfd bputs
-                "    add rbx, rax\n"        bfd bputs
-                "    push rbx\n"            bfd bputs
+              "    mov rax, [args_ptr]\n" bfd bputs
+              "    mov rax, [rax]\n"      bfd bputs
+              "    add rax, 2\n"          bfd bputs
+              "    shl rax, 3\n"          bfd bputs
+              "    mov rbx, [args_ptr]\n" bfd bputs
+              "    add rbx, rax\n"        bfd bputs
+              "    push rbx\n"            bfd bputs
             else operand INTRINSIC_CAST_PTR = if*
             else operand INTRINSIC_CAST_INT = if*
             else operand INTRINSIC_CAST_BOOL = if*
             else operand INTRINSIC_CAST_ADDR = if*
             else operand INTRINSIC_SYSCALL0 = if*
-                "    pop rax\n"             bfd bputs
-                "    syscall\n"             bfd bputs
-                "    push rax\n"            bfd bputs
+              "    pop rax\n"             bfd bputs
+              "    syscall\n"             bfd bputs
+              "    push rax\n"            bfd bputs
             else operand INTRINSIC_SYSCALL1 = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rdi\n"             bfd bputs
-                "    syscall\n"             bfd bputs
-                "    push rax\n"            bfd bputs
+              "    pop rax\n"             bfd bputs
+              "    pop rdi\n"             bfd bputs
+              "    syscall\n"             bfd bputs
+              "    push rax\n"            bfd bputs
             else operand INTRINSIC_SYSCALL2 = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rdi\n"             bfd bputs
-                "    pop rsi\n"             bfd bputs
-                "    syscall\n"             bfd bputs
-                "    push rax\n"            bfd bputs
+              "    pop rax\n"             bfd bputs
+              "    pop rdi\n"             bfd bputs
+              "    pop rsi\n"             bfd bputs
+              "    syscall\n"             bfd bputs
+              "    push rax\n"            bfd bputs
             else operand INTRINSIC_SYSCALL3 = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rdi\n"             bfd bputs
-                "    pop rsi\n"             bfd bputs
-                "    pop rdx\n"             bfd bputs
-                "    syscall\n"             bfd bputs
-                "    push rax\n"            bfd bputs
+              "    pop rax\n"             bfd bputs
+              "    pop rdi\n"             bfd bputs
+              "    pop rsi\n"             bfd bputs
+              "    pop rdx\n"             bfd bputs
+              "    syscall\n"             bfd bputs
+              "    push rax\n"            bfd bputs
             else operand INTRINSIC_SYSCALL4 = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rdi\n"             bfd bputs
-                "    pop rsi\n"             bfd bputs
-                "    pop rdx\n"             bfd bputs
-                "    pop r10\n"             bfd bputs
-                "    syscall\n"             bfd bputs
-                "    push rax\n"            bfd bputs
+              "    pop rax\n"             bfd bputs
+              "    pop rdi\n"             bfd bputs
+              "    pop rsi\n"             bfd bputs
+              "    pop rdx\n"             bfd bputs
+              "    pop r10\n"             bfd bputs
+              "    syscall\n"             bfd bputs
+              "    push rax\n"            bfd bputs
             else operand INTRINSIC_SYSCALL5 = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rdi\n"             bfd bputs
-                "    pop rsi\n"             bfd bputs
-                "    pop rdx\n"             bfd bputs
-                "    pop r10\n"             bfd bputs
-                "    pop r8\n"              bfd bputs
-                "    syscall\n"             bfd bputs
-                "    push rax\n"            bfd bputs
+              "    pop rax\n"             bfd bputs
+              "    pop rdi\n"             bfd bputs
+              "    pop rsi\n"             bfd bputs
+              "    pop rdx\n"             bfd bputs
+              "    pop r10\n"             bfd bputs
+              "    pop r8\n"              bfd bputs
+              "    syscall\n"             bfd bputs
+              "    push rax\n"            bfd bputs
             else operand INTRINSIC_SYSCALL6 = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rdi\n"             bfd bputs
-                "    pop rsi\n"             bfd bputs
-                "    pop rdx\n"             bfd bputs
-                "    pop r10\n"             bfd bputs
-                "    pop r8\n"              bfd bputs
-                "    pop r9\n"              bfd bputs
-                "    syscall\n"             bfd bputs
-                "    push rax\n"            bfd bputs
+              "    pop rax\n"             bfd bputs
+              "    pop rdi\n"             bfd bputs
+              "    pop rsi\n"             bfd bputs
+              "    pop rdx\n"             bfd bputs
+              "    pop r10\n"             bfd bputs
+              "    pop r8\n"              bfd bputs
+              "    pop r9\n"              bfd bputs
+              "    syscall\n"             bfd bputs
+              "    push rax\n"            bfd bputs
             else operand INTRINSIC_??? = if*
             else
               here eputs ": unreachable. Invalid intrinsic.\n" eputs
@@ -1897,7 +1894,7 @@ in
       "memory = []\n"                                           bfd bputs
       "def push_memory(ptr):\n"                                 bfd bputs
       "    if len(memory) <= ptr:\n"                            bfd bputs
-      "        memory.append([0] * (ptr - len(memory) + 1))\n"  bfd bputs
+      "        memory.extend([0] * (ptr - len(memory) + 8))\n"  bfd bputs
       "    return ptr\n"                                        bfd bputs
       0 while dup ops-count @64 < do
         dup tabulations bfd generate-op-python
