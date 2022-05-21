@@ -1441,6 +1441,7 @@ end
 /// END Memory //////////////////////////////
 
 memory silent sizeof(bool) end
+memory gen-comments sizeof(bool) end
 
 inline proc located-here ptr in eputloc ": NOTE: located here\n" eputs end
 
@@ -1521,7 +1522,7 @@ proc generate-op-comment ptr ptr in
     op Op.operand ptr+ @int
     op Op.token   ptr+
     let type operand token in
-      " # "                    bfd bputs
+      "# "                     bfd bputs
       token Token.loc ptr+     bfd bputloc
       ": "                     bfd bputs
       type op-type-as-str      bfd bputs
@@ -1559,7 +1560,9 @@ in
   let ip tabs bfd in
     ip sizeof(Op) * ops +ptr
     let op in
-      op bfd generate-op-comment
+      gen-comments @bool if
+        op bfd generate-op-comment
+      end
 
       op Op.type ptr+ @int
       op Op.operand ptr+ @int
@@ -1608,7 +1611,9 @@ in
            "\n"                             bfd bputs
            "    push rax\n"                 bfd bputs
         else type OP_PUSH_GLOBAL_MEM = if*
-           "    push mem+" bfd bputs operand bfd bputu "\n" bfd bputs
+          "stack.append(push_memory(" tabs bfd write-py-line
+          operand bfd bputu
+          "))\n" bfd bputs
         else type OP_PUSH_STR = if*
            "    mov rax, " bfd bputs
              operand
@@ -1744,14 +1749,10 @@ in
             else operand INTRINSIC_ROT = if*
                 "stack.append(stack[-3]);del stack[-4]\n"         tabs bfd write-py-line
             else operand INTRINSIC_LOAD8 = if*
-                "    pop rax\n"             bfd bputs
-                "    xor rbx, rbx\n"        bfd bputs
-                "    mov bl, [rax]\n"       bfd bputs
-                "    push rbx\n"            bfd bputs
+                "stack.append(memory[stack.pop()])\n"             tabs bfd write-py-line
             else operand INTRINSIC_STORE8 = if*
-                "    pop rax\n"             bfd bputs
-                "    pop rbx\n"             bfd bputs
-                "    mov [rax], bl\n"       bfd bputs
+                "memory[stack[-1]] = stack[-2] % 256\n"           tabs bfd write-py-line
+                "stack.pop();stack.pop()\n"                       tabs bfd write-py-line
             else operand INTRINSIC_LOAD16 = if*
                 "    pop rax\n"             bfd bputs
                 "    xor rbx, rbx\n"        bfd bputs
@@ -1892,7 +1893,12 @@ in
         "[ERROR] could not open `output.asm`\n" eputs
         1 exit
       end
-      // 0 1 +
+      
+      "memory = []\n"                                           bfd bputs
+      "def push_memory(ptr):\n"                                 bfd bputs
+      "    if len(memory) <= ptr:\n"                            bfd bputs
+      "        memory.append([0] * (ptr - len(memory) + 1))\n"  bfd bputs
+      "    return ptr\n"                                        bfd bputs
       0 while dup ops-count @64 < do
         dup tabulations bfd generate-op-python
         1 +
@@ -4852,6 +4858,9 @@ proc main in
         true  // continue
       else args @@ptr "-s"c cstreq if*
         true silent !bool
+        true  // continue
+      else args @@ptr "-comments"c cstreq if*
+        true gen-comments !bool
         true  // continue
       else
         args @@ptr input-file-path-cstr !ptr
