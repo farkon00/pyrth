@@ -1778,15 +1778,8 @@ in
               "memory[stack[-1]+6]*256+"                        bfd bputs
               "memory[stack.pop()+7])\n"                        bfd bputs
             else operand INTRINSIC_STORE64 = if*
-              "memory[stack[-1]+7] = stack[-2] % 256\n"         tabs bfd write-py-line
-              "memory[stack[-1]+6] = stack[-2] // 256 % 256\n"  tabs bfd write-py-line
-              "memory[stack[-1]+5] = stack[-2] // 65536 % 256\n"tabs bfd write-py-line
-              "memory[stack[-1]+4] = stack[-2] // 16777216 % 256\n" tabs bfd write-py-line
-              "memory[stack[-1]+3] = stack[-2] // 4294967296 % 256\n" tabs bfd write-py-line
-              "memory[stack[-1]+2] = stack[-2] // 1099511627776 % 256\n" tabs bfd write-py-line
-              "memory[stack[-1]+1] = stack[-2] // 281474976710656 % 256\n" tabs bfd write-py-line
-              "memory[stack[-1]] = stack[-2] // 72057594037927936 % 256\n" tabs bfd write-py-line
-              "stack.pop();stack.pop()\n"                       tabs bfd write-py-line
+              "push_64_to_mem(stack[-2], ptr=stack.pop())\n"   tabs bfd write-py-line
+              "stack.pop()\n"                                   tabs bfd write-py-line
             else operand INTRINSIC_ARGC = if*
               "    mov rax, [args_ptr]\n" bfd bputs
               "    mov rax, [rax]\n"      bfd bputs
@@ -1901,11 +1894,21 @@ in
         1 exit
       end
       
-      "memory = []\n"                                           bfd bputs
-      "def push_memory(ptr):\n"                                 bfd bputs
-      "    if len(memory) <= ptr:\n"                            bfd bputs
-      "        memory.extend([0] * (ptr - len(memory) + 8))\n"  bfd bputs
-      "    return ptr\n"                                        bfd bputs
+      "memory = []\n"                                                  bfd bputs
+      "def push_memory(ptr):\n"                                        bfd bputs
+      "    if len(memory) <= ptr:\n"                                   bfd bputs
+      "        memory.extend([0] * (ptr - len(memory) + 8))\n"         bfd bputs
+      "    return ptr\n"                                               bfd bputs
+      "def push_64_to_mem(val, ptr=-1):\n"                             bfd bputs
+      "    ptr=push_memory(len(memory) if ptr == -1 else ptr)\n"       bfd bputs
+      "    memory[ptr+7] = val % 256\n"                                bfd bputs
+      "    memory[ptr+6] = val // 256 % 256\n"                         bfd bputs
+      "    memory[ptr+5] = val // 65536 % 256\n"                       bfd bputs
+      "    memory[ptr+4] = val // 16777216 % 256\n"                    bfd bputs
+      "    memory[ptr+3] = val // 4294967296 % 256\n"                  bfd bputs
+      "    memory[ptr+2] = val // 1099511627776 % 256\n"               bfd bputs
+      "    memory[ptr+1] = val // 281474976710656 % 256\n"             bfd bputs
+      "    memory[ptr] = val // 72057594037927936 % 256\n"             bfd bputs
       0 while dup ops-count @64 < do
         dup tabulations bfd generate-op-python
         1 +
