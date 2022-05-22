@@ -1771,17 +1771,16 @@ in
               "stack[-1].mem[stack[-1].ptr] = stack[-2] // 16777216 % 256\n" tabs bfd write-py-line
               "stack.pop();stack.pop()\n"                       tabs bfd write-py-line
             else operand INTRINSIC_LOAD64 = if*
-              "stack.append(memory[stack[-1]]*72057594037927936+" tabs bfd write-py-line
-              "memory[stack[-1]+1]*281474976710656+"            bfd bputs
-              "memory[stack[-1]+2]*1099511627776+"              bfd bputs
-              "memory[stack[-1]+3]*4294967296+"                 bfd bputs
-              "memory[stack[-1]+4]*16777216+"                   bfd bputs
-              "memory[stack[-1]+5]*65536+"                      bfd bputs
-              "memory[stack[-1]+6]*256+"                        bfd bputs
-              "memory[stack.pop()+7])\n"                        bfd bputs
+              "stack.append(stack[-1].mem[stack[-1].ptr]*72057594037927936+" tabs bfd write-py-line
+              "stack[-1].mem[stack[-1].ptr+1]*281474976710656+" bfd bputs
+              "stack[-1].mem[stack[-1].ptr+2]*1099511627776+"   bfd bputs
+              "stack[-1].mem[stack[-1].ptr+3]*4294967296+"      bfd bputs
+              "stack[-1].mem[stack[-1].ptr+4]*16777216+"        bfd bputs
+              "stack[-1].mem[stack[-1].ptr+5]*65536+"           bfd bputs
+              "stack[-1].mem[stack[-1].ptr+6]*256+"             bfd bputs
+              "stack[-1].mem[stack.pop().ptr+7])\n"             bfd bputs
             else operand INTRINSIC_STORE64 = if*
-              "push_64_to_mem(stack[-2], ptr=stack.pop())\n"   tabs bfd write-py-line
-              "stack.pop()\n"                                   tabs bfd write-py-line
+              "push_64_to_mem(stack.pop(), stack.pop())\n"      tabs bfd write-py-line
             else operand INTRINSIC_ARGC = if*
               "    mov rax, [args_ptr]\n" bfd bputs
               "    mov rax, [rax]\n"      bfd bputs
