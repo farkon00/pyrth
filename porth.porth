@@ -1676,7 +1676,7 @@ in
         else type OP_INLINED = if*
            // ignored
         else type OP_INTRINSIC = if*
-            assert "Exhaustive handling of Intrinsics in generate-op-intel-linux-x86_64"
+            assert "Exhaustive handling of Intrinsics in generate-op-python"
               COUNT_INTRINSICS 46 =
             end
 
