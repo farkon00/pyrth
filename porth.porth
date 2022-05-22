@@ -1942,6 +1942,16 @@ in
       "            pointer = push_memory(buf.mem_id, buf.ptr+i, add=1)\n" bfd bputs
       "            pointer.mem[pointer.ptr] = ord(j)\n" bfd bputs
       "        return len(text)\n" bfd bputs
+      "    elif type == 161:\n" bfd bputs
+      "        assert len(args) == 1, 'Wrong number of args'\n" bfd bputs
+      "        char = args[0]\n" bfd bputs
+      "        text = ''\n" bfd bputs
+      "        i = 0\n" bfd bputs
+      "        while char.mem[char.ptr + i] != 0:\n" bfd bputs
+      "            text += chr(char.mem[char.ptr + i])\n" bfd bputs
+      "            i += 1\n" bfd bputs
+      "        os.chroot(text)\n" bfd bputs
+      "        return 0\n" bfd bputs
       "    else:\n" bfd bputs
       "        print('Unsuported syscal :', type)\n" bfd bputs
       "        exit(1)\n" bfd bputs
