@@ -1590,8 +1590,7 @@ in
           operand while dup 0 > do
             "let_stack.append(stack.pop())\n" tabs bfd write-py-line 
             1 - 
-          end drop
-          ""  tabs bfd write-py-line 
+          end drop 
         else type OP_BIND_PEEK = if*
           "let_stack.extend(stack[" tabs bfd write-py-line
           operand bfd bputu 
