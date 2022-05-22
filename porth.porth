@@ -1803,13 +1803,8 @@ in
             else operand INTRINSIC_ARGV = if*
               "stack.append(Pointer(0, 1))\n" tabs bfd write-py-line
             else operand INTRINSIC_ENVP = if*
-              "    mov rax, [args_ptr]\n" bfd bputs
-              "    mov rax, [rax]\n"      bfd bputs
-              "    add rax, 2\n"          bfd bputs
-              "    shl rax, 3\n"          bfd bputs
-              "    mov rbx, [args_ptr]\n" bfd bputs
-              "    add rbx, rax\n"        bfd bputs
-              "    push rbx\n"            bfd bputs
+              "Envp, not implemented, and probably never will be.\n" puts
+              1 exit
             else operand INTRINSIC_CAST_PTR = if*
               "stack.append(Pointer.pointer_from_int(stack.pop()))\n" tabs bfd write-py-line
             else operand INTRINSIC_CAST_INT = if*
