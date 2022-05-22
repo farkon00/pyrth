@@ -1811,60 +1811,25 @@ in
             else operand INTRINSIC_CAST_PTR = if*
               "stack.append(Pointer.pointer_from_int(stack.pop()))\n" tabs bfd write-py-line
             else operand INTRINSIC_CAST_INT = if*
-              "stack.append(int(stack.pop()))\n"                tabs bfd write-py-line
-            else operand INTRINSIC_CAST_BOOL = if*
-              "stack.append(int(stack.pop()))\n"                tabs bfd write-py-line
-            else operand INTRINSIC_CAST_ADDR = if*
-              "stack.append(int(stack.pop()))\n"                tabs bfd write-py-line
-            else operand INTRINSIC_SYSCALL0 = if*
-              "    pop rax\n"             bfd bputs
-              "    syscall\n"             bfd bputs
-              "    push rax\n"            bfd bputs
-            else operand INTRINSIC_SYSCALL1 = if*
-              "    pop rax\n"             bfd bputs
-              "    pop rdi\n"             bfd bputs
-              "    syscall\n"             bfd bputs
-              "    push rax\n"            bfd bputs
+              "stack.append(int(stack.pop()))\n"                      tabs bfd write-py-line
+            else operand INTRINSIC_CAST_BOOL = if*      
+              "stack.append(int(stack.pop()))\n"                      tabs bfd write-py-line
+            else operand INTRINSIC_CAST_ADDR = if*      
+              "stack.append(int(stack.pop()))\n"                      tabs bfd write-py-line
+            else operand INTRINSIC_SYSCALL0 = if*     
+              "stack.append(syscall(stack.pop()))\n"                tabs bfd write-py-line
+            else operand INTRINSIC_SYSCALL1 = if*     
+              "stack.append(syscall(stack.pop(), stack.pop()))\n"     tabs bfd write-py-line
             else operand INTRINSIC_SYSCALL2 = if*
-              "    pop rax\n"             bfd bputs
-              "    pop rdi\n"             bfd bputs
-              "    pop rsi\n"             bfd bputs
-              "    syscall\n"             bfd bputs
-              "    push rax\n"            bfd bputs
+              "stack.append(syscall(stack.pop(), stack.pop(), stack.pop()))\n" tabs bfd write-py-line
             else operand INTRINSIC_SYSCALL3 = if*
-              "    pop rax\n"             bfd bputs
-              "    pop rdi\n"             bfd bputs
-              "    pop rsi\n"             bfd bputs
-              "    pop rdx\n"             bfd bputs
-              "    syscall\n"             bfd bputs
-              "    push rax\n"            bfd bputs
+              "stack.append(syscall(stack.pop(), stack.pop(), stack.pop(), stack.pop()))\n" tabs bfd write-py-line
             else operand INTRINSIC_SYSCALL4 = if*
-              "    pop rax\n"             bfd bputs
-              "    pop rdi\n"             bfd bputs
-              "    pop rsi\n"             bfd bputs
-              "    pop rdx\n"             bfd bputs
-              "    pop r10\n"             bfd bputs
-              "    syscall\n"             bfd bputs
-              "    push rax\n"            bfd bputs
+              "stack.append(syscall(stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()))\n" tabs bfd write-py-line
             else operand INTRINSIC_SYSCALL5 = if*
-              "    pop rax\n"             bfd bputs
-              "    pop rdi\n"             bfd bputs
-              "    pop rsi\n"             bfd bputs
-              "    pop rdx\n"             bfd bputs
-              "    pop r10\n"             bfd bputs
-              "    pop r8\n"              bfd bputs
-              "    syscall\n"             bfd bputs
-              "    push rax\n"            bfd bputs
+              "stack.append(syscall(stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()))\n" tabs bfd write-py-line
             else operand INTRINSIC_SYSCALL6 = if*
-              "    pop rax\n"             bfd bputs
-              "    pop rdi\n"             bfd bputs
-              "    pop rsi\n"             bfd bputs
-              "    pop rdx\n"             bfd bputs
-              "    pop r10\n"             bfd bputs
-              "    pop r8\n"              bfd bputs
-              "    pop r9\n"              bfd bputs
-              "    syscall\n"             bfd bputs
-              "    push rax\n"            bfd bputs
+              "stack.append(syscall(stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()))\n" tabs bfd write-py-line
             else operand INTRINSIC_??? = if*
             else
               here eputs ": unreachable. Invalid intrinsic.\n" eputs
@@ -1910,7 +1875,7 @@ in
         1 exit
       end
       
-      "from sys import argv\n" bfd bputs
+      "import sys\n" bfd bputs
       "memory = []\n" bfd bputs
       "dyn_memory = []\n" bfd bputs
       "class Pointer:\n" bfd bputs
@@ -1943,15 +1908,38 @@ in
       "    ptr.mem[ptr.ptr+2] = val // 1099511627776 % 256\n" bfd bputs
       "    ptr.mem[ptr.ptr+1] = val // 281474976710656 % 256\n" bfd bputs
       "    ptr.mem[ptr.ptr] = val // 72057594037927936 % 256\n" bfd bputs
+      "opened_files = [sys.stdin, sys.stdout, sys.stderr]\n" bfd bputs
+      "def syscall(type, *args):\n" bfd bputs
+      "    if type == 0:\n" bfd bputs
+      "        assert len(args) == 3, 'Wrong number of args'\n" bfd bputs
+      "        fd = opened_files[args[0]]\n" bfd bputs
+      "        buf = args[1]\n" bfd bputs
+      "        text = fd.read(args[2])\n" bfd bputs
+      "        for i, j in enumerate(text):\n" bfd bputs
+      "            pointer = push_memory(buf.mem_id, buf.ptr+i, add=1)\n" bfd bputs
+      "            pointer.mem[pointer.ptr] = ord(j)\n" bfd bputs
+      "        return len(text)\n" bfd bputs
+      "    elif type == 1:\n" bfd bputs
+      "        assert len(args) == 3, 'Wrong number of args'\n" bfd bputs
+      "        fd = opened_files[args[0]]\n" bfd bputs
+      "        char = args[1]\n" bfd bputs
+      "        text = ''\n" bfd bputs
+      "        for i in range(args[2]):\n" bfd bputs
+      "            text += chr(char.mem[char.ptr + i])\n" bfd bputs 
+      "        fd.write(text)\n" bfd bputs
+      "        return args[2]\n" bfd bputs
+      "    else:\n" bfd bputs
+      "        print('Unsuported syscal :', type)\n" bfd bputs
+      "        exit(1)\n" bfd bputs
       0 while dup ops-count @64 < do
         dup tabulations bfd generate-op-python
         1 +
       end drop
 
-      "argc = len(argv)\n" bfd bputs
+      "argc = len(sys.argv)\n" bfd bputs
       "argv_pointer = push_memory(1, 0, add=argc*8+8)\n" bfd bputs
       "argv_pointer = Pointer(-8, 1)\n" bfd bputs
-      "for i, j in enumerate(argv):\n" bfd bputs
+      "for i, j in enumerate(sys.argv):\n" bfd bputs
       "    argv_pointer = Pointer(argv_pointer.ptr + 8, argv_pointer.mem_id)\n" bfd bputs
       "    push_64_to_mem(argv_pointer, int(Pointer(len(dyn_memory), 1)))\n" bfd bputs
       "    for k in j:\n" bfd bputs
