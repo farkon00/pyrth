@@ -1799,13 +1799,9 @@ in
             else operand INTRINSIC_STORE64 = if*
               "push_64_to_mem(stack.pop(), stack.pop())\n"      tabs bfd write-py-line
             else operand INTRINSIC_ARGC = if*
-              "    mov rax, [args_ptr]\n" bfd bputs
-              "    mov rax, [rax]\n"      bfd bputs
-              "    push rax\n"            bfd bputs
+              "stack.append(argc)\n" tabs bfd write-py-line
             else operand INTRINSIC_ARGV = if*
-              "    mov rax, [args_ptr]\n" bfd bputs
-              "    add rax, 8\n"          bfd bputs
-              "    push rax\n"            bfd bputs
+              "stack.append(Pointer(0, 1))\n" tabs bfd write-py-line
             else operand INTRINSIC_ENVP = if*
               "    mov rax, [args_ptr]\n" bfd bputs
               "    mov rax, [rax]\n"      bfd bputs
@@ -1914,6 +1910,7 @@ in
         1 exit
       end
       
+      "from sys import argv\n" bfd bputs
       "memory = []\n" bfd bputs
       "dyn_memory = []\n" bfd bputs
       "class Pointer:\n" bfd bputs
@@ -1950,6 +1947,18 @@ in
         dup tabulations bfd generate-op-python
         1 +
       end drop
+
+      "argc = len(argv)\n" bfd bputs
+      "argv_pointer = push_memory(1, 0, add=argc*8+8)\n" bfd bputs
+      "argv_pointer = Pointer(-8, 1)\n" bfd bputs
+      "for i, j in enumerate(argv):\n" bfd bputs
+      "    argv_pointer = Pointer(argv_pointer.ptr + 8, argv_pointer.mem_id)\n" bfd bputs
+      "    push_64_to_mem(argv_pointer, int(Pointer(len(dyn_memory), 1)))\n" bfd bputs
+      "    for k in j:\n" bfd bputs
+      "        char_pointer = push_memory(1, len(dyn_memory), add=1)\n" bfd bputs
+      "        char_pointer.mem[char_pointer.ptr] = ord(k)\n" bfd bputs
+      "    char_pointer = push_memory(1, len(dyn_memory), add=1)\n" bfd bputs
+      "    char_pointer.mem[char_pointer.ptr] = 0\n" bfd bputs
 
       "\nfunc_" bfd bputs
       "main" proc-lookup-by-name Proc.addr ptr+ @int
