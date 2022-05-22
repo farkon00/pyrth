@@ -1751,10 +1751,10 @@ in
               "stack[-1].mem[stack[-1].ptr] = stack[-2] % 256\n"tabs bfd write-py-line
               "stack.pop();stack.pop()\n"                       tabs bfd write-py-line
             else operand INTRINSIC_LOAD16 = if*
-              "stack.append(memory[stack[-1]]*256+memory[stack.pop()+1])\n" tabs bfd write-py-line
+              "stack.append(stack[-1].mem[stack[-1].ptr]*256+stack[-1].mem[stack.pop().ptr+1])\n" tabs bfd write-py-line
             else operand INTRINSIC_STORE16 = if*
-              "memory[stack[-1]+1] = stack[-2] % 256\n"         tabs bfd write-py-line
-              "memory[stack[-1]] = stack[-2] // 256 % 256\n"    tabs bfd write-py-line
+              "stack[-1].mem[stack[-1].ptr+1] = stack[-2] % 256\n" tabs bfd write-py-line
+              "stack[-1].mem[stack[-1].ptr] = stack[-2] // 256 % 256\n" tabs bfd write-py-line
               "stack.pop();stack.pop()\n"                       tabs bfd write-py-line
             else operand INTRINSIC_LOAD32 = if*
               "stack.append(memory[stack[-1]]*16777216+"        tabs bfd write-py-line
