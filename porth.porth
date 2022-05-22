@@ -1651,12 +1651,19 @@ in
             1 -
           end drop
         else type OP_WHILE = if*
-          "def __while_condition__():\n" tabs bfd write-py-line
+          "def __while_condition_" tabs bfd write-py-line
+          ip bfd bputu
+          "__():\n" bfd bputs
           tabs inc64
         else type OP_DO = if*
           "return stack.pop()\n" tabs bfd write-py-line
           tabs dec64 
-          "while __while_condition__():\n" tabs bfd write-py-line
+          "while __while_condition_" tabs bfd write-py-line
+          ip operand + 1 - 
+          peek end-ip in
+            sizeof(Op) * ops +ptr Op.operand ptr+ @int end-ip swap - bfd bputu 
+          end
+          "__():\n" bfd bputs 
           tabs inc64
         else type OP_PREP_PROC = if*
           "def func_" tabs bfd write-py-line
