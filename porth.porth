@@ -1808,9 +1808,11 @@ in
             else operand INTRINSIC_CAST_PTR = if*
               "stack.append(Pointer.pointer_from_int(stack.pop()))\n" tabs bfd write-py-line
             else operand INTRINSIC_CAST_INT = if*
-              "stack.append(int(stack.pop()))\n"         tabs bfd write-py-line
+              "stack.append(int(stack.pop()))\n"                tabs bfd write-py-line
             else operand INTRINSIC_CAST_BOOL = if*
+              "stack.append(int(stack.pop()))\n"                tabs bfd write-py-line
             else operand INTRINSIC_CAST_ADDR = if*
+              "stack.append(int(stack.pop()))\n"                tabs bfd write-py-line
             else operand INTRINSIC_SYSCALL0 = if*
               "    pop rax\n"             bfd bputs
               "    syscall\n"             bfd bputs
