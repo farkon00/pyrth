@@ -1,6 +1,7 @@
 output
 test
 foo.porth
+bar.porth
 __pycache__/
 *.asm
 *.o
