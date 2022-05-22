@@ -1573,12 +1573,13 @@ in
           operand bfd bputu 
           ")\n" bfd bputs 
         else type OP_PUSH_BOOL = if*
-          "I have no idea why this even exists, it looks like its dead code, but it may work somewhere" puts
-          here eputs
-          1 exit
+          "stack.append(" tabs bfd write-py-line 
+          operand cast(int) bfd bputu 
+          ")\n" bfd bputs
         else type OP_PUSH_PTR = if*
-           "    mov rax, "   bfd bputs operand bfd bputu "\n" bfd bputs
-           "    push rax\n"  bfd bputs
+           "stack.append(Pointer.pointer_from_int(" tabs bfd write-py-line 
+            operand cast(int) bfd bputu 
+            "))\n" bfd bputs
         else type OP_PUSH_ADDR = if*
           "stack.append(" tabs bfd write-py-line
           operand proc-lookup-by-addr Proc.name ptr+ @Str bfd bputs 
