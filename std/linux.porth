@@ -430,10 +430,12 @@ inline proc fcntl int int int -- int in SYS_fcntl syscall3 end
 inline proc kill int int -- int in SYS_kill syscall2 end
 // TODO: possible confusion with `dup` intrinsic
 inline proc dup2 int int -- int in SYS_dup2 syscall2 end
-inline proc socket int int int -- int in SYS_socket syscall3 end
-inline proc bind int ptr int -- int in SYS_bind syscall3 end
-inline proc listen int int -- int in SYS_listen syscall2 end
-inline proc accept ptr ptr int -- int in SYS_accept syscall3 end
+
+// Sorry no sockets for now
+//inline proc socket int int int -- int in SYS_socket syscall3 end
+//inline proc bind int ptr int -- int in SYS_bind syscall3 end
+//inline proc listen int int -- int in SYS_listen syscall2 end
+//inline proc accept ptr ptr int -- int in SYS_accept syscall3 end
 inline proc getcwd int ptr -- int in SYS_getcwd syscall2 end
 inline proc chroot ptr -- int in SYS_chroot syscall1 end
 inline proc ioctl ptr int int -- int in SYS_ioctl syscall3 end

@@ -1876,6 +1876,7 @@ in
       end
       
       "import sys\n" bfd bputs
+      "import os\n" bfd bputs
       "memory = []\n" bfd bputs
       "dyn_memory = []\n" bfd bputs
       "class Pointer:\n" bfd bputs
@@ -1931,6 +1932,16 @@ in
       "    elif type == 60:\n" bfd bputs
       "        assert len(args) == 1, 'Wrong number of args'\n" bfd bputs
       "        exit(args[0])\n" bfd bputs
+      "    elif type == 79:\n" bfd bputs
+      "        assert len(args) == 2, 'Wrong number of args'\n" bfd bputs
+      "        buf = args[0]\n" bfd bputs
+      "        text = os.getcwd()\n" bfd bputs
+      "        if args[1] < len(text):\n" bfd bputs
+      "            return 18446744073709551582\n" bfd bputs
+      "        for i, j in enumerate(text):\n" bfd bputs
+      "            pointer = push_memory(buf.mem_id, buf.ptr+i, add=1)\n" bfd bputs
+      "            pointer.mem[pointer.ptr] = ord(j)\n" bfd bputs
+      "        return len(text)\n" bfd bputs
       "    else:\n" bfd bputs
       "        print('Unsuported syscal :', type)\n" bfd bputs
       "        exit(1)\n" bfd bputs
