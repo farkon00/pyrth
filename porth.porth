@@ -1624,9 +1624,18 @@ in
            operand bfd bputu
            "\n"                 bfd bputs
         else type OP_PUSH_CSTR = if*
-           "    push str_"      bfd bputs
-           operand bfd bputu
-           "\n"                 bfd bputs
+            "stack.append(Pointer(len(dyn_memory), 1))\n" tabs bfd write-py-line
+            strlits operand ptr+ @Str
+            swap dup rot
+            swap while dup 0 > do
+              peek len data count in
+                "cstr_mem = push_memory(1, len(dyn_memory), add=1);cstr_mem.mem[cstr_mem.ptr]=" tabs bfd write-py-line
+                data len count - ptr+ @8 bfd bputu
+                "\n" bfd bputs
+              end
+              1 -
+            end
+            drop drop drop
         else type OP_IF = if*
           "if stack.pop():\n" tabs bfd write-py-line
           tabs inc64
@@ -1923,9 +1932,9 @@ in
       "    @staticmethod\n" bfd bputs
       "    def pointer_from_int(ptr):\n" bfd bputs
       "        return push_memory(ptr // 10000000000000, ptr % 10000000000000)\n" bfd bputs
-      "def push_memory(mem, ptr):\n" bfd bputs
+      "def push_memory(mem, ptr, add=8):\n" bfd bputs
       "    if len(Pointer.memories[mem]) <= ptr:\n" bfd bputs
-      "        Pointer.memories[mem].extend([0] * (ptr - len(Pointer.memories[mem]) + 8))\n" bfd bputs
+      "        Pointer.memories[mem].extend([0] * (ptr - len(Pointer.memories[mem]) + add))\n" bfd bputs
       "    return Pointer(ptr, mem)\n" bfd bputs
       "def push_64_to_mem(ptr, val):\n" bfd bputs
       "    ptr.mem[ptr.ptr+7] = val % 256\n" bfd bputs
