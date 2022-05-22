@@ -1605,7 +1605,9 @@ in
           operand bfd bputu
           "-1])\n" bfd bputs
         else type OP_PUSH_LOCAL_MEM = if*
-          "#TDODOO: local memory\n" tabs bfd write-py-line
+          "stack.append(push_memory(local_memory, " tabs bfd write-py-line
+          operand bfd bputu
+          "))\n" bfd bputs
         else type OP_PUSH_GLOBAL_MEM = if*
           "stack.append(push_memory(0, " tabs bfd write-py-line
           operand bfd bputu
@@ -1683,6 +1685,7 @@ in
           "(stack):\n" bfd bputs
           tabs inc64
           "let_stack = []\n" tabs bfd write-py-line
+          "local_memory = Pointer.get_new_mem_id()\n" tabs bfd write-py-line
         else type OP_RET = if*
           "return stack\n" tabs bfd write-py-line // Its kinda useless, because list is mutable. But we need smth to fill empty procs.
           tabs dec64 
