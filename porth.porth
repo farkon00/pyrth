@@ -1611,18 +1611,19 @@ in
           operand bfd bputu
           "))\n" bfd bputs
         else type OP_PUSH_STR = if*
-           "    mov rax, " bfd bputs
-             operand
-             sizeof(Str) *
-             strlits +ptr
-             @Str.count
-             bfd bputu
-           "\n" bfd bputs
-
-           "    push rax\n"     bfd bputs
-           "    push str_"      bfd bputs
-           operand bfd bputu
-           "\n"                 bfd bputs
+            strlits operand ptr+ @Str
+            swap dup
+            "stack.append(" tabs bfd write-py-line dup bfd bputu ")\n" bfd bputs // length 
+            "stack.append(Pointer(len(dyn_memory), 1))\n" tabs bfd write-py-line // data pointer
+            rot swap while dup 0 > do
+              peek len data count in
+                "cstr_mem = push_memory(1, len(dyn_memory), add=1);cstr_mem.mem[cstr_mem.ptr]=" tabs bfd write-py-line
+                data len count - ptr+ @8 bfd bputu
+                "\n" bfd bputs
+              end
+              1 -
+            end
+            drop drop drop
         else type OP_PUSH_CSTR = if*
             "stack.append(Pointer(len(dyn_memory), 1))\n" tabs bfd write-py-line
             strlits operand ptr+ @Str
