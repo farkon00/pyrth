@@ -1928,6 +1928,9 @@ in
       "            text += chr(char.mem[char.ptr + i])\n" bfd bputs 
       "        fd.write(text)\n" bfd bputs
       "        return args[2]\n" bfd bputs
+      "    elif type == 60:\n" bfd bputs
+      "        assert len(args) == 1, 'Wrong number of args'\n" bfd bputs
+      "        exit(args[0])\n" bfd bputs
       "    else:\n" bfd bputs
       "        print('Unsuported syscal :', type)\n" bfd bputs
       "        exit(1)\n" bfd bputs
