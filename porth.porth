@@ -1935,6 +1935,9 @@ in
       "    elif type == 60:\n" bfd bputs
       "        assert len(args) == 1, 'Wrong number of args'\n" bfd bputs
       "        exit(args[0])\n" bfd bputs
+      "    elif type == 62:\n" bfd bputs
+      "        assert len(args) == 2, 'Wrong number of args'\n" bfd bputs
+      "        os.kill(args[0], args[1])\n" bfd bputs
       "    elif type == 79:\n" bfd bputs
       "        assert len(args) == 2, 'Wrong number of args'\n" bfd bputs
       "        buf = args[0]\n" bfd bputs
