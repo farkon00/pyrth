@@ -1619,7 +1619,7 @@ in
             "stack.append(Pointer(len(dyn_memory), 1))\n" tabs bfd write-py-line // data pointer
             rot swap while dup 0 > do
               peek len data count in
-                "cstr_mem = push_memory(1, len(dyn_memory), add=1);cstr_mem.mem[cstr_mem.ptr]=" tabs bfd write-py-line
+                "str_mem = push_memory(1, len(dyn_memory), add=1);str_mem.mem[str_mem.ptr]=" tabs bfd write-py-line
                 data len count - ptr+ @8 bfd bputu
                 "\n" bfd bputs
               end
@@ -1922,11 +1922,11 @@ in
       "        text = ''\n" bfd bputs
       "        for i in range(args[2]):\n" bfd bputs
       "            text += chr(char.mem[char.ptr + i])\n" bfd bputs
+      "        return os.write(args[0], bytes(text, encoding='utf-8'))\n" bfd bputs
       "    elif type == 3:\n" bfd bputs
       "        assert len(args) == 1, 'Wrong number of args'\n" bfd bputs
       "        os.close(args[0])\n" bfd bputs
       "        return 0\n" bfd bputs
-      "        return os.write(args[0], bytes(text, encoding='utf-8'))\n" bfd bputs
       "    elif type == 39:\n" bfd bputs
       "        assert len(args) == 0, 'Wrong number of args'\n" bfd bputs
       "        return os.getpid()\n" bfd bputs
