@@ -416,7 +416,7 @@ inline proc read int ptr int -- int in SYS_read syscall3 end
 inline proc openat int int ptr int -- int in SYS_openat syscall4 end
 inline proc fstat ptr int -- int in SYS_fstat syscall2 end  // TODO
 inline proc stat ptr ptr -- int in SYS_stat syscall2 end  // TODO
-inline proc close int -- int in SYS_close syscall1 end  // TODO
+inline proc close int -- int in SYS_close syscall1 end
 inline proc exit int in SYS_exit syscall1 drop end
 inline proc mmap int int int int int ptr -- int in SYS_mmap syscall6 end  // TODO
 inline proc clock_nanosleep ptr ptr int int -- int in SYS_clock_nanosleep syscall4 end  // TODO
