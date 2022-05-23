@@ -1909,26 +1909,22 @@ in
       "    ptr.mem[ptr.ptr+2] = val // 1099511627776 % 256\n" bfd bputs
       "    ptr.mem[ptr.ptr+1] = val // 281474976710656 % 256\n" bfd bputs
       "    ptr.mem[ptr.ptr] = val // 72057594037927936 % 256\n" bfd bputs
-      "opened_files = [sys.stdin, sys.stdout, sys.stderr]\n" bfd bputs
       "def syscall(type, *args):\n" bfd bputs
       "    if type == 0:\n" bfd bputs
       "        assert len(args) == 3, 'Wrong number of args'\n" bfd bputs
-      "        fd = opened_files[args[0]]\n" bfd bputs
       "        buf = args[1]\n" bfd bputs
-      "        text = fd.read(args[2])\n" bfd bputs
+      "        text = os.read(args[0], args[2])\n" bfd bputs
       "        for i, j in enumerate(text):\n" bfd bputs
       "            pointer = push_memory(buf.mem_id, buf.ptr+i, add=1)\n" bfd bputs
-      "            pointer.mem[pointer.ptr] = ord(j)\n" bfd bputs
+      "            pointer.mem[pointer.ptr] = j\n" bfd bputs
       "        return len(text)\n" bfd bputs
       "    elif type == 1:\n" bfd bputs
       "        assert len(args) == 3, 'Wrong number of args'\n" bfd bputs
-      "        fd = opened_files[args[0]]\n" bfd bputs
       "        char = args[1]\n" bfd bputs
       "        text = ''\n" bfd bputs
       "        for i in range(args[2]):\n" bfd bputs
-      "            text += chr(char.mem[char.ptr + i])\n" bfd bputs 
-      "        fd.write(text)\n" bfd bputs
-      "        return args[2]\n" bfd bputs
+      "            text += chr(char.mem[char.ptr + i])\n" bfd bputs
+      "        return os.write(args[0], bytes(text, encoding='utf-8'))\n" bfd bputs
       "    elif type == 39:\n" bfd bputs
       "        assert len(args) == 0, 'Wrong number of args'\n" bfd bputs
       "        return os.getpid()\n" bfd bputs
@@ -1974,6 +1970,15 @@ in
       "            i += 1\n" bfd bputs
       "        os.chroot(text)\n" bfd bputs
       "        return 0\n" bfd bputs
+      "    elif type == 257:\n" bfd bputs
+      "        assert len(args) == 4, 'Wrong number of args'\n" bfd bputs
+      "        char = args[1]\n" bfd bputs
+      "        path = ''\n" bfd bputs
+      "        i = 0\n" bfd bputs
+      "        while char.mem[char.ptr + i] != 0:\n" bfd bputs
+      "            path += chr(char.mem[char.ptr + i])\n" bfd bputs
+      "            i += 1\n" bfd bputs
+      "        return os.open(path, args[2], args[3], dir_fd=args[0] if args[0] < 18446744073709551515 else None)\n" bfd bputs
       "    else:\n" bfd bputs
       "        print('Unsuported syscal :', type)\n" bfd bputs
       "        exit(1)\n" bfd bputs
