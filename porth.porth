@@ -1924,6 +1924,10 @@ in
       "        text = ''\n" bfd bputs
       "        for i in range(args[2]):\n" bfd bputs
       "            text += chr(char.mem[char.ptr + i])\n" bfd bputs
+      "    elif type == 3:\n" bfd bputs
+      "        assert len(args) == 1, 'Wrong number of args'\n" bfd bputs
+      "        os.close(args[0])\n" bfd bputs
+      "        return 0\n" bfd bputs
       "        return os.write(args[0], bytes(text, encoding='utf-8'))\n" bfd bputs
       "    elif type == 39:\n" bfd bputs
       "        assert len(args) == 0, 'Wrong number of args'\n" bfd bputs
