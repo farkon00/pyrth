@@ -485,6 +485,15 @@ include "std.porth"
 const Str.count sizeof(int) offset end
 const Str.data  sizeof(ptr) offset end
 const sizeof(Str) reset end
+
+proc main in
+  memory string sizeof(Str) end
+  "Hello world"c 
+  string Str.data ptr+ !ptr
+  11 string Str.count ptr+ !int
+  // Prints utf-8 code for first character of the string
+  string Str.data ptr+ @8 print
+end
 ```
 
 ### Type Checking
