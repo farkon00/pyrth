@@ -513,4 +513,12 @@ TBD
 
 #### Procedure Signatures
 
-TBD
+```
+proc ++ int -> int in
+  1 +
+end
+
+proc inc_ret ptr -> int int in
+  dup @64 1 + dup rot !64 dup 1 -
+end
+```
