@@ -1570,7 +1570,13 @@ in
         assert "Exhaustive handling of Op types in generate-op-python" COUNT_OPS 25 = end
         type OP_PUSH_INT = if
           "stack.append(" tabs bfd write-py-line 
-          operand bfd bputu 
+          operand 0 < if
+            "-" bfd bputs
+            operand not 1 +
+          else
+            operand
+          end
+          bfd bputu
           ")\n" bfd bputs 
         else type OP_PUSH_BOOL = if*
           "stack.append(" tabs bfd write-py-line 
