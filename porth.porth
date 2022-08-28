@@ -1587,8 +1587,8 @@ in
             operand cast(int) bfd bputu 
             "))\n" bfd bputs
         else type OP_PUSH_ADDR = if*
-          "stack.append(" tabs bfd write-py-line
-          operand proc-lookup-by-addr Proc.name ptr+ @Str bfd bputs 
+          "stack.append(func_" tabs bfd write-py-line
+          operand proc-lookup-by-addr Proc.addr ptr+ @int bfd bputu
           ")\n" bfd bputs
         else type OP_CALL_LIKE = if*
           "stack.pop()(stack)\n" tabs bfd write-py-line
@@ -1812,6 +1812,7 @@ in
             else operand INTRINSIC_ARGV = if*
               "stack.append(Pointer(0, 1))\n" tabs bfd write-py-line
             else operand INTRINSIC_ENVP = if*
+              "print('Envp isn\\'t supported');exit()\n" tabs bfd write-py-line
             else operand INTRINSIC_CAST_PTR = if*
               "stack.append(Pointer.pointer_from_int(stack.pop()))\n" tabs bfd write-py-line
             else operand INTRINSIC_CAST_INT = if*
